@@ -1,3 +1,5 @@
+![Example search strategy](github-readme-graphic.png "Example search strategy")
+
 # What is evoSearch?
 
 This project arises in the course of my bachelor thesis, which examines the behavior of genetic algorithms on the following

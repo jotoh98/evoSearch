@@ -1,4 +1,6 @@
-![Example search strategy](github-readme-graphic.png "Example search strategy")
+<p align="center">
+  <img src="github-readme-graphic.png">
+</p>
 
 # What is evoSearch?
 

@@ -1,61 +1,30 @@
 package evo.search.view;
 
 import lombok.Getter;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
-import java.awt.event.MouseWheelEvent;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.awt.geom.*;
 import java.util.HashMap;
-import java.util.List;
 
 @Slf4j
 public class Canvas extends JPanel {
 
-    @Getter
-    HashMap<Point2D, PointStyle> points = new HashMap<>();
-    List<Shape> shapes = new ArrayList<>();
     private Transformation transformation = new Transformation();
-    private AffineTransform affineTransform = new AffineTransform();
+
+    @Getter
+    private HashMap<Point2D, Style> points = new HashMap<>();
+
+    @Getter
+    private HashMap<Shape, Style> shapes = new HashMap<>();
 
     public Canvas() {
-
         transformation.setScale(10);
-        transformation.getOffset().setLocation(250, 250);
+        transformation.getOffset().setLocation(getHeight() / 2d, getWidth() / 2d);
         addMouseListener(transformation.getMouseListener());
         addMouseMotionListener(transformation.getMouseMotionListener(this));
         addMouseWheelListener(transformation.getMouseWheelListener(this));
-
-        addMouseMotionListener(new MouseMotionAdapter() {
-            @SneakyThrows
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                Point2D inverted = affineTransform.inverseTransform(e.getPoint(), null);
-                points.keySet().stream()
-                        .filter(point2D -> point2D.distance(inverted) < 5 * affineTransform.getScaleX())
-                        .min(Comparator.comparingDouble(point -> point.distance(inverted)))
-                        .ifPresent(point2D -> log.info("hovered: {}", point2D));
-            }
-        });
-
-    }
-
-    @SneakyThrows
-    public void onScroll(MouseWheelEvent e) {
-        final double amount = Math.pow(1.05, e.getScrollAmount());
-        final double delta = e.getPreciseWheelRotation() > 0 ? amount : 1 / amount;
-        Point2D transform = affineTransform.inverseTransform(e.getPoint(), null);
-        affineTransform.translate(transform.getX(), transform.getY());
-        affineTransform.scale(delta, delta);
-        affineTransform.translate(-transform.getX(), -transform.getY());
-        repaint();
     }
 
     @Override
@@ -63,59 +32,54 @@ public class Canvas extends JPanel {
         super.paintComponent(g);
         Graphics2D graphics2D = (Graphics2D) g.create();
         graphics2D.setTransform(transformation.getAffineTransformation());
-
-        shapes.forEach(shape -> draw(graphics2D, shape));
-
-        points.forEach((point, pointStyle) -> {
-            switch (pointStyle) {
-                case SQUARE:
-                    draw(graphics2D, point);
-                    break;
-                case CROSS:
-                    drawCross(graphics2D, point);
-            }
-        });
-
+        shapes.forEach((shape, style) -> render(graphics2D, shape, style));
+        points.forEach((point2D, style) -> render(graphics2D, point2D, style));
         graphics2D.dispose();
     }
 
-    public void draw(Graphics2D g, Point2D point) {
-        int x = (int) point.getX();
-        int y = (int) point.getY();
-        g.setColor(Color.WHITE);
-        g.fillRect(x - 1, y - 1, 2, 2);
-        g.setColor(Color.BLACK);
-        g.drawRect(x - 1, y - 1, 2, 2);
+    private void render(Graphics2D graphics2D, Shape shape, Style style) {
+        if (style.isFilled()) {
+            graphics2D.setColor(style.getFill());
+            graphics2D.fill(shape);
+        }
+        graphics2D.setColor(style.getColor());
+        graphics2D.setStroke(style.getStroke());
+        graphics2D.draw(shape);
     }
 
-    public void drawCross(Graphics2D g, Point2D point) {
-        int x = (int) point.getX();
-        int y = (int) point.getY();
-        g.setColor(Color.BLACK);
-        g.drawLine(x - 2, y + 2, x + 2, y - 2);
-        g.drawLine(x - 2, y - 2, x + 2, y + 2);
+    private void render(Graphics2D graphics2D, Point2D point2D, Style style) {
+        double x = point2D.getX();
+        double y = point2D.getY();
+        switch (style.getShape()) {
+            case DOT:
+                render(graphics2D, new Ellipse2D.Double(x - .3, y - .3, .6, .6), style);
+                return;
+            case CROSS:
+                GeneralPath path = new GeneralPath();
+                path.append(new Line2D.Double(x - .3, y + .3, x + .3, y - .3), false);
+                path.append(new Line2D.Double(x - .3, y - .3, x + .3, y + .3), false);
+                render(graphics2D, path, style);
+                return;
+            case RECT:
+                render(graphics2D, new Rectangle2D.Double(x - .3, y - .3, .6, .6), style);
+        }
     }
 
-    public void draw(Graphics2D g, Shape shape) {
-        g.draw(shape);
+    public void enqueue(Point2D point) {
+        enqueue(point, Style.DEFAULT);
     }
 
-    public void render(Point2D point) {
-        render(point, PointStyle.SQUARE);
-    }
-
-    public void render(Point2D point, PointStyle style) {
+    public void enqueue(Point2D point, Style style) {
         points.put(point, style);
         repaint();
     }
 
-    public void render(Shape shape) {
-        shapes.add(shape);
+    public void enqueue(Shape shape, Style style) {
+        shapes.put(shape, style);
         repaint();
     }
 
-    public enum PointStyle {
-        SQUARE,
-        CROSS
+    public void enqueue(Shape shape) {
+        enqueue(shape, Style.DEFAULT);
     }
 }

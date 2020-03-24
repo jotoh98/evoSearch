@@ -27,6 +27,13 @@ public class Canvas extends JPanel {
         addMouseWheelListener(transformation.getMouseWheelListener(this));
     }
 
+    public void clear() {
+        EventQueue.invokeLater(() -> {
+            points.clear();
+            shapes.clear();
+        });
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -70,13 +77,17 @@ public class Canvas extends JPanel {
     }
 
     public void enqueue(Point2D point, Style style) {
-        points.put(point, style);
-        repaint();
+        EventQueue.invokeLater(() -> {
+            points.put(point, style);
+            repaint();
+        });
     }
 
     public void enqueue(Shape shape, Style style) {
-        shapes.put(shape, style);
-        repaint();
+        EventQueue.invokeLater(() -> {
+            shapes.put(shape, style);
+            repaint();
+        });
     }
 
     public void enqueue(Shape shape) {

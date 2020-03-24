@@ -1,8 +1,17 @@
 package evo.search;
 
+import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
 import io.jenetics.Chromosome;
+import io.jenetics.Genotype;
+import io.jenetics.Mutator;
+import io.jenetics.UniformCrossover;
+import io.jenetics.engine.Codec;
+import io.jenetics.engine.Engine;
+import io.jenetics.engine.EvolutionResult;
+import io.jenetics.engine.Problem;
+import io.jenetics.util.ISeq;
 import io.jenetics.util.RandomRegistry;
 import lombok.Getter;
 import lombok.Setter;
@@ -42,7 +51,7 @@ public class Experiment {
         List<Double> collect = IntStream.range(0, amountDistances)
                 .mapToDouble(integer -> {
                     double distance = RandomRegistry.random().nextDouble() * 50;
-                    if(distance > max.get()) {
+                    if (distance > max.get()) {
                         max.set(distance);
                     }
                     return distance;
@@ -54,6 +63,7 @@ public class Experiment {
         experiment.setPositions(positions);
 
 
+        experiment.setTreasures(new ArrayList<>());
         int bound = RandomRegistry.random().nextInt(amountDistances - 1);
         for (int index = -1; index < bound; index++) {
             final int position = RandomRegistry.random().nextInt(positions);
@@ -98,5 +108,31 @@ public class Experiment {
         }
 
         return trace;
+    }
+
+    public static Genotype<DiscreteGene> evolve(final int length, final int limit) {
+        Experiment.init(length, 3);
+
+
+        Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
+                Experiment::fitness,
+                Codec.of(
+                        Genotype.of(DiscreteChromosome.shuffle()),
+                        chromosomes -> DiscreteChromosome.of(ISeq.of(chromosomes.chromosome()))
+                )
+        );
+
+        //TODO: prevent distances from being chosen multiple times
+        // this happens in Mutator.mutate()
+        return Engine
+                .builder(problem)
+                .alterers(
+                        new UniformCrossover<>(0.2),
+                        new Mutator<>(0.15)
+                )
+                .build()
+                .stream()
+                .limit(limit)
+                .collect(EvolutionResult.toBestGenotype());
     }
 }

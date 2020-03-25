@@ -3,10 +3,10 @@ package evo.search;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
+import evo.search.ga.SwapPositionsMutator;
 import io.jenetics.Chromosome;
 import io.jenetics.Genotype;
-import io.jenetics.Mutator;
-import io.jenetics.UniformCrossover;
+import io.jenetics.SwapMutator;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
@@ -44,6 +44,8 @@ public class Experiment {
 
     private List<DiscretePoint> treasures = new ArrayList<>();
 
+    private List<DiscreteChromosome> individuals = new ArrayList<>();
+
     public static void init(int amountDistances, int positions) {
         Experiment experiment = Experiment.getInstance();
 
@@ -62,14 +64,16 @@ public class Experiment {
         experiment.setDistances(collect);
         experiment.setPositions(positions);
 
+        List<DiscretePoint> treasures = experiment.getDistances()
+                .stream()
+                .map(aDouble -> {
+                    final int position = RandomRegistry.random().nextInt(positions);
+                    double distance = Math.max(0, RandomRegistry.random().nextDouble() * aDouble);
+                    return new DiscretePoint(position, distance);
+                })
+                .collect(Collectors.toList());
 
-        experiment.setTreasures(new ArrayList<>());
-        int bound = RandomRegistry.random().nextInt(amountDistances - 1);
-        for (int index = -1; index < bound; index++) {
-            final int position = RandomRegistry.random().nextInt(positions);
-            final double distance = RandomRegistry.random().nextDouble() * max.get();
-            experiment.getTreasures().add(new DiscretePoint(position, distance));
-        }
+        experiment.setTreasures(treasures);
     }
 
     public static boolean finds(final DiscretePoint point, final DiscretePoint treasure) {
@@ -113,7 +117,6 @@ public class Experiment {
     public static Genotype<DiscreteGene> evolve(final int length, final int limit) {
         Experiment.init(length, 3);
 
-
         Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
                 Experiment::fitness,
                 Codec.of(
@@ -124,15 +127,17 @@ public class Experiment {
 
         //TODO: prevent distances from being chosen multiple times
         // this happens in Mutator.mutate()
-        return Engine
+        final Genotype<DiscreteGene> indivual = Engine
                 .builder(problem)
                 .alterers(
-                        new UniformCrossover<>(0.2),
-                        new Mutator<>(0.15)
+                        new SwapMutator<>(0.5),
+                        new SwapPositionsMutator(0.5)
                 )
                 .build()
                 .stream()
                 .limit(limit)
                 .collect(EvolutionResult.toBestGenotype());
+        instance.individuals.add((DiscreteChromosome) indivual.chromosome());
+        return indivual;
     }
 }

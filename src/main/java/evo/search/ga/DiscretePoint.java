@@ -44,4 +44,10 @@ public class DiscretePoint implements Cloneable {
     public double getDistanceSquared() {
         return distance * distance;
     }
+
+    public void swapDistance(DiscretePoint other) {
+        final int temp = position;
+        position = other.position;
+        other.position = temp;
+    }
 }

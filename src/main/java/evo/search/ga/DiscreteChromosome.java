@@ -57,6 +57,11 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
 
     @Override
     public boolean isValid() {
-        return genes.stream().allMatch(DiscreteGene::isValid);
+        List<Double> distances = Experiment.getInstance().getDistances();
+        if (distances.size() != length()) {
+            return false;
+        }
+        List<DiscreteGene> genes = this.genes.asList();
+        return genes.containsAll(distances);
     }
 }

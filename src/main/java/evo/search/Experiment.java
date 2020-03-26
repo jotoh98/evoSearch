@@ -18,7 +18,9 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -114,9 +116,7 @@ public class Experiment {
         return trace;
     }
 
-    public static Genotype<DiscreteGene> evolve(final int length, final int limit) {
-        Experiment.init(length, 3);
-
+    public Genotype<DiscreteGene> evolve(final int limit, Consumer<Integer> consumer) {
         Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
                 Experiment::fitness,
                 Codec.of(
@@ -127,6 +127,7 @@ public class Experiment {
 
         //TODO: prevent distances from being chosen multiple times
         // this happens in Mutator.mutate()
+        final AtomicInteger progress = new AtomicInteger();
         final Genotype<DiscreteGene> indivual = Engine
                 .builder(problem)
                 .alterers(
@@ -136,6 +137,7 @@ public class Experiment {
                 .build()
                 .stream()
                 .limit(limit)
+                .peek(result -> consumer.accept(progress.incrementAndGet()))
                 .collect(EvolutionResult.toBestGenotype());
         instance.individuals.add((DiscreteChromosome) indivual.chromosome());
         return indivual;

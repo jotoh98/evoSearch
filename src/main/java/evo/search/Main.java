@@ -1,6 +1,6 @@
 package evo.search;
 
-import evo.search.view.MainView;
+import evo.search.view.MainForm;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -9,8 +9,7 @@ import javax.swing.*;
 public class Main {
 
     public static void main(String[] args) throws ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException {
-        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        new MainView();
+        MainForm.main(args);
         /*Experiment.init(20, 3);
         final File file = FileService.promptForSave();
 

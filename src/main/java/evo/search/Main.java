@@ -8,6 +8,10 @@ import javax.swing.*;
 @Slf4j
 public class Main {
 
+    static {
+        //System.setProperty("apple.laf.useScreenMenuBar", "true");
+    }
+
     public static void main(String[] args) throws ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException {
         MainForm.main(args);
         /*Experiment.init(20, 3);

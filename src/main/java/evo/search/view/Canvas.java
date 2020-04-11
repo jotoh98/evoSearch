@@ -10,7 +10,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.font.GlyphVector;
 import java.awt.geom.*;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,6 +25,9 @@ public class Canvas extends JPanel {
     @Getter
     private HashMap<Shape, Style> shapes = new HashMap<>();
 
+    @Getter
+    private HashMap<StringShape, Style> strings = new HashMap<>();
+
     public Canvas() {
         points.put(new Point2D.Double(5, 5), Style.builder().color(Color.lightGray).build());
         transformation.setScale(10);
@@ -39,12 +41,14 @@ public class Canvas extends JPanel {
                 log.info("clicked: {}", e);
             }
         });
+        addComponentListener(transformation.getComponentListener(this));
     }
 
     public void clear() {
         EventQueue.invokeLater(() -> {
             points.clear();
             shapes.clear();
+            strings.clear();
         });
     }
 
@@ -55,6 +59,7 @@ public class Canvas extends JPanel {
         graphics2D.setTransform(transformation.getAffineTransformation());
         shapes.forEach((shape, style) -> render(graphics2D, shape, style));
         points.forEach((point2D, style) -> render(graphics2D, point2D, style));
+        strings.forEach((stringShape, style) -> render(graphics2D, stringShape, style));
         graphics2D.dispose();
     }
 
@@ -65,7 +70,13 @@ public class Canvas extends JPanel {
         }
         graphics2D.setColor(style.getColor());
         graphics2D.setStroke(style.getStroke());
-        graphics2D.draw(shape);
+        if (shape instanceof StringShape) {
+            graphics2D.setFont(style.getFont());
+            final StringShape string = (StringShape) shape;
+            graphics2D.drawString(string.getString(), string.getX(), string.getY());
+        } else {
+            graphics2D.draw(shape);
+        }
     }
 
     private void render(Graphics2D graphics2D, Point2D point2D, Style style) {
@@ -87,24 +98,43 @@ public class Canvas extends JPanel {
     }
 
     public void render(final Chromosome<DiscreteGene> chromosome) {
-        Experiment.getInstance().getTreasures().forEach(
-                treasure -> enqueue(
-                        treasure.toPoint2D(),
-                        Style.builder().shape(Style.Shape.CROSS).build()
-                )
-        );
+        final int availablePosition = Experiment.getInstance().getPositions();
+
+        renderRays(availablePosition);
+
         final AtomicInteger index = new AtomicInteger();
         chromosome.forEach(gene -> {
             final Point2D point = gene.getAllele().toPoint2D();
-            enqueue(String.valueOf(index.get()), point, 5.0f);
-            enqueue(point);
+            enqueue(String.valueOf(index.get()), point, Style.builder().color(Color.WHITE).build());
+            enqueue(point, Style.builder().color(Color.GREEN).build());
             index.getAndIncrement();
         });
-        int availablePosition = Experiment.getInstance().getPositions();
 
-        for (int position = 0; position < availablePosition; position++) {
-            int x = (int) Math.round(Math.cos(position / (double) availablePosition * 2 * Math.PI) * 100);
-            int y = (int) Math.round(Math.sin(position / (double) availablePosition * 2 * Math.PI) * 100);
+
+        if (availablePosition > 2) {
+            Point2D previous = new Point2D.Double();
+            for (final DiscreteGene discreteGene : chromosome) {
+                Point2D current = discreteGene.getAllele().toPoint2D();
+                enqueue(
+                        new Line2D.Double(previous, current),
+                        Style.builder().color(Color.WHITE).build()
+                );
+                previous = current;
+            }
+        }
+
+        Experiment.getInstance().getTreasures().forEach(
+                treasure -> enqueue(
+                        treasure.toPoint2D(),
+                        Style.builder().shape(Style.Shape.CROSS).color(Color.RED).build()
+                )
+        );
+    }
+
+    public void renderRays(final int amount) {
+        for (int position = 0; position < amount; position++) {
+            int x = (int) Math.round(Math.cos(position / (double) amount * 2 * Math.PI) * 100);
+            int y = (int) Math.round(Math.sin(position / (double) amount * 2 * Math.PI) * 100);
             enqueue(
                     new Line2D.Double(0, 0, x, y),
                     Style.builder()
@@ -113,25 +143,17 @@ public class Canvas extends JPanel {
                             .build()
             );
         }
-
-        if (availablePosition > 2) {
-            Point2D previous = new Point2D.Double();
-            for (final DiscreteGene discreteGene : chromosome) {
-                Point2D current = discreteGene.getAllele().toPoint2D();
-                enqueue(new Line2D.Double(previous, current));
-                previous = current;
-            }
-        }
     }
 
-    public void enqueue(String text, Point2D position, float size) {
-        final Font font = getFont().deriveFont(Font.BOLD, size);
-        final GlyphVector glyphVector = font.createGlyphVector(
-                getFontMetrics(font).getFontRenderContext(),
-                text
-        );
-        glyphVector.setGlyphPosition(1, position);
-        enqueue(glyphVector.getOutline());
+    public void enqueue(String text, Point2D position) {
+        enqueue(text, position, Style.builder().build());
+    }
+
+    public void enqueue(String text, Point2D position, Style style) {
+        EventQueue.invokeLater(() -> {
+            strings.put(new StringShape(text, (float) position.getX(), (float) position.getY()), style);
+            repaint();
+        });
     }
 
     public void enqueue(Point2D point) {

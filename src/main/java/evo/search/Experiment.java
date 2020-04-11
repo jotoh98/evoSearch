@@ -4,8 +4,10 @@ import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.SwapPositionsMutator;
+import evo.search.io.EventService;
 import io.jenetics.Chromosome;
 import io.jenetics.Genotype;
+import io.jenetics.Optimize;
 import io.jenetics.SwapMutator;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
@@ -39,6 +41,7 @@ public class Experiment {
         }
         return instance;
     }
+
 
     private int positions = 2;
 
@@ -86,7 +89,7 @@ public class Experiment {
 
     public static double fitnessSingular(Chromosome<DiscreteGene> chromosome) {
         DiscretePoint treasure = Experiment.getInstance().getTreasures().get(0);
-        return treasure.getDistance() / trace(chromosome, treasure);
+        return trace(chromosome, treasure);
     }
 
     public static double fitness(Chromosome<DiscreteGene> chromosome) {
@@ -95,7 +98,7 @@ public class Experiment {
             return 0;
         }
         return treasures.stream()
-                .mapToDouble(treasure -> treasure.getDistance() / trace(chromosome, treasure))
+                .mapToDouble(treasure -> trace(chromosome, treasure))
                 .reduce(Double::sum)
                 .orElse(0d) / treasures.size();
     }
@@ -116,7 +119,15 @@ public class Experiment {
         return trace;
     }
 
+    /**
+     * Evolving the individuals
+     *
+     * @param limit
+     * @param consumer
+     * @return
+     */
     public Genotype<DiscreteGene> evolve(final int limit, Consumer<Integer> consumer) {
+        EventService.LOG_EVENT.trigger("Experiment initialized, evolving...");
         Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
                 Experiment::fitness,
                 Codec.of(
@@ -124,12 +135,10 @@ public class Experiment {
                         chromosomes -> DiscreteChromosome.of(ISeq.of(chromosomes.chromosome()))
                 )
         );
-
-        //TODO: prevent distances from being chosen multiple times
-        // this happens in Mutator.mutate()
         final AtomicInteger progress = new AtomicInteger();
         final Genotype<DiscreteGene> indivual = Engine
                 .builder(problem)
+                .optimize(Optimize.MINIMUM)
                 .alterers(
                         new SwapMutator<>(0.5),
                         new SwapPositionsMutator(0.5)

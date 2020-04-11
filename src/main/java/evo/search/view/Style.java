@@ -21,6 +21,8 @@ public class Style {
     private boolean filled = false;
     @Builder.Default
     private Shape shape = Shape.RECT;
+    @Builder.Default
+    private Font font = new Font(Font.SANS_SERIF, Font.PLAIN, 2);
 
     public enum Shape {
         RECT,

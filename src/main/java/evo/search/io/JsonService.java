@@ -77,8 +77,8 @@ public class JsonService {
         return new DiscreteChromosome(ISeq.of(discreteGenes));
     }
 
-    public static Experiment readExperiment(JSONObject jsonObject) {
-        Experiment experiment = Experiment.getInstance();
+    public static void readExperiment(JSONObject jsonObject) {
+        final Experiment experiment = Experiment.getInstance();
 
         if (valid(jsonObject, "a", "d", "t", "i")) {
 
@@ -99,9 +99,8 @@ public class JsonService {
             experiment.setDistances(distances);
             experiment.setTreasures(treasures);
             experiment.setIndividuals(individuals);
+            EventService.LOG_EVENT.trigger("Experiment loaded");
         }
-
-        return experiment;
     }
 
     public static boolean valid(JSONObject jsonObject, String... requiredKeys) {

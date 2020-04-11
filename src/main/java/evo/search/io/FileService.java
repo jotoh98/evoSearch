@@ -44,16 +44,13 @@ public class FileService {
         return selectedFile;
     }
 
-    public static Experiment loadExperiment(File file) {
+    public static void loadExperiment(File file) {
         try {
             final String jsonString = Files.readString(file.toPath());
-
-            return JsonService.readExperiment(new JSONObject(jsonString));
+            JsonService.readExperiment(new JSONObject(jsonString));
         } catch (IOException e) {
             log.error("Could not read file.", e);
         }
-
-        return Experiment.getInstance();
     }
 
     public static void saveExperiment(File file, Experiment experiment) {
@@ -66,6 +63,7 @@ public class FileService {
                     StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING
             );
+            EventService.LOG_EVENT.trigger("Experiment loaded");
         } catch (IOException e) {
             log.error("Could not write file.", e);
         }

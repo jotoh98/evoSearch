@@ -5,27 +5,22 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  javadoc:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: JDK 11 setup ⚙️
-      uses: actions/setup-java@v1
-      with:
-        java-version: 11
-    - name: Maven Javadoc 🔧
-      run: mvn clean javadoc:javadoc
-    - uses: stefanzweifel/git-auto-commit-action@v4.1.2
-      with:
-        commit_message: Deploy javadoc
+      - uses: actions/checkout@v2
+      - name: JDK 11 setup ⚙️
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Maven Javadoc 🔧
+        run: mvn clean javadoc:javadoc
+      - name: Deploy to gh-pages 🚀
+        uses: JamesIves/github-pages-deploy-action@releases/v3
+        with:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: docs
 
-        # Optional name of the branch the commit should be pushed to
-        # Required if Action is used in Workflow listening to the `pull_request` event
-        branch: ${{ github.head_ref }}
-
-        # Optional commit user and author settings
-        commit_user_name: Github actions bot
-        commit_user_email: actions@github.com
-        commit_author: Bot <actions@github.com>

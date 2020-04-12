@@ -25,9 +25,6 @@ jobs:
         # Required if Action is used in Workflow listening to the `pull_request` event
         branch: ${{ github.head_ref }}
 
-        # Optional glob pattern of files which should be added to the commit
-        file_pattern: docs/\*
-
         # Optional commit user and author settings
         commit_user_name: Github actions bot
         commit_user_email: actions@github.com

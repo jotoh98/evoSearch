@@ -1,0 +1,34 @@
+name: JavaDoc
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: JDK 11 setup ⚙️
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - name: Maven Javadoc 🔧
+      run: mvn clean javadoc:javadoc
+    - uses: stefanzweifel/git-auto-commit-action@v4.1.2
+      with:
+        commit_message: Deploy javadoc
+
+        # Optional name of the branch the commit should be pushed to
+        # Required if Action is used in Workflow listening to the `pull_request` event
+        branch: ${{ github.head_ref }}
+
+        # Optional glob pattern of files which should be added to the commit
+        file_pattern: docs/\*
+
+        # Optional commit user and author settings
+        commit_user_name: Github actions bot
+        commit_user_email: actions@github.com
+        commit_author: Bot <actions@github.com>

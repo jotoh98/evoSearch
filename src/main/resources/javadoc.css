@@ -1,0 +1,126 @@
+@font-face {
+    font-family: Jetbrains Mono;
+    src: url(https://github.com/JetBrains/JetBrainsMono/blob/master/web/woff/JetBrainsMono-Regular.woff);
+}
+
+* {
+    --bg-body: #333;
+    --bg-header: #404040;
+    --color-border: #757474;
+    --color-text: lightgrey;
+    --color-link: rgb(123, 126, 196);
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+}
+
+body {
+    background: var(--bg-body);
+    color: var(--color-text);
+    font-family: -apple-system, "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+}
+
+a {
+    color: var(--color-link);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+header {
+    position: fixed;
+    width: 100%;
+    top: 0;
+    background: var(--bg-header);
+    left: 0;
+    padding: 0 1rem;
+}
+
+header + * {
+    margin-top: 5rem !important;
+}
+
+header *,
+.navList {
+    list-style: none;
+}
+
+ul {
+    padding: 0;
+}
+
+footer nav,
+.fixedNav {
+    display: flex;
+    justify-content: space-between;
+}
+
+.navList,
+.subNav {
+    display: flex;
+    justify-content: center;
+}
+
+.skipNav,
+.navPadding,
+label[for="search"],
+input[type="reset"] {
+    display: none;
+}
+
+.navList li {
+    padding: .2rem 1rem;
+}
+
+input {
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    padding: .2rem .5rem;
+    border-radius: .2rem;
+    font-size: .8rem;
+}
+
+.header,
+main,
+footer,
+.bar {
+    max-width: 60rem;
+    margin: 0 auto;
+}
+
+table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+    border: 2px solid var(--bg-header);
+}
+
+table tr {
+    background: var(--bg-header)
+}
+
+td, th {
+    padding: .2rem .4rem;
+    border-width: 0 2px;
+    border-color: var(--bg-header);
+    border-style: solid;
+}
+
+.altColor {
+    background: transparent;
+}
+
+.indexContainer li {
+    list-style: none;
+    margin: .5rem 0;
+}
+
+.indexContainer li,
+code,
+pre {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .9em;
+}

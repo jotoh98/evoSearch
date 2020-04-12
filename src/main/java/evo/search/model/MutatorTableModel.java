@@ -60,7 +60,7 @@ public class MutatorTableModel extends AbstractTableModel {
             case 1:
                 throw new IllegalStateException("You cannot edit existing mutator class names.");
             case 2:
-                config.setProbability((double) aValue);
+                config.setProbability(Double.parseDouble(aValue.toString()));
         }
     }
 
@@ -68,7 +68,7 @@ public class MutatorTableModel extends AbstractTableModel {
     public String getColumnName(final int column) {
         switch (column) {
             case 0:
-                return "Selected";
+                return "Select";
             case 1:
                 return "Mutator";
         }

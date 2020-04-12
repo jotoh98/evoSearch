@@ -1,5 +1,6 @@
-package evo.search.ga;
+package evo.search.ga.mutators;
 
+import evo.search.ga.DiscreteGene;
 import io.jenetics.Chromosome;
 import io.jenetics.MutatorResult;
 import io.jenetics.SwapMutator;
@@ -9,7 +10,7 @@ import java.util.Random;
 
 import static io.jenetics.internal.math.Randoms.indexes;
 
-public class SwapPositionsMutator extends SwapMutator<DiscreteGene, Double> {
+public class SwapPositionsMutator extends SwapMutator<DiscreteGene, Double> implements DiscreteMutator {
 
     public SwapPositionsMutator(final double probability) {
         super(probability);

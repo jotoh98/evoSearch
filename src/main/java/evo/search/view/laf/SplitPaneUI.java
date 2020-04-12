@@ -17,4 +17,10 @@ public class SplitPaneUI extends DarculaSplitPaneUI {
     public BasicSplitPaneDivider createDefaultDivider() {
         return new SplitPaneDivider(this);
     }
+
+
+    @Override
+    public boolean isContinuousLayout() {
+        return true;
+    }
 }

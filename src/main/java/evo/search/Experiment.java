@@ -3,12 +3,11 @@ package evo.search;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
-import evo.search.ga.SwapPositionsMutator;
+import evo.search.ga.mutators.DiscreteMutator;
 import evo.search.io.EventService;
 import io.jenetics.Chromosome;
 import io.jenetics.Genotype;
 import io.jenetics.Optimize;
-import io.jenetics.SwapMutator;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
@@ -17,6 +16,7 @@ import io.jenetics.util.ISeq;
 import io.jenetics.util.RandomRegistry;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+@Slf4j
 @Getter
 @Setter
 public class Experiment {
@@ -126,7 +127,7 @@ public class Experiment {
      * @param consumer
      * @return
      */
-    public Genotype<DiscreteGene> evolve(final int limit, Consumer<Integer> consumer) {
+    public Genotype<DiscreteGene> evolve(final int limit, List<DiscreteMutator> alterers, Consumer<Integer> consumer) {
         EventService.LOG_EVENT.trigger("Experiment initialized, evolving...");
         Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
                 Experiment::fitness,
@@ -135,20 +136,24 @@ public class Experiment {
                         chromosomes -> DiscreteChromosome.of(ISeq.of(chromosomes.chromosome()))
                 )
         );
-        final AtomicInteger progress = new AtomicInteger();
-        final Genotype<DiscreteGene> indivual = Engine
-                .builder(problem)
-                .optimize(Optimize.MINIMUM)
-                .alterers(
-                        new SwapMutator<>(0.5),
-                        new SwapPositionsMutator(0.5)
-                )
-                .build()
+
+        final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine.builder(problem).optimize(Optimize.MINIMUM);
+
+        if (alterers.size() > 0) {
+            final DiscreteMutator first = alterers.remove(0);
+            final DiscreteMutator[] rest = alterers.toArray(DiscreteMutator[]::new);
+            evolutionBuilder.alterers(first, rest);
+        }
+
+        final AtomicInteger progressCounter = new AtomicInteger();
+        final Genotype<DiscreteGene> individual = evolutionBuilder.build()
                 .stream()
                 .limit(limit)
-                .peek(result -> consumer.accept(progress.incrementAndGet()))
+                .peek(result -> consumer.accept(progressCounter.incrementAndGet()))
                 .collect(EvolutionResult.toBestGenotype());
-        instance.individuals.add((DiscreteChromosome) indivual.chromosome());
-        return indivual;
+
+        instance.individuals.add((DiscreteChromosome) individual.chromosome());
+
+        return individual;
     }
 }

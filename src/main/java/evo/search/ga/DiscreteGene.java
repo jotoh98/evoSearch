@@ -7,16 +7,51 @@ import lombok.AllArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Discrete genome carrying a {@link DiscretePoint} allele.
+ */
 @AllArgsConstructor
 public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
 
-    private DiscretePoint data;
+    /**
+     * The discrete allele.
+     */
+    private DiscretePoint allele;
 
-    @Override
-    public DiscretePoint getAllele() {
-        return data;
+    /**
+     * Create a new gene from its {@link DiscretePoint} allele.
+     *
+     * @return A discrete gene with a given allele.
+     */
+    public static DiscreteGene of(DiscretePoint value) {
+        return new DiscreteGene(value.clone());
     }
 
+    /**
+     * Create a new gene from a given distance. Shuffles a position.
+     *
+     * @return A discrete gene with a given distance with a shuffled position.
+     */
+    public static DiscreteGene of(double distance) {
+        int availablePositions = Experiment.getInstance().getPositions();
+        int position = RandomRegistry.random().nextInt(availablePositions);
+        return new DiscreteGene(new DiscretePoint(position, distance));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public DiscretePoint getAllele() {
+        return allele;
+    }
+
+    /**
+     * {@inheritDoc}
+     * For a {@link DiscreteGene}, it has to pull a valid position from the
+     * {@link Experiment#getPositions()} and the distance from the
+     * {@link Experiment#getDistances()} method.
+     */
     @Override
     public DiscreteGene newInstance() {
         int positions = Experiment.getInstance().getPositions();
@@ -26,25 +61,25 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
         return new DiscreteGene(new DiscretePoint(position, distances.get(index)));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public DiscreteGene newInstance(DiscretePoint value) {
         return of(value);
     }
 
-    public static DiscreteGene of(DiscretePoint value) {
-        return new DiscreteGene(value.clone());
-    }
-
-    public static DiscreteGene of(double distance) {
-        int availablePositions = Experiment.getInstance().getPositions();
-        int position = RandomRegistry.random().nextInt(availablePositions);
-        return new DiscreteGene(new DiscretePoint(position, distance));
-    }
-
+    /**
+     * Checks, if a gene is valid. That means, than the alleles distance is
+     * one of these in the {@link Experiment} and smaller than the
+     * {@link Experiment#getPositions()} property.
+     *
+     * @return Whether the discrete gene is valid.
+     */
     @Override
     public boolean isValid() {
-        boolean distanceValid = Experiment.getInstance().getDistances().contains(data.getDistance());
-        boolean positionValid = Experiment.getInstance().getPositions() >= data.getPosition();
+        boolean distanceValid = Experiment.getInstance().getDistances().contains(allele.getDistance());
+        boolean positionValid = Experiment.getInstance().getPositions() >= allele.getPosition();
         return distanceValid && positionValid;
     }
 }

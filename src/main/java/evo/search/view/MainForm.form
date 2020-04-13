@@ -35,11 +35,11 @@
               <hideActionText value="false"/>
               <horizontalTextPosition value="4"/>
               <inheritsPopupMenu value="true"/>
-              <label value="Run"/>
+              <label resource-bundle="lang" key="run"/>
               <margin top="0" left="0" bottom="0" right="0"/>
               <opaque value="false"/>
               <selected value="true"/>
-              <text value="Run"/>
+              <text resource-bundle="lang" key="run"/>
             </properties>
           </component>
           <hspacer id="3f5f7">
@@ -54,7 +54,7 @@
             <properties>
               <borderPainted value="true"/>
               <contentAreaFilled value="false"/>
-              <text value="Config"/>
+              <text resource-bundle="lang" key="config"/>
             </properties>
           </component>
         </children>
@@ -102,7 +102,8 @@
             </constraints>
             <properties>
               <horizontalTextPosition value="11"/>
-              <text value="Label"/>
+              <labelFor value="eabf8"/>
+              <text value=""/>
             </properties>
           </component>
         </children>
@@ -123,7 +124,7 @@
               </grid>
             </constraints>
             <properties>
-              <dividerLocation value="77"/>
+              <dividerLocation value="300"/>
               <dividerSize value="9"/>
               <enabled value="false"/>
               <focusable value="false"/>
@@ -131,14 +132,6 @@
             </properties>
             <border type="none"/>
             <children>
-              <component id="88d2e" class="evo.search.view.Canvas" binding="canvas">
-                <constraints>
-                  <splitpane position="right"/>
-                </constraints>
-                <properties>
-                  <focusable value="false"/>
-                </properties>
-              </component>
               <tabbedpane id="31374" binding="configTabs">
                 <constraints>
                   <splitpane position="left"/>
@@ -150,7 +143,7 @@
                 <children>
                   <scrollpane id="40f3">
                     <constraints>
-                      <tabbedpane title="General"/>
+                      <tabbedpane title-resource-bundle="lang" title-key="general"/>
                     </constraints>
                     <properties/>
                     <border type="none"/>
@@ -163,7 +156,7 @@
                   </scrollpane>
                   <scrollpane id="eabf8">
                     <constraints>
-                      <tabbedpane title="Mutators"/>
+                      <tabbedpane title-resource-bundle="lang" title-key="mutators"/>
                     </constraints>
                     <properties/>
                     <border type="none"/>
@@ -179,6 +172,12 @@
                   </scrollpane>
                 </children>
               </tabbedpane>
+              <component id="da274" class="evo.search.view.Canvas" binding="canvas">
+                <constraints>
+                  <splitpane position="right"/>
+                </constraints>
+                <properties/>
+              </component>
             </children>
           </splitpane>
         </children>

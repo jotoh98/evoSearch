@@ -3,6 +3,9 @@ package evo.search;
 import evo.search.view.MainForm;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Main class.
+ */
 @Slf4j
 public class Main {
 

@@ -3,8 +3,9 @@ package evo.search;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
-import evo.search.ga.mutators.DiscreteMutator;
+import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.io.EventService;
+import evo.search.view.LangService;
 import io.jenetics.Chromosome;
 import io.jenetics.Genotype;
 import io.jenetics.Optimize;
@@ -121,14 +122,15 @@ public class Experiment {
     }
 
     /**
-     * Evolving the individuals
+     * Evolving the individuals.
      *
-     * @param limit
-     * @param consumer
-     * @return
+     * @param limit    Amount of iterations to evolve the population.
+     * @param alterers List of mutators to alter the individuals during evolution.
+     * @param consumer Progress consumer.
+     * @return The resulting fittest individual of the evolution.
      */
-    public Genotype<DiscreteGene> evolve(final int limit, List<DiscreteMutator> alterers, Consumer<Integer> consumer) {
-        EventService.LOG_EVENT.trigger("Experiment initialized, evolving...");
+    public Genotype<DiscreteGene> evolve(final int limit, List<DiscreteAlterer> alterers, Consumer<Integer> consumer) {
+        EventService.LOG_EVENT.trigger(LangService.get("experiment.evolving"));
         Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
                 Experiment::fitness,
                 Codec.of(
@@ -140,8 +142,8 @@ public class Experiment {
         final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine.builder(problem).optimize(Optimize.MINIMUM);
 
         if (alterers.size() > 0) {
-            final DiscreteMutator first = alterers.remove(0);
-            final DiscreteMutator[] rest = alterers.toArray(DiscreteMutator[]::new);
+            final DiscreteAlterer first = alterers.remove(0);
+            final DiscreteAlterer[] rest = alterers.toArray(DiscreteAlterer[]::new);
             evolutionBuilder.alterers(first, rest);
         }
 

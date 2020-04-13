@@ -5,8 +5,18 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.function.Consumer;
 
+/**
+ * DSL {@link JMenu} service.
+ */
 public class MenuService {
 
+    /**
+     * Construct a named menu with some children.
+     *
+     * @param text     Name of the menu.
+     * @param children Items in the menu.
+     * @return A named menu with given items.
+     */
     public static JMenu menu(String text, Object... children) {
         final JMenu jMenu = new JMenu(text);
 
@@ -24,14 +34,38 @@ public class MenuService {
         return jMenu;
     }
 
+    /**
+     * Construct a named action item.
+     *
+     * @param name   Name of the action.
+     * @param action Action to perform.
+     * @return A named action item.
+     */
     public static Action item(String name, Consumer<ActionEvent> action) {
         return item(name, action, null);
     }
 
+    /**
+     * Construct a named action item associated with a key stroke.
+     *
+     * @param name   Name of the action.
+     * @param action Action to perform.
+     * @param stroke Keystroke to invoke the action
+     * @return A named action item associated with a key stroke.
+     */
     public static Action item(String name, Consumer<ActionEvent> action, KeyStroke stroke) {
         return item(name, null, action, stroke);
     }
 
+    /**
+     * Construct a named action item associated with a key stroke and an icon.
+     *
+     * @param name   Name of the action.
+     * @param icon   Icon for the action item.
+     * @param action Action to perform.
+     * @param stroke Keystroke to invoke the action
+     * @return A named action item associated with a key stroke and an icon.
+     */
     public static Action item(String name, Icon icon, Consumer<ActionEvent> action, KeyStroke stroke) {
         final AbstractAction abstractAction = new AbstractAction(name, icon) {
             @Override
@@ -45,10 +79,22 @@ public class MenuService {
         return abstractAction;
     }
 
+    /**
+     * Construct a separator with {@link SwingConstants#HORIZONTAL} orientation.
+     *
+     * @return Horizontal separator item.
+     */
     public static JSeparator separator() {
-        return separator(0);
+        return separator(SwingConstants.HORIZONTAL);
     }
 
+    /**
+     * Construct a separator with {@link SwingConstants#HORIZONTAL} orientation.
+     *
+     * @param orientation An integer specifying <code>SwingConstants.HORIZONTAL</code>
+     *                    or <code>SwingConstants.VERTICAL</code>.
+     * @return A separator item with given orientation.
+     */
     public static JSeparator separator(int orientation) {
         return new JSeparator(orientation);
     }

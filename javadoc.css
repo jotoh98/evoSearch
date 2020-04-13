@@ -33,7 +33,7 @@ iframe {
     border: none;
 }
 
-a:link, a:visited {
+a {
     text-decoration: none;
     color: var(--color-link);
 }

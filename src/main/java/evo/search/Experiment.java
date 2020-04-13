@@ -27,16 +27,51 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * The experiment singleton is the running environment for the
+ * evolution of {@link DiscreteChromosome}s.
+ * It manages the environment and executes the evolution.
+ * <p>
+ * It also offers some utility methods for the individuals.
+ */
 @Slf4j
 @Getter
 @Setter
 public class Experiment {
 
+    /**
+     * Singleton experiment instance.
+     */
     private static Experiment instance = null;
+    /**
+     * The amount of positions available for the {@link DiscretePoint}s.
+     */
+    private int positions = 2;
+    /**
+     * Input distances to choose a permutation from.
+     * Forms single {@link DiscreteChromosome}s.
+     */
+    private List<Double> distances = new ArrayList<>();
+    /**
+     * List of treasure {@link DiscretePoint}s to search for.
+     */
+    private List<DiscretePoint> treasures = new ArrayList<>();
+    /**
+     * Historic list of optimal individuals.
+     */
+    private List<DiscreteChromosome> individuals = new ArrayList<>();
 
+    /**
+     * Hidden singleton constructor.
+     */
     private Experiment() {
     }
 
+    /**
+     * Singleton instance getter.
+     *
+     * @return Singleton experiment instance.
+     */
     public static Experiment getInstance() {
         if (instance == null) {
             instance = new Experiment();
@@ -44,15 +79,13 @@ public class Experiment {
         return instance;
     }
 
-
-    private int positions = 2;
-
-    private List<Double> distances = new ArrayList<>();
-
-    private List<DiscretePoint> treasures = new ArrayList<>();
-
-    private List<DiscreteChromosome> individuals = new ArrayList<>();
-
+    /**
+     * Initialize the experiment singleton with n random
+     * distances and a given amount of positions.
+     *
+     * @param amountDistances Amount of shuffled treasures.
+     * @param positions       Amount of available positions.
+     */
     public static void init(int amountDistances, int positions) {
         Experiment experiment = Experiment.getInstance();
 
@@ -83,17 +116,49 @@ public class Experiment {
         experiment.setTreasures(treasures);
     }
 
+    /**
+     * Compute for two {@link DiscretePoint}s, whether the first
+     * point {@code point} finds the second point {@code treasure}.
+     * <p>
+     * That equals the following statement:
+     * {@code point.position == treasure.position && point.distance >= treasure.distance}
+     *
+     * @param point    Point to check, if it finds the second point.
+     * @param treasure Point to be found.
+     * @return Whether the first point finds the second point.
+     */
     public static boolean finds(final DiscretePoint point, final DiscretePoint treasure) {
         boolean distanceEqualOrGreater = point.getDistance() >= treasure.getDistance();
         boolean positionEquals = point.getPosition() == point.getPosition();
         return positionEquals && distanceEqualOrGreater;
     }
 
+    /**
+     * Compute the fitness of a {@link DiscreteChromosome} based on the
+     * single first treasure {@link DiscretePoint}.
+     * This is the trace length of the individual visiting it's {@link DiscretePoint}s
+     * until the treasure is found.
+     *
+     * @param chromosome Chromosome to evaluate.
+     * @return Chromosome singular fitness.
+     * @see #trace(Chromosome, DiscretePoint)
+     */
     public static double fitnessSingular(Chromosome<DiscreteGene> chromosome) {
         DiscretePoint treasure = Experiment.getInstance().getTreasures().get(0);
         return trace(chromosome, treasure);
     }
 
+    /**
+     * Compute the fitness of a {@link DiscreteChromosome} based on
+     * all treasures.
+     * <p>
+     * The fitness of the chromosome is the sum of all singular fitnesses divided
+     * by the amount of treasures.
+     *
+     * @param chromosome Chromosome to evaluate.
+     * @return Chromosome singular fitness.
+     * @see #trace(Chromosome, DiscretePoint)
+     */
     public static double fitness(Chromosome<DiscreteGene> chromosome) {
         List<DiscretePoint> treasures = Experiment.getInstance().getTreasures();
         if (treasures.isEmpty()) {
@@ -105,6 +170,14 @@ public class Experiment {
                 .orElse(0d) / treasures.size();
     }
 
+    /**
+     * Computes the trace length necessary for the {@link DiscreteChromosome}
+     * necessary to find the given treasure {@link DiscretePoint}.
+     *
+     * @param chromosome Chromosome to evaluate the trace length on.
+     * @param treasure   Treasure point to be found.
+     * @return Trace length necessary for the individual to find the treasure.
+     */
     public static double trace(Chromosome<DiscreteGene> chromosome, DiscretePoint treasure) {
         double trace = 0d;
 

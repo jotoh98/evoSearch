@@ -71,7 +71,7 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
     }
 
     /**
-     * Checks, if a gene is valid. That means, than the alleles distance is
+     * Checks, if a gene is valid. That means, that the allele's distance is
      * one of these in the {@link Experiment} and smaller than the
      * {@link Experiment}'s position property.
      *

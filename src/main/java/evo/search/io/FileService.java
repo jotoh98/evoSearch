@@ -1,6 +1,7 @@
 package evo.search.io;
 
-import evo.search.Experiment;
+import evo.search.Configuration;
+import evo.search.Environment;
 import evo.search.view.LangService;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -42,7 +43,7 @@ public class FileService {
         JFrame parent = new JFrame();
 
         //TODO: i18n for dialogs
-        FileDialog fileDialog = new FileDialog(parent, LangService.get("experiment.save"), FileDialog.SAVE);
+        FileDialog fileDialog = new FileDialog(parent, LangService.get("environment.save"), FileDialog.SAVE);
         fileDialog.setVisible(true);
         String fileName = fileDialog.getFile();
         if (fileName == null) {
@@ -61,27 +62,33 @@ public class FileService {
     }
 
     /**
-     * Load an {@link Experiment} from a given {@link File}.
+     * Load an {@link Environment} from a given {@link File}.
      *
-     * @param file File which contains the json representation of an {@link Experiment}.
+     * @param file File which contains the json representation of an {@link Environment}.
      */
     public static void loadExperiment(File file) {
         try {
             final String jsonString = Files.readString(file.toPath());
-            JsonService.readExperiment(new JSONObject(jsonString));
+            final Configuration configuration = JsonService.readConfiguration(new JSONObject(jsonString));
+            if (configuration == null) {
+                EventService.LOG_EVENT.trigger(LangService.get("environment.config.broken"));
+                return;
+            }
+            Environment.getInstance().setConfiguration(configuration);
+            EventService.LOG_EVENT.trigger(LangService.get("environment.loaded"));
         } catch (IOException e) {
             log.error("Could not read file.", e);
         }
     }
 
     /**
-     * Save an {@link Experiment} to a given {@link File}.
+     * Save an {@link Environment} to a given {@link File}.
      *
-     * @param file       File to save the json representation of an {@link Experiment} to.
-     * @param experiment Experiment to create a json representation from.
+     * @param file          File to save the json representation of an {@link Environment} to.
+     * @param configuration Configuration to create a json representation from.
      */
-    public static void saveExperiment(File file, Experiment experiment) {
-        final JSONObject jsonObject = JsonService.write(experiment);
+    public static void saveConfiguration(File file, Configuration configuration) {
+        final JSONObject jsonObject = JsonService.write(configuration);
         try {
             Files.write(
                     file.toPath(),
@@ -89,7 +96,7 @@ public class FileService {
                     StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING
             );
-            EventService.LOG_EVENT.trigger(LangService.get("experiment.loaded"));
+            EventService.LOG_EVENT.trigger(LangService.get("environment.loaded"));
         } catch (IOException e) {
             log.error("Could not write file.", e);
         }

@@ -1,13 +1,17 @@
 package evo.search;
 
 import evo.search.view.MainForm;
-import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NonNls;
 
 /**
  * Main class.
  */
-@Slf4j
 public class Main {
+
+    @NonNls
+    public static final String APP_TITLE = "evoSearch";
+
+    public static final String VERSION = Main.class.getPackage().getImplementationVersion();
 
     /**
      * Main class method wrapper for the {@link MainForm#main(String[])} method.

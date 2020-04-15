@@ -1,5 +1,6 @@
 package evo.search.view.model;
 
+import evo.search.Environment;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.view.LangService;
 import lombok.AllArgsConstructor;
@@ -15,7 +16,7 @@ import java.util.stream.Collectors;
 
 /**
  * This table model displays all registered {@link DiscreteAlterer} classes to select and configure
- * for the {@link evo.search.Experiment#evolve(int, List, Consumer)} method.
+ * for the {@link Environment#evolve(int, List, Consumer)} method.
  */
 @Slf4j
 public class MutatorTableModel extends AbstractTableModel {
@@ -155,7 +156,7 @@ public class MutatorTableModel extends AbstractTableModel {
     /**
      * The configuration of the {@link DiscreteAlterer}s.
      * Consists of a field that filters them to be selected for the
-     * {@link evo.search.Experiment#evolve(int, List, Consumer)} method and a
+     * {@link Environment#evolve(int, List, Consumer)} method and a
      * {@link MutatorConfig#probability} to construct an instance of their
      * {@link MutatorConfig#mutator} class.
      */

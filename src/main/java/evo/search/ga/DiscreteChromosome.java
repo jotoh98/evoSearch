@@ -1,6 +1,6 @@
 package evo.search.ga;
 
-import evo.search.Experiment;
+import evo.search.Environment;
 import io.jenetics.Chromosome;
 import io.jenetics.util.ISeq;
 import lombok.AllArgsConstructor;
@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * Chromosome consisting of a permutations of the distances
- * from the {@link Experiment} in an evolved order
+ * from the {@link Environment} in an evolved order
  * associated with valid positional indices.
  */
 @AllArgsConstructor
@@ -23,12 +23,12 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
 
     /**
      * Shuffle a new {@link DiscreteChromosome} from the distances in the
-     * {@link Experiment} and a random valid position.
+     * {@link Environment} and a random valid position.
      *
      * @return A valid shuffled chromosome.
      */
     public static DiscreteChromosome shuffle() {
-        List<Double> distances = Experiment.getInstance().getDistances();
+        List<Double> distances = Environment.getInstance().getConfiguration().getDistances();
         Collections.shuffle(distances);
         return of(distances);
     }
@@ -82,7 +82,7 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
 
     /**
      * {@inheritDoc}
-     * Has to be equal to the size of the {@link Experiment}'s distances list.
+     * Has to be equal to the size of the {@link Environment}'s distances list.
      */
     @Override
     public int length() {
@@ -99,13 +99,13 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
 
     /**
      * Check if the chromosome is valid. That means, that all positions are valid
-     * and that all distances from the {@link Experiment} are contained in the chromosome.
+     * and that all distances from the {@link Environment} are contained in the chromosome.
      *
      * @return Whether the chromosome is valid or not.
      */
     @Override
     public boolean isValid() {
-        List<Double> distances = Experiment.getInstance().getDistances();
+        List<Double> distances = Environment.getInstance().getConfiguration().getDistances();
         if (distances.size() != length()) {
             return false;
         }
@@ -113,7 +113,7 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
         final boolean positionsValid = genes.stream()
                 .map(DiscreteGene::getAllele)
                 .mapToDouble(DiscretePoint::getPosition)
-                .allMatch(value -> value >= 0 && value < Experiment.getInstance().getPositions());
+                .allMatch(value -> value >= 0 && value < Environment.getInstance().getConfiguration().getPositions());
 
         return genes.containsAll(distances) && positionsValid;
     }

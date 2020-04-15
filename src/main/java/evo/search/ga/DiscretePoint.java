@@ -1,6 +1,7 @@
 package evo.search.ga;
 
-import evo.search.Experiment;
+import evo.search.Configuration;
+import evo.search.Environment;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -14,8 +15,8 @@ import java.awt.geom.Point2D;
 public class DiscretePoint implements Cloneable {
 
     /**
-     * Discretized angle of the polar coordinate.
-     * To be used in perspective of {@link Experiment#getPositions()}.
+     * Index of the angle used for the corresponding polar coordinate.
+     * Is used with {@link Configuration#getPositions()}.
      */
     private int position;
 
@@ -40,7 +41,7 @@ public class DiscretePoint implements Cloneable {
      * @return Radian angle of the polar coordinate.
      */
     public double getAngle() {
-        double positions = Experiment.getInstance().getPositions();
+        double positions = Environment.getInstance().getConfiguration().getPositions();
         return position / positions * 2 * Math.PI;
     }
 

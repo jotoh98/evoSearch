@@ -1,4 +1,4 @@
-package evo.search.view;
+package evo.search.view.render;
 
 import lombok.Builder;
 import lombok.Getter;

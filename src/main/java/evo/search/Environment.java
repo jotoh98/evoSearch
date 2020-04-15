@@ -14,7 +14,6 @@ import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
 import io.jenetics.engine.Problem;
 import io.jenetics.util.ISeq;
-import io.jenetics.util.RandomRegistry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,13 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
- * The experiment singleton is the running environment for the
+ * This singleton class is the running environment for the
  * evolution of {@link DiscreteChromosome}s.
  * It manages the environment and executes the evolution.
  * <p>
@@ -37,34 +33,23 @@ import java.util.stream.IntStream;
 @Slf4j
 @Getter
 @Setter
-public class Experiment {
+public class Environment {
 
     /**
-     * Singleton experiment instance.
+     * Singleton environment instance.
      */
-    private static Experiment instance = null;
-    /**
-     * The amount of positions available for the {@link DiscretePoint}s.
-     */
-    private int positions = 2;
-    /**
-     * Input distances to choose a permutation from.
-     * Forms single {@link DiscreteChromosome}s.
-     */
-    private List<Double> distances = new ArrayList<>();
-    /**
-     * List of treasure {@link DiscretePoint}s to search for.
-     */
-    private List<DiscretePoint> treasures = new ArrayList<>();
+    private static Environment instance = null;
     /**
      * Historic list of optimal individuals.
      */
     private List<DiscreteChromosome> individuals = new ArrayList<>();
 
+    private Configuration configuration;
+
     /**
      * Hidden singleton constructor.
      */
-    private Experiment() {
+    private Environment() {
     }
 
     /**
@@ -72,9 +57,9 @@ public class Experiment {
      *
      * @return Singleton experiment instance.
      */
-    public static Experiment getInstance() {
+    public static Environment getInstance() {
         if (instance == null) {
-            instance = new Experiment();
+            instance = new Environment();
         }
         return instance;
     }
@@ -87,33 +72,7 @@ public class Experiment {
      * @param positions       Amount of available positions.
      */
     public static void init(int amountDistances, int positions) {
-        Experiment experiment = Experiment.getInstance();
-
-        AtomicReference<Double> max = new AtomicReference<>(0d);
-        List<Double> collect = IntStream.range(0, amountDistances)
-                .mapToDouble(integer -> {
-                    double distance = RandomRegistry.random().nextDouble() * 50;
-                    if (distance > max.get()) {
-                        max.set(distance);
-                    }
-                    return distance;
-                })
-                .boxed()
-                .collect(Collectors.toList());
-
-        experiment.setDistances(collect);
-        experiment.setPositions(positions);
-
-        List<DiscretePoint> treasures = experiment.getDistances()
-                .stream()
-                .map(aDouble -> {
-                    final int position = RandomRegistry.random().nextInt(positions);
-                    double distance = Math.max(0, RandomRegistry.random().nextDouble() * aDouble);
-                    return new DiscretePoint(position, distance);
-                })
-                .collect(Collectors.toList());
-
-        experiment.setTreasures(treasures);
+        Environment.getInstance().setConfiguration(Configuration.shuffle(amountDistances, positions));
     }
 
     /**
@@ -144,7 +103,7 @@ public class Experiment {
      * @see #trace(Chromosome, DiscretePoint)
      */
     public static double fitnessSingular(Chromosome<DiscreteGene> chromosome) {
-        DiscretePoint treasure = Experiment.getInstance().getTreasures().get(0);
+        DiscretePoint treasure = Environment.getInstance().getConfiguration().getTreasures().get(0);
         return trace(chromosome, treasure);
     }
 
@@ -160,7 +119,7 @@ public class Experiment {
      * @see #trace(Chromosome, DiscretePoint)
      */
     public static double fitness(Chromosome<DiscreteGene> chromosome) {
-        List<DiscretePoint> treasures = Experiment.getInstance().getTreasures();
+        List<DiscretePoint> treasures = Environment.getInstance().getConfiguration().getTreasures();
         if (treasures.isEmpty()) {
             return 0;
         }
@@ -203,9 +162,12 @@ public class Experiment {
      * @return The resulting fittest individual of the evolution.
      */
     public Genotype<DiscreteGene> evolve(final int limit, List<DiscreteAlterer> alterers, Consumer<Integer> consumer) {
-        EventService.LOG_EVENT.trigger(LangService.get("experiment.evolving"));
+        if (configuration == null) {
+            EventService.LOG_EVENT.trigger(LangService.get("environment.config.missing"));
+        }
+        EventService.LOG_EVENT.trigger(LangService.get("environment.evolving"));
         Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
-                Experiment::fitness,
+                Environment::fitness,
                 Codec.of(
                         Genotype.of(DiscreteChromosome.shuffle()),
                         chromosomes -> DiscreteChromosome.of(ISeq.of(chromosomes.chromosome()))
@@ -227,7 +189,9 @@ public class Experiment {
                 .peek(result -> consumer.accept(progressCounter.incrementAndGet()))
                 .collect(EvolutionResult.toBestGenotype());
 
-        instance.individuals.add((DiscreteChromosome) individual.chromosome());
+        configuration.getHistory().add(
+                new Run(limit, (DiscreteChromosome) individual.chromosome())
+        );
 
         return individual;
     }

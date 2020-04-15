@@ -1,10 +1,11 @@
 package evo.search.io;
 
-import evo.search.Experiment;
+import evo.search.Configuration;
+import evo.search.Environment;
+import evo.search.Run;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
-import evo.search.view.LangService;
 import io.jenetics.util.ISeq;
 import org.json.JSONObject;
 
@@ -14,9 +15,21 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Json service to serialize and deserialize {@link Experiment}s and members.
+ * Json service to serialize and deserialize {@link Environment}s and members.
  */
 public class JsonService {
+
+    private static final String VERSION = "ver";
+    private static final String DISTANCE = "distance";
+    private static final String DISTANCES = "distance";
+    private static final String POSITION = "position";
+    private static final String POSITIONS = "positions";
+    private static final String TREASURES = "treasures";
+    private static final String HISTORY = "history";
+    private static final String CHROMOSOME = "chromosome";
+    private static final String LIMIT = "limit";
+
+    private static String[] CONFIG_JSON = new String[]{"ver", "positions", "distances", "treasures", "history"};
 
     /**
      * Serialize a {@link DiscretePoint}.
@@ -26,8 +39,8 @@ public class JsonService {
      */
     public static JSONObject write(DiscretePoint discretePoint) {
         return new JSONObject()
-                .accumulate("p", discretePoint.getPosition())
-                .accumulate("d", discretePoint.getDistance());
+                .accumulate(POSITION, discretePoint.getPosition())
+                .accumulate(DISTANCE, discretePoint.getDistance());
     }
 
     /**
@@ -48,30 +61,43 @@ public class JsonService {
      */
     public static JSONObject write(DiscreteChromosome discreteChromosome) {
         JSONObject jsonObject = new JSONObject();
-        discreteChromosome.forEach(discreteGene -> jsonObject.append("c", write(discreteGene)));
+        discreteChromosome.forEach(discreteGene -> jsonObject.append(CHROMOSOME, write(discreteGene)));
         return jsonObject;
     }
 
     /**
-     * Serialize an {@link Experiment}.
+     * Serialize a {@link Run}.
      *
-     * @param experiment Experiment to serialize.
-     * @return Json object for the {@link Experiment}.
+     * @param run Run to serialize.
+     * @return Json object for the {@link Run}.
      */
-    public static JSONObject write(Experiment experiment) {
+    public static JSONObject write(Run run) {
+        return write(run.getIndividual())
+                .accumulate(LIMIT, run.getLimit());
+    }
+
+    /**
+     * Serialize an {@link Environment}.
+     *
+     * @param configuration Experiment to serialize.
+     * @return Json object for the {@link Environment}.
+     */
+    public static JSONObject write(Configuration configuration) {
         JSONObject jsonObject = new JSONObject()
-                .accumulate("a", experiment.getPositions())
-                .accumulate("d", experiment.getDistances());
+                .accumulate(VERSION, configuration.getVersion())
+                .accumulate(POSITIONS, configuration.getPositions())
+                .accumulate(DISTANCES, configuration.getDistances())
+                .accumulate(LIMIT, configuration.getLimit());
 
-        if (experiment.getTreasures().size() == 0) {
-            jsonObject.put("t", new ArrayList<>());
+        if (configuration.getTreasures().size() == 0) {
+            jsonObject.put(TREASURES, new ArrayList<>());
         }
-        if (experiment.getIndividuals().size() == 0) {
-            jsonObject.put("i", new ArrayList<>());
+        if (configuration.getHistory().size() == 0) {
+            jsonObject.put(HISTORY, new ArrayList<>());
         }
 
-        experiment.getTreasures().forEach(discretePoint -> jsonObject.append("t", write(discretePoint)));
-        experiment.getIndividuals().forEach(discreteChromosome -> jsonObject.append("i", write(discreteChromosome)));
+        configuration.getTreasures().forEach(discretePoint -> jsonObject.append(TREASURES, write(discretePoint)));
+        configuration.getHistory().forEach(discreteChromosome -> jsonObject.append(HISTORY, write(discreteChromosome)));
         return jsonObject;
     }
 
@@ -82,10 +108,10 @@ public class JsonService {
      * @return A new {@link DiscretePoint} instance.
      */
     public static DiscretePoint readDiscretePoint(JSONObject jsonObject) {
-        if (valid(jsonObject, "p", "d")) {
-            return new DiscretePoint(jsonObject.getInt("p"), jsonObject.getDouble("d"));
+        if (invalid(jsonObject, POSITION, DISTANCE)) {
+            return null;
         }
-        return null;
+        return new DiscretePoint(jsonObject.getInt(POSITION), jsonObject.getDouble(DISTANCE));
     }
 
     /**
@@ -109,11 +135,11 @@ public class JsonService {
      * @return A new {@link DiscreteChromosome} instance.
      */
     public static DiscreteChromosome readDiscreteChromosome(JSONObject jsonObject) {
-        if (!valid(jsonObject, "c")) {
+        if (invalid(jsonObject, CHROMOSOME)) {
             return null;
         }
         List<DiscreteGene> genes = new ArrayList<>();
-        jsonObject.getJSONArray("c").forEach(
+        jsonObject.getJSONArray(CHROMOSOME).forEach(
                 o -> genes.add(readDiscreteGene((JSONObject) o))
         );
         DiscreteGene[] discreteGenes = genes.stream()
@@ -123,49 +149,59 @@ public class JsonService {
         return new DiscreteChromosome(ISeq.of(discreteGenes));
     }
 
-    /**
-     * Deserialize an {@link Experiment}s json.
-     * Writes the experiment directly to the singleton.
-     *
-     * @param jsonObject Json to deserialize into an {@link Experiment}.
-     */
-    public static void readExperiment(JSONObject jsonObject) {
-        final Experiment experiment = Experiment.getInstance();
-
-        if (valid(jsonObject, "a", "d", "t", "i")) {
-
-            int positions = jsonObject.getInt("a");
-            Object distanceObject = jsonObject.get("d");
-            List<Double> distances = new ArrayList<>();
-            if (distanceObject instanceof List) {
-                distances = (List<Double>) distanceObject;
-            }
-
-            List<DiscretePoint> treasures = new ArrayList<>();
-            jsonObject.getJSONArray("t").forEach(o -> treasures.add(readDiscretePoint((JSONObject) o)));
-
-            List<DiscreteChromosome> individuals = new ArrayList<>();
-            jsonObject.getJSONArray("i").forEach(o -> individuals.add(readDiscreteChromosome((JSONObject) o)));
-
-            experiment.setPositions(positions);
-            experiment.setDistances(distances);
-            experiment.setTreasures(treasures);
-            experiment.setIndividuals(individuals);
-            EventService.LOG_EVENT.trigger(LangService.get("experiment.loaded"));
+    public static Run readRun(JSONObject jsonObject) {
+        if (invalid(jsonObject, LIMIT, CHROMOSOME)) {
+            return null;
         }
+        final int limit = jsonObject.getInt(LIMIT);
+        final DiscreteChromosome discreteChromosome = readDiscreteChromosome(jsonObject.getJSONObject(CHROMOSOME));
+        return new Run(limit, discreteChromosome);
     }
 
     /**
-     * Checks if a {@link JSONObject} contains all of the given {@code requiredKeys}.
+     * Deserialize an {@link Environment}s json.
+     * Writes the experiment directly to the singleton.
+     *
+     * @param jsonObject Json to deserialize into an {@link Environment}.
+     * @return The saved configuration.
+     */
+    public static Configuration readConfiguration(JSONObject jsonObject) {
+        if (invalid(jsonObject, CONFIG_JSON)) {
+            return null;
+        }
+
+        String version = jsonObject.getString(VERSION);
+        int positions = jsonObject.getInt(POSITIONS);
+
+        final List<Double> distances = new ArrayList<>();
+        final Object distanceObject = jsonObject.get(DISTANCES);
+        if (distanceObject instanceof List) {
+            distances.addAll((List<Double>) distanceObject);
+        }
+
+        final List<DiscretePoint> treasures = new ArrayList<>();
+        jsonObject.getJSONArray(TREASURES).forEach(o -> treasures.add(readDiscretePoint((JSONObject) o)));
+
+        final List<Run> history = new ArrayList<>();
+        jsonObject.getJSONArray(HISTORY).forEach(o -> history.add(readRun((JSONObject) o)));
+
+        final Configuration configuration = new Configuration(version, positions, distances, treasures);
+
+        configuration.getHistory().addAll(history);
+        return configuration;
+    }
+
+    /**
+     * Checks if a {@link JSONObject} misses one of the given {@code requiredKeys}.
      *
      * @param jsonObject   Json object to validate.
      * @param requiredKeys Required string keys expected in the json objects keys.
-     * @return Whether a json object has all of the {@code requiredKeys}.
+     * @return Whether a json object has of the {@code requiredKeys} missing.
      */
-    public static boolean valid(JSONObject jsonObject, String... requiredKeys) {
+    public static boolean invalid(JSONObject jsonObject, String... requiredKeys) {
         if (jsonObject.keySet().size() != requiredKeys.length) {
-            return false;
+            return true;
         }
-        return Set.of(requiredKeys).containsAll(jsonObject.keySet());
+        return !Set.of(requiredKeys).containsAll(jsonObject.keySet());
     }
 }

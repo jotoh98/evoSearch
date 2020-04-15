@@ -1,6 +1,6 @@
 package evo.search.ga;
 
-import evo.search.Experiment;
+import evo.search.Environment;
 import io.jenetics.Gene;
 import io.jenetics.util.RandomRegistry;
 import lombok.AllArgsConstructor;
@@ -35,7 +35,7 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
      * @return A discrete gene with a given distance with a shuffled position.
      */
     public static DiscreteGene of(double distance) {
-        int availablePositions = Experiment.getInstance().getPositions();
+        int availablePositions = Environment.getInstance().getConfiguration().getPositions();
         int position = RandomRegistry.random().nextInt(availablePositions);
         return new DiscreteGene(new DiscretePoint(position, distance));
     }
@@ -51,12 +51,12 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
     /**
      * {@inheritDoc}
      * For a {@link DiscreteGene}, it has to pull a valid position from the
-     * {@link Experiment}'s positions and distances.
+     * {@link Environment}'s positions and distances.
      */
     @Override
     public DiscreteGene newInstance() {
-        int positions = Experiment.getInstance().getPositions();
-        List<Double> distances = Experiment.getInstance().getDistances();
+        int positions = Environment.getInstance().getConfiguration().getPositions();
+        List<Double> distances = Environment.getInstance().getConfiguration().getDistances();
         int position = RandomRegistry.random().nextInt(positions);
         int index = RandomRegistry.random().nextInt(distances.size());
         return new DiscreteGene(new DiscretePoint(position, distances.get(index)));
@@ -72,15 +72,15 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
 
     /**
      * Checks, if a gene is valid. That means, that the allele's distance is
-     * one of these in the {@link Experiment} and smaller than the
-     * {@link Experiment}'s position property.
+     * one of these in the {@link Environment} and smaller than the
+     * {@link Environment}'s position property.
      *
      * @return Whether the discrete gene is valid.
      */
     @Override
     public boolean isValid() {
-        boolean distanceValid = Experiment.getInstance().getDistances().contains(allele.getDistance());
-        boolean positionValid = Experiment.getInstance().getPositions() >= allele.getPosition();
+        boolean distanceValid = Environment.getInstance().getConfiguration().getDistances().contains(allele.getDistance());
+        boolean positionValid = Environment.getInstance().getConfiguration().getPositions() >= allele.getPosition();
         return distanceValid && positionValid;
     }
 }

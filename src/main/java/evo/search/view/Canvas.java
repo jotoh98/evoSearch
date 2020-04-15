@@ -1,18 +1,25 @@
 package evo.search.view;
 
-import evo.search.Experiment;
+import evo.search.Environment;
 import evo.search.ga.DiscreteGene;
+import evo.search.view.render.StringShape;
+import evo.search.view.render.Style;
+import evo.search.view.render.Transformation;
 import io.jenetics.Chromosome;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseMotionListener;
 import java.awt.geom.*;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * Canvas to be painted on.
@@ -43,22 +50,68 @@ public class Canvas extends JPanel {
     @Getter
     private HashMap<StringShape, Style> strings = new HashMap<>();
 
+    @Getter
+    final private JLabel popover = new JLabel();
+
     /**
      * Canvas constructor. Sets initial scale and the offset to the center of the canvas.
      */
     public Canvas() {
+        //setLayout(new FlowLayout(FlowLayout.LEADING));
+        add(popover);
+        popover.setVisible(false);
         transformation.setScale(10);
         transformation.getOffset().setLocation(getHeight() / 2d, getWidth() / 2d);
         addMouseListener(transformation.getMouseListener());
         addMouseMotionListener(transformation.getMouseMotionListener(this));
+        addMouseMotionListener(getHoverListener());
         addMouseWheelListener(transformation.getMouseWheelListener(this));
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(final MouseEvent e) {
-                log.info("clicked: {}", e);
-            }
-        });
         addComponentListener(transformation.getComponentListener(this));
+    }
+
+    private MouseMotionListener getHoverListener() {
+        return new MouseMotionAdapter() {
+
+            boolean hovered = false;
+
+            @Override
+            public void mouseDragged(final MouseEvent event) {
+                popover.setLocation(event.getX(), event.getY());
+            }
+
+            @Override
+            public void mouseMoved(final MouseEvent event) {
+                popover.setLocation(event.getX(), event.getY());
+                final Point2D mousePosition = new Point2D.Double(event.getX() * Transformation.UI_SCALE, event.getY() * Transformation.UI_SCALE);
+                final Point2D revertedPosition = transformation.revert(mousePosition);
+                final double epsilonEnvironment = 10 / transformation.getScale();
+
+                final List<Point2D> hoveredPoints = points.keySet().stream()
+                        .filter(point2D -> point2D.distance(revertedPosition) < epsilonEnvironment)
+                        .sorted(Comparator.comparingDouble(point -> point.distance(revertedPosition)))
+                        .collect(Collectors.toList());
+
+                if (hoveredPoints.size() == 0) {
+                    popover.setVisible(false);
+                    popover.setText("");
+                    if (hovered) {
+                        repaint();
+                    }
+                    hovered = false;
+                    return;
+                }
+
+                hovered = true;
+
+                final Point2D point2D = hoveredPoints.get(0);
+
+                popover.setText(point2D.toString());
+                popover.setVisible(true);
+                repaint();
+            }
+
+
+        };
     }
 
     /**
@@ -113,12 +166,12 @@ public class Canvas extends JPanel {
 
     /**
      * Render a {@link Point2D} associated with a {@link Style}.
-     * The {@link Point2D} is transformed into a {@link Shape} according to the corresponding {@link evo.search.view.Style.Shape}.
+     * The {@link Point2D} is transformed into a {@link Shape} according to the corresponding {@link Style.Shape}.
      *
      * @param graphics2D Graphics to render the items with.
      * @param point2D    Point to render.
      * @param style      Style to customize the shapes appearance.
-     * @see evo.search.view.Style.Shape
+     * @see Style.Shape
      */
     private void render(Graphics2D graphics2D, Point2D point2D, Style style) {
         double x = point2D.getX();
@@ -144,7 +197,7 @@ public class Canvas extends JPanel {
      * @param chromosome Chromosome to render.
      */
     public void render(final Chromosome<DiscreteGene> chromosome) {
-        final int availablePosition = Experiment.getInstance().getPositions();
+        final int availablePosition = Environment.getInstance().getConfiguration().getPositions();
 
         renderRays(availablePosition);
 
@@ -169,7 +222,7 @@ public class Canvas extends JPanel {
             }
         }
 
-        Experiment.getInstance().getTreasures().forEach(
+        Environment.getInstance().getConfiguration().getTreasures().forEach(
                 treasure -> enqueue(
                         treasure.toPoint2D(),
                         Style.builder().shape(Style.Shape.CROSS).color(Color.RED).build()

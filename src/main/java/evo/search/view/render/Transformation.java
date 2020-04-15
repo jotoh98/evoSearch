@@ -1,5 +1,6 @@
-package evo.search.view;
+package evo.search.view.render;
 
+import evo.search.view.Canvas;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,8 @@ public class Transformation {
     /**
      * A const for behaviour scaling factor.
      */
-    private static final double UI_SCALE = 2.0;
+    public static final double UI_SCALE = 2.0;
+
     /**
      * A backup of the internal offset vector to translate upon.
      */
@@ -113,20 +115,20 @@ public class Transformation {
     /**
      * Get the mouse dragging listener.
      *
-     * @param c The component being repainted and providing the visual boundary for {@link #updateBoundary(Component)}.
+     * @param canvas The canvas being repainted and providing the visual boundary for {@link #updateBoundary(Component)}.
      * @return The mouse listener for the drag event.
      */
-    public MouseMotionListener getMouseMotionListener(Component c) {
+    public MouseMotionListener getMouseMotionListener(Canvas canvas) {
         return new MouseMotionAdapter() {
             @Override
             public void mouseDragged(final MouseEvent e) {
-                Point2D mousePosition = new Point2D.Double(e.getX() * UI_SCALE, e.getY() * UI_SCALE);
+                final Point2D mousePosition = new Point2D.Double(e.getX() * UI_SCALE, e.getY() * UI_SCALE);
                 offset.setLocation(
                         offsetBackup.getX() + mousePosition.getX() - pressOffset.getX(),
                         offsetBackup.getY() + mousePosition.getY() - pressOffset.getY()
                 );
-                updateBoundary(c);
-                c.repaint();
+                updateBoundary(canvas);
+                canvas.repaint();
             }
         };
     }

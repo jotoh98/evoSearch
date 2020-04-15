@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"l":"evo.search"},{"l":"evo.search.ga"},{"l":"evo.search.ga.mutators"},{"l":"evo.search.io"},{"l":"evo.search.view"},{"l":"evo.search.view.model"}]
+packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"l":"evo.search"},{"l":"evo.search.ga"},{"l":"evo.search.ga.mutators"},{"l":"evo.search.io"},{"l":"evo.search.view"},{"l":"evo.search.view.model"},{"l":"evo.search.view.render"}]

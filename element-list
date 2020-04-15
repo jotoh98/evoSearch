@@ -4,3 +4,4 @@ evo.search.ga.mutators
 evo.search.io
 evo.search.view
 evo.search.view.model
+evo.search.view.render

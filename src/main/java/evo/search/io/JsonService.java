@@ -6,13 +6,15 @@ import evo.search.Run;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
+import evo.search.view.LangService;
 import io.jenetics.util.ISeq;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Json service to serialize and deserialize {@link Environment}s and members.
@@ -108,9 +110,6 @@ public class JsonService {
      * @return A new {@link DiscretePoint} instance.
      */
     public static DiscretePoint readDiscretePoint(JSONObject jsonObject) {
-        if (invalid(jsonObject, POSITION, DISTANCE)) {
-            return null;
-        }
         return new DiscretePoint(jsonObject.getInt(POSITION), jsonObject.getDouble(DISTANCE));
     }
 
@@ -131,15 +130,12 @@ public class JsonService {
     /**
      * Deserialize a {@link DiscreteChromosome}s json.
      *
-     * @param jsonObject Json to deserialize into a {@link DiscreteChromosome}.
+     * @param jsonArray Json to deserialize into a {@link DiscreteChromosome}.
      * @return A new {@link DiscreteChromosome} instance.
      */
-    public static DiscreteChromosome readDiscreteChromosome(JSONObject jsonObject) {
-        if (invalid(jsonObject, CHROMOSOME)) {
-            return null;
-        }
+    public static DiscreteChromosome readDiscreteChromosome(JSONArray jsonArray) {
         List<DiscreteGene> genes = new ArrayList<>();
-        jsonObject.getJSONArray(CHROMOSOME).forEach(
+        jsonArray.forEach(
                 o -> genes.add(readDiscreteGene((JSONObject) o))
         );
         DiscreteGene[] discreteGenes = genes.stream()
@@ -150,11 +146,8 @@ public class JsonService {
     }
 
     public static Run readRun(JSONObject jsonObject) {
-        if (invalid(jsonObject, LIMIT, CHROMOSOME)) {
-            return null;
-        }
         final int limit = jsonObject.getInt(LIMIT);
-        final DiscreteChromosome discreteChromosome = readDiscreteChromosome(jsonObject.getJSONObject(CHROMOSOME));
+        final DiscreteChromosome discreteChromosome = readDiscreteChromosome(jsonObject.getJSONArray(CHROMOSOME));
         return new Run(limit, discreteChromosome);
     }
 
@@ -166,11 +159,14 @@ public class JsonService {
      * @return The saved configuration.
      */
     public static Configuration readConfiguration(JSONObject jsonObject) {
-        if (invalid(jsonObject, CONFIG_JSON)) {
-            return null;
+        String version = "undefined";
+        try {
+            version = jsonObject.getString(VERSION);
+        } catch (JSONException e) {
+            EventService.LOG_LABEL.trigger(LangService.get("version.undefined"));
+            EventService.LOG.trigger(LangService.get("version.undefined"));
         }
 
-        String version = jsonObject.getString(VERSION);
         int positions = jsonObject.getInt(POSITIONS);
 
         final List<Double> distances = new ArrayList<>();
@@ -189,19 +185,5 @@ public class JsonService {
 
         configuration.getHistory().addAll(history);
         return configuration;
-    }
-
-    /**
-     * Checks if a {@link JSONObject} misses one of the given {@code requiredKeys}.
-     *
-     * @param jsonObject   Json object to validate.
-     * @param requiredKeys Required string keys expected in the json objects keys.
-     * @return Whether a json object has of the {@code requiredKeys} missing.
-     */
-    public static boolean invalid(JSONObject jsonObject, String... requiredKeys) {
-        if (jsonObject.keySet().size() != requiredKeys.length) {
-            return true;
-        }
-        return !Set.of(requiredKeys).containsAll(jsonObject.keySet());
     }
 }

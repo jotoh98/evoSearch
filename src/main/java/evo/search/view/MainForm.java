@@ -8,6 +8,7 @@ import com.intellij.uiDesigner.core.Spacer;
 import evo.search.Configuration;
 import evo.search.Environment;
 import evo.search.Main;
+import evo.search.Run;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.ga.mutators.SwapGeneMutator;
@@ -56,6 +57,7 @@ public class MainForm extends JFrame {
     private Canvas canvas;
     private JPanel bottomBar;
     private JComboBox comboBox1;
+    private JTextArea textArea1;
 
     /**
      * Custom table model for the simple configuration table.
@@ -144,11 +146,18 @@ public class MainForm extends JFrame {
      * Bind the {@link EventService}s events.
      */
     private void bindEvents() {
-        EventService.LOG_EVENT.addListener(
+        EventService.LOG_LABEL.addListener(
                 string -> getLogLabel().setText(string)
+        );
+        EventService.LOG.addListener(
+                message -> textArea1.append(message + "\n")
         );
         EventService.REPAINT_CANVAS.addListener(chromosome -> {
             getCanvas().clear();
+            if (chromosome == null) {
+                final List<Run> history = Environment.getInstance().getConfiguration().getHistory();
+                chromosome = history.get(history.size() - 1).getIndividual();
+            }
             getCanvas().render(chromosome);
         });
     }
@@ -184,7 +193,7 @@ public class MainForm extends JFrame {
     private void bindRunButton() {
         getRunButton().addActionListener(e -> {
             if (getMutatorTableModel() == null) {
-                EventService.LOG_EVENT.trigger(LangService.get("error.creating.config.table"));
+                EventService.LOG_LABEL.trigger(LangService.get("error.creating.config.table"));
                 return;
             }
 
@@ -229,7 +238,7 @@ public class MainForm extends JFrame {
                             .chromosome()
             )
                     .thenAccept(chromosome -> {
-                        EventService.LOG_EVENT.trigger(LangService.get("environment.finished"));
+                        EventService.LOG_LABEL.trigger(LangService.get("environment.finished"));
                         EventService.REPAINT_CANVAS.trigger(chromosome);
                     })
                     .thenRun(() -> getProgressBar().setVisible(false));
@@ -363,13 +372,17 @@ public class MainForm extends JFrame {
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         rootPanel.add(panel1, gbc);
+        final JSplitPane splitPane1 = new JSplitPane();
+        splitPane1.setDividerLocation(300);
+        splitPane1.setOrientation(0);
+        panel1.add(splitPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
         mainSplit = new JSplitPane();
-        mainSplit.setDividerLocation(300);
+        mainSplit.setDividerLocation(103);
         mainSplit.setDividerSize(9);
         mainSplit.setEnabled(false);
         mainSplit.setFocusable(false);
         mainSplit.setRequestFocusEnabled(false);
-        panel1.add(mainSplit, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
+        splitPane1.setLeftComponent(mainSplit);
         configTabs = new JTabbedPane();
         configTabs.setVisible(true);
         mainSplit.setLeftComponent(configTabs);
@@ -399,7 +412,38 @@ public class MainForm extends JFrame {
         panel2.add(spacer3, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         canvas = new Canvas();
         mainSplit.setRightComponent(canvas);
+        final JScrollPane scrollPane3 = new JScrollPane();
+        splitPane1.setRightComponent(scrollPane3);
+        scrollPane3.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5), null));
+        textArea1 = new JTextArea();
+        textArea1.setEditable(false);
+        Font textArea1Font = this.$$$getFont$$$("JetBrains Mono", Font.PLAIN, 11, textArea1.getFont());
+        if (textArea1Font != null) textArea1.setFont(textArea1Font);
+        textArea1.setInheritsPopupMenu(true);
+        textArea1.setOpaque(false);
+        textArea1.setText(":");
+        textArea1.setVisible(true);
+        scrollPane3.setViewportView(textArea1);
         logLabel.setLabelFor(scrollPane2);
+    }
+
+    /**
+     * @noinspection ALL
+     */
+    private Font $$$getFont$$$(String fontName, int style, int size, Font currentFont) {
+        if (currentFont == null) return null;
+        String resultName;
+        if (fontName == null) {
+            resultName = currentFont.getName();
+        } else {
+            Font testFont = new Font(fontName, Font.PLAIN, 10);
+            if (testFont.canDisplay('a') && testFont.canDisplay('1')) {
+                resultName = fontName;
+            } else {
+                resultName = currentFont.getName();
+            }
+        }
+        return new Font(resultName, style >= 0 ? style : currentFont.getStyle(), size >= 0 ? size : currentFont.getSize());
     }
 
     /**

@@ -12,7 +12,13 @@ public class EventService {
     /**
      * Event for when something should be written to the log label.
      */
-    public static final Event<String> LOG_EVENT = new SimpleEvent<>();
+    public static final Event<String> LOG_LABEL = new SimpleEvent<>();
+
+    /**
+     * Event for when something should be appended to the big log.
+     * Useful when cumulative error messages are necessary.
+     */
+    public static final Event<String> LOG = new SimpleEvent<>();
 
     /**
      * Event to repaint the {@link evo.search.view.Canvas} upon.

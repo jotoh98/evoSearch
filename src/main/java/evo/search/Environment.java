@@ -18,7 +18,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -39,11 +38,11 @@ public class Environment {
      * Singleton environment instance.
      */
     private static Environment instance = null;
-    /**
-     * Historic list of optimal individuals.
-     */
-    private List<DiscreteChromosome> individuals = new ArrayList<>();
 
+    /**
+     * The environments configuration.
+     * Holds all information to reproduce experiments and is serialized and saved.
+     */
     private Configuration configuration;
 
     /**
@@ -163,9 +162,9 @@ public class Environment {
      */
     public Genotype<DiscreteGene> evolve(final int limit, List<DiscreteAlterer> alterers, Consumer<Integer> consumer) {
         if (configuration == null) {
-            EventService.LOG_EVENT.trigger(LangService.get("environment.config.missing"));
+            EventService.LOG_LABEL.trigger(LangService.get("environment.config.missing"));
         }
-        EventService.LOG_EVENT.trigger(LangService.get("environment.evolving"));
+        EventService.LOG_LABEL.trigger(LangService.get("environment.evolving"));
         Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
                 Environment::fitness,
                 Codec.of(

@@ -16,7 +16,7 @@ jobs:
         with:
           java-version: 11
       - name: Maven Javadoc 🔧
-        run: mvn clean javadoc:javadoc
+        run: mvn javadoc:javadoc
       - name: Deploy to gh-pages 🚀
         uses: JamesIves/github-pages-deploy-action@releases/v3
         with:

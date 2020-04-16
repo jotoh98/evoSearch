@@ -76,6 +76,7 @@
                     <stylesheetfile>src/main/resources/javadoc.css</stylesheetfile>
                     <reportOutputDirectory>${project.basedir}/docs</reportOutputDirectory>
                     <destDir>docs</destDir>
+                    <additionalJOption>--no-module-directories</additionalJOption>
                 </configuration>
             </plugin>
             <plugin>
@@ -94,10 +95,6 @@
                         <JVMVersion>11+</JVMVersion>
                         <JVMOptions>-Xdock:name=evoSearch</JVMOptions>
                     </plist>
-                    <jdk>
-                        <include>true</include>
-                        <location>/Library/Java/JavaVirtualMachines/adoptopenjdk-13.jdk/Contents/Home</location>
-                    </jdk>
                 </configuration>
                 <executions>
                     <execution>

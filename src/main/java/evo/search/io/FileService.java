@@ -4,6 +4,7 @@ import evo.search.Configuration;
 import evo.search.Environment;
 import evo.search.view.LangService;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.swing.*;
@@ -70,14 +71,15 @@ public class FileService {
         try {
             final String jsonString = Files.readString(file.toPath());
             final Configuration configuration = JsonService.readConfiguration(new JSONObject(jsonString));
-            if (configuration == null) {
-                EventService.LOG_EVENT.trigger(LangService.get("environment.config.broken"));
-                return;
-            }
             Environment.getInstance().setConfiguration(configuration);
-            EventService.LOG_EVENT.trigger(LangService.get("environment.loaded"));
+            EventService.LOG_LABEL.trigger(LangService.get("environment.loaded"));
+            EventService.REPAINT_CANVAS.trigger();
         } catch (IOException e) {
-            log.error("Could not read file.", e);
+            EventService.LOG.trigger(e.getLocalizedMessage());
+            log.error(LangService.get("could.not.read.file"), e);
+        } catch (JSONException e) {
+            EventService.LOG.trigger(LangService.get("environment.config.broken") + ": " + e.getLocalizedMessage());
+            EventService.LOG_LABEL.trigger(LangService.get("environment.config.broken"));
         }
     }
 
@@ -88,17 +90,18 @@ public class FileService {
      * @param configuration Configuration to create a json representation from.
      */
     public static void saveConfiguration(File file, Configuration configuration) {
-        final JSONObject jsonObject = JsonService.write(configuration);
         try {
+            final JSONObject jsonObject = JsonService.write(configuration);
             Files.write(
                     file.toPath(),
                     jsonObject.toString().getBytes(),
                     StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING
             );
-            EventService.LOG_EVENT.trigger(LangService.get("environment.loaded"));
-        } catch (IOException e) {
-            log.error("Could not write file.", e);
+            EventService.LOG_LABEL.trigger(LangService.get("environment.loaded"));
+        } catch (IOException | JSONException e) {
+            log.error(LangService.get("could.not.write.file"), e);
+            EventService.LOG.trigger(LangService.get("could.not.write.file") + ": " + e.getLocalizedMessage());
         }
 
     }

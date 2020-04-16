@@ -119,7 +119,7 @@
         <properties/>
         <border type="none"/>
         <children>
-          <splitpane id="e1d19" binding="mainSplit">
+          <splitpane id="22f41">
             <constraints>
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
                 <preferred-size width="200" height="200"/>
@@ -127,88 +127,122 @@
             </constraints>
             <properties>
               <dividerLocation value="300"/>
-              <dividerSize value="9"/>
-              <enabled value="false"/>
-              <focusable value="false"/>
-              <requestFocusEnabled value="false"/>
+              <orientation value="0"/>
             </properties>
             <border type="none"/>
             <children>
-              <tabbedpane id="31374" binding="configTabs">
+              <splitpane id="e1d19" binding="mainSplit">
                 <constraints>
                   <splitpane position="left"/>
                 </constraints>
                 <properties>
-                  <visible value="true"/>
+                  <dividerLocation value="103"/>
+                  <dividerSize value="9"/>
+                  <enabled value="false"/>
+                  <focusable value="false"/>
+                  <requestFocusEnabled value="false"/>
                 </properties>
                 <border type="none"/>
                 <children>
-                  <scrollpane id="40f3">
+                  <tabbedpane id="31374" binding="configTabs">
                     <constraints>
-                      <tabbedpane title-resource-bundle="lang" title-key="general"/>
+                      <splitpane position="left"/>
                     </constraints>
-                    <properties/>
+                    <properties>
+                      <visible value="true"/>
+                    </properties>
                     <border type="none"/>
                     <children>
-                      <component id="6badb" class="javax.swing.JTable" binding="simpleConfigTable">
-                        <constraints/>
+                      <scrollpane id="40f3">
+                        <constraints>
+                          <tabbedpane title-resource-bundle="lang" title-key="general"/>
+                        </constraints>
                         <properties/>
-                      </component>
+                        <border type="none"/>
+                        <children>
+                          <component id="6badb" class="javax.swing.JTable" binding="simpleConfigTable">
+                            <constraints/>
+                            <properties/>
+                          </component>
+                        </children>
+                      </scrollpane>
+                      <scrollpane id="eabf8">
+                        <constraints>
+                          <tabbedpane title-resource-bundle="lang" title-key="mutators"/>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <component id="7dc7c" class="javax.swing.JTable" binding="mutatorConfigTable">
+                            <constraints/>
+                            <properties>
+                              <name value="Mutators"/>
+                              <visible value="true"/>
+                            </properties>
+                          </component>
+                        </children>
+                      </scrollpane>
+                      <grid id="559c1" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <tabbedpane title="Test"/>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <component id="9d183" class="javax.swing.JComboBox" binding="comboBox1" default-binding="true">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <editable value="true"/>
+                              <model>
+                                <item value="13"/>
+                                <item value="12"/>
+                                <item value="15"/>
+                                <item value="17"/>
+                              </model>
+                            </properties>
+                          </component>
+                          <vspacer id="ceb2a">
+                            <constraints>
+                              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                          </vspacer>
+                        </children>
+                      </grid>
                     </children>
-                  </scrollpane>
-                  <scrollpane id="eabf8">
+                  </tabbedpane>
+                  <component id="da274" class="evo.search.view.Canvas" binding="canvas">
                     <constraints>
-                      <tabbedpane title-resource-bundle="lang" title-key="mutators"/>
+                      <splitpane position="right"/>
                     </constraints>
                     <properties/>
-                    <border type="none"/>
-                    <children>
-                      <component id="7dc7c" class="javax.swing.JTable" binding="mutatorConfigTable">
-                        <constraints/>
-                        <properties>
-                          <name value="Mutators"/>
-                          <visible value="true"/>
-                        </properties>
-                      </component>
-                    </children>
-                  </scrollpane>
-                  <grid id="559c1" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-                    <margin top="0" left="0" bottom="0" right="0"/>
-                    <constraints>
-                      <tabbedpane title="Test"/>
-                    </constraints>
-                    <properties/>
-                    <border type="none"/>
-                    <children>
-                      <component id="9d183" class="javax.swing.JComboBox" binding="comboBox1" default-binding="true">
-                        <constraints>
-                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <editable value="true"/>
-                          <model>
-                            <item value="13"/>
-                            <item value="12"/>
-                            <item value="15"/>
-                            <item value="17"/>
-                          </model>
-                        </properties>
-                      </component>
-                      <vspacer id="ceb2a">
-                        <constraints>
-                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                      </vspacer>
-                    </children>
-                  </grid>
+                  </component>
                 </children>
-              </tabbedpane>
-              <component id="da274" class="evo.search.view.Canvas" binding="canvas">
+              </splitpane>
+              <scrollpane id="6f0cb">
                 <constraints>
                   <splitpane position="right"/>
                 </constraints>
                 <properties/>
-              </component>
+                <border type="empty">
+                  <size top="5" left="10" bottom="5" right="5"/>
+                </border>
+                <children>
+                  <component id="f84ed" class="javax.swing.JTextArea" binding="textArea1" default-binding="true">
+                    <constraints/>
+                    <properties>
+                      <editable value="false"/>
+                      <font name="JetBrains Mono" size="11" style="0"/>
+                      <inheritsPopupMenu value="true"/>
+                      <opaque value="false"/>
+                      <text value=":"/>
+                      <visible value="true"/>
+                    </properties>
+                  </component>
+                </children>
+              </scrollpane>
             </children>
           </splitpane>
         </children>

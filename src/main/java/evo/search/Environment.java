@@ -18,9 +18,12 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * This singleton class is the running environment for the
@@ -152,15 +155,29 @@ public class Environment {
         return trace;
     }
 
+    public static List<Method> getFitnessMethods() {
+        return List.of(Environment.class.getDeclaredMethods()).stream()
+                .filter(method -> {
+                    final Class<?>[] parameterTypes = method.getParameterTypes();
+                    final Class<?> returnType = method.getReturnType();
+                    if (parameterTypes.length != 1) {
+                        return false;
+                    }
+                    return parameterTypes[0].equals(Chromosome.class) && (returnType.equals(double.class) || returnType.equals(Double.class));
+                })
+                .collect(Collectors.toList());
+    }
+
     /**
      * Evolving the individuals.
      *
+     * @param fitness  Fitness function for the evolutionary algorithm.
      * @param limit    Amount of iterations to evolve the population.
      * @param alterers List of mutators to alter the individuals during evolution.
      * @param consumer Progress consumer.
      * @return The resulting fittest individual of the evolution.
      */
-    public Genotype<DiscreteGene> evolve(final int limit, List<DiscreteAlterer> alterers, Consumer<Integer> consumer) {
+    public Genotype<DiscreteGene> evolve(final Function<Chromosome<DiscreteGene>, Double> fitness, final int limit, List<DiscreteAlterer> alterers, Consumer<Integer> consumer) {
         if (configuration == null) {
             EventService.LOG_LABEL.trigger(LangService.get("environment.config.missing"));
         }

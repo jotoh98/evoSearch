@@ -31,8 +31,6 @@ public class JsonService {
     private static final String CHROMOSOME = "chromosome";
     private static final String LIMIT = "limit";
 
-    private static String[] CONFIG_JSON = new String[]{"ver", "positions", "distances", "treasures", "history"};
-
     /**
      * Serialize a {@link DiscretePoint}.
      *

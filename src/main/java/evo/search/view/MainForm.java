@@ -9,6 +9,7 @@ import evo.search.Configuration;
 import evo.search.Environment;
 import evo.search.Main;
 import evo.search.Run;
+import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.ga.mutators.SwapGeneMutator;
@@ -16,24 +17,26 @@ import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.EventService;
 import evo.search.io.FileService;
 import evo.search.io.MenuService;
-import evo.search.view.model.ConfigTableModel;
-import evo.search.view.model.MutatorTableModel;
+import evo.search.view.model.*;
+import io.jenetics.Chromosome;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.File;
-import java.util.Arrays;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Random;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -46,18 +49,17 @@ public class MainForm extends JFrame {
 
     private JPanel rootPanel;
     private JPanel toolbar;
-    private JButton runButton;
+    private static Method $$$cachedGetBundleMethod$$$ = null;
     private JProgressBar progressBar;
     private JLabel logLabel;
-    private JTable simpleConfigTable;
     private JTable mutatorConfigTable;
     private JTabbedPane configTabs;
-    private JButton configButton;
+    private JButton startButton;
     private JSplitPane mainSplit;
     private Canvas canvas;
     private JPanel bottomBar;
-    private JComboBox comboBox1;
     private JTextArea textArea1;
+    private JButton konfigurationButton;
 
     /**
      * Custom table model for the simple configuration table.
@@ -162,13 +164,15 @@ public class MainForm extends JFrame {
         });
     }
 
+    private FlexTable configTable;
+
     /**
      * Bind the configuration button to its behaviour.
      */
     private void bindConfigButton() {
         final AtomicInteger mainDividerLocation = new AtomicInteger(300);
         final AtomicInteger dividerSize = new AtomicInteger(9);
-        getConfigButton().addActionListener(e -> {
+        getKonfigurationButton().addActionListener(e -> {
             if (getMainSplit().isEnabled()) {
                 mainDividerLocation.set(getMainSplit().getDividerLocation());
                 dividerSize.set(getMainSplit().getDividerSize());
@@ -188,23 +192,61 @@ public class MainForm extends JFrame {
     }
 
     /**
+     * Set up the jFrame for the swing application.
+     */
+    private void setupFrame() {
+        final JMenuBar jMenuBar = new JMenuBar();
+        setupMenuBar(jMenuBar);
+        setJMenuBar(jMenuBar);
+
+        setTitle(Main.APP_TITLE);
+        setMinimumSize(new Dimension(700, 500));
+        setContentPane(rootPanel);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setVisible(true);
+    }
+
+    /**
      * Bind the run button to its behaviour.
      */
     private void bindRunButton() {
-        getRunButton().addActionListener(e -> {
+        getStartButton().addActionListener(event -> {
             if (getMutatorTableModel() == null) {
                 EventService.LOG_LABEL.trigger(LangService.get("error.creating.config.table"));
                 return;
             }
 
             final Random random = new Random();
-            final int positions = (int) configTableModel.getConfig("positions");
-            final int limit = (int) configTableModel.getConfig("limit");
-            final int treasureAmount = (int) configTableModel.getConfig("treasures");
-            final Object distanceObject = configTableModel.getConfig("distances");
+            final int positions;
+            final int limit;
+            final int treasureAmount;
+            final Object distanceObject;
+            final Method fitnessMethod;
+
+            try {
+                positions = configTableModel.getIntConfig("positions");
+                limit = configTableModel.getIntConfig("limit");
+                treasureAmount = configTableModel.getIntConfig("treasures");
+                distanceObject = configTableModel.getConfig("distances");
+                fitnessMethod = (Method) configTableModel.getConfig("fitness");
+            } catch (Exception exception) {
+                log.info("Config transfer error", exception);
+                EventService.LOG.trigger(LangService.get("error.config.transfer") + exception.getLocalizedMessage());
+                EventService.LOG_LABEL.trigger(LangService.get("error.config.transfer"));
+                return;
+            }
+
             if (!(distanceObject instanceof List)) {
                 return;
             }
+
+            Function<Chromosome<DiscreteGene>, Double> fitnessFunction = chromosome -> {
+                try {
+                    return (double) fitnessMethod.invoke(chromosome);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new RuntimeException(e);
+                }
+            };
 
             final List<Double> distances = ((List<?>) distanceObject).stream()
                     .filter(o -> o instanceof Number)
@@ -231,6 +273,7 @@ public class MainForm extends JFrame {
             CompletableFuture.supplyAsync(() ->
                     Environment.getInstance()
                             .evolve(
+                                    fitnessFunction,
                                     limit,
                                     selected,
                                     integer -> getProgressBar().setValue(integer)
@@ -243,35 +286,6 @@ public class MainForm extends JFrame {
                     })
                     .thenRun(() -> getProgressBar().setVisible(false));
         });
-    }
-
-    /**
-     * Set up the jFrame for the swing application.
-     */
-    private void setupFrame() {
-        final JMenuBar jMenuBar = new JMenuBar();
-        setupMenuBar(jMenuBar);
-        setJMenuBar(jMenuBar);
-
-        setTitle(Main.APP_TITLE);
-        setMinimumSize(new Dimension(700, 500));
-        setContentPane(rootPanel);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setVisible(true);
-    }
-
-    /**
-     * Set up the configuration table.
-     */
-    private void setupConfigTable() {
-        configTableModel = new ConfigTableModel();
-
-        configTableModel.addConfig("positions", 2);
-        configTableModel.addConfig("treasures", 7);
-        configTableModel.addConfig("limit", 1000);
-        configTableModel.addConfig("distances", Arrays.asList(45, 2.0, 2.0, 7.0, 12.0, 5.0));
-
-        getSimpleConfigTable().setModel(configTableModel);
     }
 
     /**
@@ -297,134 +311,108 @@ public class MainForm extends JFrame {
 
     }
 
-
     /**
-     * Method generated by IntelliJ IDEA GUI Designer
-     * >>> IMPORTANT!! <<<
-     * DO NOT edit this method OR call it in your code!
-     *
-     * @noinspection ALL
+     * Set up the configuration table.
      */
-    private void $$$setupUI$$$() {
-        rootPanel = new JPanel();
-        rootPanel.setLayout(new GridBagLayout());
-        toolbar = new JPanel();
-        toolbar.setLayout(new GridLayoutManager(1, 3, new Insets(0, 10, 0, 10), -1, -1));
-        toolbar.setBackground(new Color(-12105140));
-        toolbar.setEnabled(false);
-        GridBagConstraints gbc;
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        rootPanel.add(toolbar, gbc);
-        runButton = new JButton();
-        runButton.setAlignmentY(0.0f);
-        runButton.setBackground(new Color(-4866622));
-        runButton.setBorderPainted(true);
-        runButton.setContentAreaFilled(false);
-        runButton.setEnabled(true);
-        runButton.setFocusPainted(false);
-        runButton.setHideActionText(false);
-        runButton.setHorizontalTextPosition(4);
-        runButton.setInheritsPopupMenu(true);
-        runButton.setLabel(ResourceBundle.getBundle("lang").getString("run"));
-        runButton.setMargin(new Insets(0, 0, 0, 0));
-        runButton.setOpaque(false);
-        runButton.setSelected(true);
-        this.$$$loadButtonText$$$(runButton, ResourceBundle.getBundle("lang").getString("run"));
-        toolbar.add(runButton, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, 1, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer1 = new Spacer();
-        toolbar.add(spacer1, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
-        configButton = new JButton();
-        configButton.setBorderPainted(true);
-        configButton.setContentAreaFilled(false);
-        this.$$$loadButtonText$$$(configButton, ResourceBundle.getBundle("lang").getString("config"));
-        toolbar.add(configButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        bottomBar = new JPanel();
-        bottomBar.setLayout(new GridLayoutManager(1, 3, new Insets(0, 10, 0, 10), -1, -1));
-        bottomBar.setBackground(new Color(-12105140));
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        rootPanel.add(bottomBar, gbc);
-        progressBar = new JProgressBar();
-        progressBar.setBorderPainted(false);
-        progressBar.setOrientation(0);
-        progressBar.setStringPainted(false);
-        progressBar.setVisible(false);
-        bottomBar.add(progressBar, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(-1, 3), new Dimension(50, 3), new Dimension(-1, 3), 0, false));
-        final Spacer spacer2 = new Spacer();
-        bottomBar.add(spacer2, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
-        logLabel = new JLabel();
-        logLabel.setHorizontalTextPosition(11);
-        logLabel.setText("");
-        bottomBar.add(logLabel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_NORTHWEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(-1, 25), new Dimension(-1, 25), new Dimension(-1, 25), 0, false));
-        final JPanel panel1 = new JPanel();
-        panel1.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        rootPanel.add(panel1, gbc);
-        final JSplitPane splitPane1 = new JSplitPane();
-        splitPane1.setDividerLocation(300);
-        splitPane1.setOrientation(0);
-        panel1.add(splitPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
-        mainSplit = new JSplitPane();
-        mainSplit.setDividerLocation(103);
-        mainSplit.setDividerSize(9);
-        mainSplit.setEnabled(false);
-        mainSplit.setFocusable(false);
-        mainSplit.setRequestFocusEnabled(false);
-        splitPane1.setLeftComponent(mainSplit);
-        configTabs = new JTabbedPane();
-        configTabs.setVisible(true);
-        mainSplit.setLeftComponent(configTabs);
-        final JScrollPane scrollPane1 = new JScrollPane();
-        configTabs.addTab(ResourceBundle.getBundle("lang").getString("general"), scrollPane1);
-        simpleConfigTable = new JTable();
-        scrollPane1.setViewportView(simpleConfigTable);
-        final JScrollPane scrollPane2 = new JScrollPane();
-        configTabs.addTab(ResourceBundle.getBundle("lang").getString("mutators"), scrollPane2);
-        mutatorConfigTable = new JTable();
-        mutatorConfigTable.setName("Mutators");
-        mutatorConfigTable.setVisible(true);
-        scrollPane2.setViewportView(mutatorConfigTable);
-        final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        configTabs.addTab("Test", panel2);
-        comboBox1 = new JComboBox();
-        comboBox1.setEditable(true);
-        final DefaultComboBoxModel defaultComboBoxModel1 = new DefaultComboBoxModel();
-        defaultComboBoxModel1.addElement("13");
-        defaultComboBoxModel1.addElement("12");
-        defaultComboBoxModel1.addElement("15");
-        defaultComboBoxModel1.addElement("17");
-        comboBox1.setModel(defaultComboBoxModel1);
-        panel2.add(comboBox1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer3 = new Spacer();
-        panel2.add(spacer3, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        canvas = new Canvas();
-        mainSplit.setRightComponent(canvas);
-        final JScrollPane scrollPane3 = new JScrollPane();
-        splitPane1.setRightComponent(scrollPane3);
-        scrollPane3.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5), null));
-        textArea1 = new JTextArea();
-        textArea1.setEditable(false);
-        Font textArea1Font = this.$$$getFont$$$("JetBrains Mono", Font.PLAIN, 11, textArea1.getFont());
-        if (textArea1Font != null) textArea1.setFont(textArea1Font);
-        textArea1.setInheritsPopupMenu(true);
-        textArea1.setOpaque(false);
-        textArea1.setText(":");
-        textArea1.setVisible(true);
-        scrollPane3.setViewportView(textArea1);
-        logLabel.setLabelFor(scrollPane2);
+    private void setupConfigTable() {
+        final List<Double> defaultDistances = List.of(45.0, 2.0, 7.0, 12.0, 5.0);
+        final List<Method> collect = Environment.getFitnessMethods();
+
+        final JComboBox<Method> functionJComboBox = new JComboBox<>(new Vector<>(collect)) {
+            @Override
+            public ListCellRenderer<? super Method> getRenderer() {
+                return new DefaultListCellRenderer() {
+                    @Override
+                    public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index, final boolean isSelected, final boolean cellHasFocus) {
+                        final Method method = (Method) value;
+                        return super.getListCellRendererComponent(list, method.getName(), index, isSelected, cellHasFocus);
+                    }
+                };
+            }
+        };
+
+        final SpecificCellRenderer specificCellRenderer = new SpecificCellRenderer();
+        final SpecificCellEditor specificCellEditor = new SpecificCellEditor();
+
+        specificCellRenderer.setRenderer(3, 1, new DefaultTableCellRenderer() {
+
+            @Override
+            public Component getTableCellRendererComponent(final JTable table, final Object value, final boolean isSelected, final boolean hasFocus, final int row, final int column) {
+                return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            }
+
+
+            @Override
+            protected void setValue(Object value) {
+                if (value instanceof List) {
+                    value = ((List<?>) value).stream()
+                            .map(Object::toString)
+                            .reduce((s, s2) -> s + ", " + s2)
+                            .orElse("");
+                }
+                super.setValue(value);
+            }
+        });
+
+        specificCellEditor.setEditor(3, 1, new DefaultCellEditor(new JTextField()) {
+            List<?> defaultValue;
+
+            @Override
+            public Component getTableCellEditorComponent(JTable table, Object value,
+                                                         boolean isSelected,
+                                                         int row, int column) {
+                ((JComponent) getComponent()).setBorder(
+                        BorderFactory.createEmptyBorder(0, 0, 0, 0)
+                );
+                if (value instanceof List) {
+                    defaultValue = new ArrayList<>((List<?>) value);
+                    value = ((List<?>) value).stream()
+                            .map(Object::toString)
+                            .reduce((s, s2) -> s + ", " + s2)
+                            .orElse("");
+                }
+                return super.getTableCellEditorComponent(table, value, isSelected, row, column);
+            }
+
+            @Override
+            public Object getCellEditorValue() {
+                final String input = (String) super.getCellEditorValue();
+                try {
+                    return Arrays.stream(input.split("\\s*,\\s*"))
+                            .mapToDouble(Double::parseDouble)
+                            .boxed()
+                            .collect(Collectors.toList());
+                } catch (NumberFormatException e) {
+                    return defaultValue;
+                }
+            }
+        });
+
+        specificCellRenderer.setRenderer(4, 1, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(final JTable table, final Object value, final boolean isSelected, final boolean hasFocus, final int row, final int column) {
+                final Method method = (Method) value;
+                return super.getTableCellRendererComponent(table, method.getName(), isSelected, hasFocus, row, column);
+            }
+        });
+
+        specificCellEditor.setEditor(4, 1, new DefaultCellEditor(functionJComboBox));
+
+        configTable.setSpecificCellRenderer(specificCellRenderer);
+        configTable.setSpecificCellEditor(specificCellEditor);
+
+        configTableModel = new ConfigTableModel();
+
+        configTableModel.addConfig("positions", 2);
+        configTableModel.addConfig("treasures", 7);
+        configTableModel.addConfig("limit", 1000);
+        configTableModel.addConfig("distances", defaultDistances);
+        configTableModel.addConfig("fitness", functionJComboBox.getModel().getSelectedItem());
+
+        configTable.setModel(configTableModel);
+        configTableModel.addColumn("hello");
+
+
     }
 
     /**
@@ -478,6 +466,139 @@ public class MainForm extends JFrame {
      */
     public JComponent $$$getRootComponent$$$() {
         return rootPanel;
+    }
+
+    /**
+     * Method generated by IntelliJ IDEA GUI Designer
+     * >>> IMPORTANT!! <<<
+     * DO NOT edit this method OR call it in your code!
+     *
+     * @noinspection ALL
+     */
+    private void $$$setupUI$$$() {
+        rootPanel = new JPanel();
+        rootPanel.setLayout(new GridBagLayout());
+        toolbar = new JPanel();
+        toolbar.setLayout(new GridLayoutManager(1, 3, new Insets(0, 10, 0, 10), -1, -1));
+        toolbar.setBackground(new Color(-12105140));
+        toolbar.setEnabled(false);
+        GridBagConstraints gbc;
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        rootPanel.add(toolbar, gbc);
+        startButton = new JButton();
+        startButton.setAlignmentY(0.0f);
+        startButton.setBackground(new Color(-4866622));
+        startButton.setBorderPainted(true);
+        startButton.setContentAreaFilled(false);
+        startButton.setEnabled(true);
+        startButton.setFocusPainted(false);
+        startButton.setHideActionText(false);
+        startButton.setHorizontalTextPosition(4);
+        startButton.setInheritsPopupMenu(true);
+        startButton.setLabel(ResourceBundle.getBundle("lang").getString("run"));
+        startButton.setMargin(new Insets(0, 0, 0, 0));
+        startButton.setOpaque(false);
+        startButton.setSelected(true);
+        this.$$$loadButtonText$$$(startButton, ResourceBundle.getBundle("lang").getString("run"));
+        toolbar.add(startButton, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, 1, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final Spacer spacer1 = new Spacer();
+        toolbar.add(spacer1, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        konfigurationButton = new JButton();
+        konfigurationButton.setBorderPainted(true);
+        konfigurationButton.setContentAreaFilled(false);
+        this.$$$loadButtonText$$$(konfigurationButton, ResourceBundle.getBundle("lang").getString("config"));
+        toolbar.add(konfigurationButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        bottomBar = new JPanel();
+        bottomBar.setLayout(new GridLayoutManager(1, 3, new Insets(0, 10, 0, 10), -1, -1));
+        bottomBar.setBackground(new Color(-12105140));
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        rootPanel.add(bottomBar, gbc);
+        progressBar = new JProgressBar();
+        progressBar.setBorderPainted(false);
+        progressBar.setOrientation(0);
+        progressBar.setStringPainted(false);
+        progressBar.setVisible(false);
+        bottomBar.add(progressBar, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(-1, 3), new Dimension(50, 3), new Dimension(-1, 3), 0, false));
+        final Spacer spacer2 = new Spacer();
+        bottomBar.add(spacer2, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        logLabel = new JLabel();
+        logLabel.setHorizontalTextPosition(11);
+        logLabel.setText("");
+        bottomBar.add(logLabel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_NORTHWEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(-1, 25), new Dimension(-1, 25), new Dimension(-1, 25), 0, false));
+        final JPanel panel1 = new JPanel();
+        panel1.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        rootPanel.add(panel1, gbc);
+        final JSplitPane splitPane1 = new JSplitPane();
+        splitPane1.setDividerLocation(300);
+        splitPane1.setOrientation(0);
+        panel1.add(splitPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
+        mainSplit = new JSplitPane();
+        mainSplit.setDividerLocation(123);
+        mainSplit.setDividerSize(9);
+        mainSplit.setEnabled(false);
+        mainSplit.setFocusable(false);
+        mainSplit.setRequestFocusEnabled(false);
+        splitPane1.setLeftComponent(mainSplit);
+        configTabs = new JTabbedPane();
+        configTabs.setVisible(true);
+        mainSplit.setLeftComponent(configTabs);
+        final JPanel panel2 = new JPanel();
+        panel2.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
+        configTabs.addTab(ResourceBundle.getBundle("lang").getString("general"), panel2);
+        final JScrollPane scrollPane1 = new JScrollPane();
+        panel2.add(scrollPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        configTable = new FlexTable();
+        scrollPane1.setViewportView(configTable);
+        final JScrollPane scrollPane2 = new JScrollPane();
+        configTabs.addTab(ResourceBundle.getBundle("lang").getString("mutators"), scrollPane2);
+        mutatorConfigTable = new JTable();
+        mutatorConfigTable.setName("Mutators");
+        mutatorConfigTable.setVisible(true);
+        scrollPane2.setViewportView(mutatorConfigTable);
+        canvas = new Canvas();
+        mainSplit.setRightComponent(canvas);
+        final JScrollPane scrollPane3 = new JScrollPane();
+        splitPane1.setRightComponent(scrollPane3);
+        scrollPane3.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5), null));
+        textArea1 = new JTextArea();
+        textArea1.setEditable(false);
+        Font textArea1Font = this.$$$getFont$$$("JetBrains Mono", Font.PLAIN, 11, textArea1.getFont());
+        if (textArea1Font != null) textArea1.setFont(textArea1Font);
+        textArea1.setInheritsPopupMenu(true);
+        textArea1.setOpaque(false);
+        textArea1.setText(":");
+        textArea1.setVisible(true);
+        scrollPane3.setViewportView(textArea1);
+        logLabel.setLabelFor(scrollPane2);
+    }
+
+    private String $$$getMessageFromBundle$$$(String path, String key) {
+        ResourceBundle bundle;
+        try {
+            Class<?> thisClass = this.getClass();
+            if ($$$cachedGetBundleMethod$$$ == null) {
+                Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
+                $$$cachedGetBundleMethod$$$ = dynamicBundleClass.getMethod("getBundle", String.class, Class.class);
+            }
+            bundle = (ResourceBundle) $$$cachedGetBundleMethod$$$.invoke(null, path, thisClass);
+        } catch (Exception e) {
+            bundle = ResourceBundle.getBundle(path);
+        }
+        return bundle.getString(key);
     }
 
 }

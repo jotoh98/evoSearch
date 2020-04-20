@@ -1,7 +1,7 @@
 package evo.search.ga;
 
-import evo.search.Configuration;
 import evo.search.Environment;
+import evo.search.io.entities.Configuration;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

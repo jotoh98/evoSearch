@@ -5,6 +5,7 @@ import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.io.EventService;
+import evo.search.io.entities.Configuration;
 import evo.search.view.LangService;
 import io.jenetics.Chromosome;
 import io.jenetics.Genotype;
@@ -64,17 +65,6 @@ public class Environment {
             instance = new Environment();
         }
         return instance;
-    }
-
-    /**
-     * Initialize the experiment singleton with n random
-     * distances and a given amount of positions.
-     *
-     * @param amountDistances Amount of shuffled treasures.
-     * @param positions       Amount of available positions.
-     */
-    public static void init(int amountDistances, int positions) {
-        Environment.getInstance().setConfiguration(Configuration.shuffle(amountDistances, positions));
     }
 
     /**
@@ -204,10 +194,6 @@ public class Environment {
                 .limit(limit)
                 .peek(result -> consumer.accept(progressCounter.incrementAndGet()))
                 .collect(EvolutionResult.toBestGenotype());
-
-        configuration.getHistory().add(
-                new Run(limit, (DiscreteChromosome) individual.chromosome())
-        );
 
         return individual;
     }

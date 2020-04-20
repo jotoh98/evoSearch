@@ -5,10 +5,8 @@ import com.github.weisj.darklaf.theme.DarculaTheme;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
-import evo.search.Configuration;
 import evo.search.Environment;
 import evo.search.Main;
-import evo.search.Run;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
@@ -17,6 +15,7 @@ import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.EventService;
 import evo.search.io.FileService;
 import evo.search.io.MenuService;
+import evo.search.io.entities.Configuration;
 import evo.search.view.model.*;
 import io.jenetics.Chromosome;
 import lombok.Getter;
@@ -29,6 +28,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -54,12 +55,12 @@ public class MainForm extends JFrame {
     private JLabel logLabel;
     private JTable mutatorConfigTable;
     private JTabbedPane configTabs;
-    private JButton startButton;
+    private JButton runButton;
     private JSplitPane mainSplit;
     private Canvas canvas;
     private JPanel bottomBar;
     private JTextArea textArea1;
-    private JButton konfigurationButton;
+    private JButton configButton;
 
     /**
      * Custom table model for the simple configuration table.
@@ -102,7 +103,7 @@ public class MainForm extends JFrame {
      * Set up the static properties.
      * Installs the swing look and feel.
      */
-    private static void setupEnvironment() {
+    public static void setupEnvironment() {
         LafManager.install(new DarculaTheme());
         UIManager.getDefaults().addResourceBundle("evo.search.lang");
         System.setProperty("-Xdock:name", Main.APP_TITLE);
@@ -156,11 +157,11 @@ public class MainForm extends JFrame {
         );
         EventService.REPAINT_CANVAS.addListener(chromosome -> {
             getCanvas().clear();
-            if (chromosome == null) {
+            /*if (chromosome == null) {
                 final List<Run> history = Environment.getInstance().getConfiguration().getHistory();
                 chromosome = history.get(history.size() - 1).getIndividual();
             }
-            getCanvas().render(chromosome);
+            getCanvas().render(chromosome);*/
         });
     }
 
@@ -172,8 +173,8 @@ public class MainForm extends JFrame {
     private void bindConfigButton() {
         final AtomicInteger mainDividerLocation = new AtomicInteger(300);
         final AtomicInteger dividerSize = new AtomicInteger(9);
-        getKonfigurationButton().addActionListener(e -> {
-            if (getMainSplit().isEnabled()) {
+        getConfigButton().addActionListener(e -> {
+            /*if (getMainSplit().isEnabled()) {
                 mainDividerLocation.set(getMainSplit().getDividerLocation());
                 dividerSize.set(getMainSplit().getDividerSize());
                 getMainSplit().setDividerSize(0);
@@ -184,7 +185,8 @@ public class MainForm extends JFrame {
                 getMainSplit().setDividerSize(dividerSize.get());
                 getMainSplit().setEnabled(true);
                 getConfigTabs().setVisible(true);
-            }
+            }*/
+            ConfigurationDialog.main(new String[]{});
         });
         getMainSplit().setDividerSize(0);
         getMainSplit().setEnabled(false);
@@ -210,7 +212,7 @@ public class MainForm extends JFrame {
      * Bind the run button to its behaviour.
      */
     private void bindRunButton() {
-        getStartButton().addActionListener(event -> {
+        getRunButton().addActionListener(event -> {
             if (getMutatorTableModel() == null) {
                 EventService.LOG_LABEL.trigger(LangService.get("error.creating.config.table"));
                 return;
@@ -267,7 +269,7 @@ public class MainForm extends JFrame {
             final List<DiscreteAlterer> selected = getMutatorTableModel().getSelected();
 
             Environment.getInstance()
-                    .setConfiguration(new Configuration(positions, distances, treasures));
+                    .setConfiguration(new Configuration(1000, positions, distances, treasures, Environment::fitness));
             getProgressBar().setMaximum(limit);
             getProgressBar().setVisible(true);
             CompletableFuture.supplyAsync(() ->
@@ -412,60 +414,23 @@ public class MainForm extends JFrame {
         configTable.setModel(configTableModel);
         configTableModel.addColumn("hello");
 
+        JPopupMenu menu = MenuService.popupMenu("",
+                MenuService.item("Generate random", actionEvent -> log.info("{}", actionEvent))
+        );
+        add(menu);
 
-    }
-
-    /**
-     * @noinspection ALL
-     */
-    private Font $$$getFont$$$(String fontName, int style, int size, Font currentFont) {
-        if (currentFont == null) return null;
-        String resultName;
-        if (fontName == null) {
-            resultName = currentFont.getName();
-        } else {
-            Font testFont = new Font(fontName, Font.PLAIN, 10);
-            if (testFont.canDisplay('a') && testFont.canDisplay('1')) {
-                resultName = fontName;
-            } else {
-                resultName = currentFont.getName();
-            }
-        }
-        return new Font(resultName, style >= 0 ? style : currentFont.getStyle(), size >= 0 ? size : currentFont.getSize());
-    }
-
-    /**
-     * @noinspection ALL
-     */
-    private void $$$loadButtonText$$$(AbstractButton component, String text) {
-        StringBuffer result = new StringBuffer();
-        boolean haveMnemonic = false;
-        char mnemonic = '\0';
-        int mnemonicIndex = -1;
-        for (int i = 0; i < text.length(); i++) {
-            if (text.charAt(i) == '&') {
-                i++;
-                if (i == text.length()) break;
-                if (!haveMnemonic && text.charAt(i) != '&') {
-                    haveMnemonic = true;
-                    mnemonic = text.charAt(i);
-                    mnemonicIndex = result.length();
+        configTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(final MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e) || e.isControlDown()) {
+                    final int rowIndex = configTable.rowAtPoint(e.getPoint());
+                    if (configTable.getModel().getValueAt(rowIndex, 0).equals(LangService.get("treasures"))) {
+                        menu.show(configTable, e.getX(), e.getY());
+                    }
                 }
             }
-            result.append(text.charAt(i));
-        }
-        component.setText(result.toString());
-        if (haveMnemonic) {
-            component.setMnemonic(mnemonic);
-            component.setDisplayedMnemonicIndex(mnemonicIndex);
-        }
-    }
+        });
 
-    /**
-     * @noinspection ALL
-     */
-    public JComponent $$$getRootComponent$$$() {
-        return rootPanel;
     }
 
     /**
@@ -489,29 +454,29 @@ public class MainForm extends JFrame {
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         rootPanel.add(toolbar, gbc);
-        startButton = new JButton();
-        startButton.setAlignmentY(0.0f);
-        startButton.setBackground(new Color(-4866622));
-        startButton.setBorderPainted(true);
-        startButton.setContentAreaFilled(false);
-        startButton.setEnabled(true);
-        startButton.setFocusPainted(false);
-        startButton.setHideActionText(false);
-        startButton.setHorizontalTextPosition(4);
-        startButton.setInheritsPopupMenu(true);
-        startButton.setLabel(ResourceBundle.getBundle("lang").getString("run"));
-        startButton.setMargin(new Insets(0, 0, 0, 0));
-        startButton.setOpaque(false);
-        startButton.setSelected(true);
-        this.$$$loadButtonText$$$(startButton, ResourceBundle.getBundle("lang").getString("run"));
-        toolbar.add(startButton, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, 1, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        runButton = new JButton();
+        runButton.setAlignmentY(0.0f);
+        runButton.setBackground(new Color(-4866622));
+        runButton.setBorderPainted(true);
+        runButton.setContentAreaFilled(false);
+        runButton.setEnabled(true);
+        runButton.setFocusPainted(false);
+        runButton.setHideActionText(false);
+        runButton.setHorizontalTextPosition(4);
+        runButton.setInheritsPopupMenu(true);
+        runButton.setLabel(ResourceBundle.getBundle("lang").getString("run"));
+        runButton.setMargin(new Insets(0, 0, 0, 0));
+        runButton.setOpaque(false);
+        runButton.setSelected(true);
+        this.$$$loadButtonText$$$(runButton, ResourceBundle.getBundle("lang").getString("run"));
+        toolbar.add(runButton, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, 1, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final Spacer spacer1 = new Spacer();
         toolbar.add(spacer1, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
-        konfigurationButton = new JButton();
-        konfigurationButton.setBorderPainted(true);
-        konfigurationButton.setContentAreaFilled(false);
-        this.$$$loadButtonText$$$(konfigurationButton, ResourceBundle.getBundle("lang").getString("config"));
-        toolbar.add(konfigurationButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        configButton = new JButton();
+        configButton.setBorderPainted(true);
+        configButton.setContentAreaFilled(false);
+        this.$$$loadButtonText$$$(configButton, ResourceBundle.getBundle("lang").getString("config"));
+        toolbar.add(configButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         bottomBar = new JPanel();
         bottomBar.setLayout(new GridLayoutManager(1, 3, new Insets(0, 10, 0, 10), -1, -1));
         bottomBar.setBackground(new Color(-12105140));
@@ -584,6 +549,59 @@ public class MainForm extends JFrame {
         textArea1.setVisible(true);
         scrollPane3.setViewportView(textArea1);
         logLabel.setLabelFor(scrollPane2);
+    }
+
+    /**
+     * @noinspection ALL
+     */
+    private Font $$$getFont$$$(String fontName, int style, int size, Font currentFont) {
+        if (currentFont == null) return null;
+        String resultName;
+        if (fontName == null) {
+            resultName = currentFont.getName();
+        } else {
+            Font testFont = new Font(fontName, Font.PLAIN, 10);
+            if (testFont.canDisplay('a') && testFont.canDisplay('1')) {
+                resultName = fontName;
+            } else {
+                resultName = currentFont.getName();
+            }
+        }
+        return new Font(resultName, style >= 0 ? style : currentFont.getStyle(), size >= 0 ? size : currentFont.getSize());
+    }
+
+    /**
+     * @noinspection ALL
+     */
+    private void $$$loadButtonText$$$(AbstractButton component, String text) {
+        StringBuffer result = new StringBuffer();
+        boolean haveMnemonic = false;
+        char mnemonic = '\0';
+        int mnemonicIndex = -1;
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == '&') {
+                i++;
+                if (i == text.length()) break;
+                if (!haveMnemonic && text.charAt(i) != '&') {
+                    haveMnemonic = true;
+                    mnemonic = text.charAt(i);
+                    mnemonicIndex = result.length();
+                }
+            }
+            result.append(text.charAt(i));
+        }
+        component.setText(result.toString());
+        if (haveMnemonic) {
+            component.setMnemonic(mnemonic);
+            component.setDisplayedMnemonicIndex(mnemonicIndex);
+        }
+    }
+
+    /**
+     * @noinspection ALL
+     */
+    public JComponent $$$getRootComponent$$$() {
+        return rootPanel;
     }
 
     private String $$$getMessageFromBundle$$$(String path, String key) {

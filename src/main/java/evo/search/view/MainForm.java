@@ -106,6 +106,7 @@ public class MainForm extends JFrame {
     public static void setupEnvironment() {
         LafManager.install(new DarculaTheme());
         UIManager.getDefaults().addResourceBundle("evo.search.lang");
+        UIManager.put("EvoSearch.darker", new Color(0x292929));
         System.setProperty("-Xdock:name", Main.APP_TITLE);
         System.setProperty("apple.laf.useScreenMenuBar", "true");
         System.setProperty("com.apple.mrj.application.apple.menu.about.name", Main.APP_TITLE);
@@ -269,7 +270,7 @@ public class MainForm extends JFrame {
             final List<DiscreteAlterer> selected = getMutatorTableModel().getSelected();
 
             Environment.getInstance()
-                    .setConfiguration(new Configuration(1000, positions, distances, treasures, Environment::fitness));
+                    .setConfiguration(new Configuration(1000, positions, distances, treasures, Environment.Fitness.GLOBAL));
             getProgressBar().setMaximum(limit);
             getProgressBar().setVisible(true);
             CompletableFuture.supplyAsync(() ->

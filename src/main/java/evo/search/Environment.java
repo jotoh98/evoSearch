@@ -15,6 +15,7 @@ import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
 import io.jenetics.engine.Problem;
 import io.jenetics.util.ISeq;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,18 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 public class Environment {
+
+    @AllArgsConstructor
+    public enum Fitness {
+        SINGULAR(Environment::fitnessSingular),
+        GLOBAL(Environment::fitness);
+
+        private Function<DiscreteChromosome, Double> method;
+
+        public static Fitness getDefault() {
+            return GLOBAL;
+        }
+    }
 
     /**
      * Singleton environment instance.

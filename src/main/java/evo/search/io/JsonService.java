@@ -187,6 +187,6 @@ public class JsonService {
         final List<DiscretePoint> treasures = new ArrayList<>();
         jsonObject.getJSONArray(TREASURES).forEach(o -> treasures.add(readDiscretePoint((JSONObject) o)));
 
-        return new Configuration(version, name, 1000, positions, distances, treasures, Environment::fitness);
+        return new Configuration(version, name, 1000, positions, distances, treasures, Environment.Fitness.GLOBAL);
     }
 }

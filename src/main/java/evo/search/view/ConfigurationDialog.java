@@ -7,12 +7,16 @@ import com.intellij.uiDesigner.core.Spacer;
 import evo.search.Environment;
 import evo.search.ga.DiscretePoint;
 import evo.search.io.entities.Configuration;
+import evo.search.view.listener.DocumentEditHandler;
+import lombok.Value;
 
 import javax.swing.*;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
@@ -23,9 +27,8 @@ public class ConfigurationDialog extends JDialog {
     private JButton buttonOK;
     private JButton buttonCancel;
     private JButton applyButton;
-    Hashtable<Configuration, ConfigPanel> configPanels = new Hashtable<>();
     private JPanel bottomPane;
-    private JList<Configuration> list1;
+    private JList<ConfigTuple> configChooserList;
     private JTextField nameTextField;
     private JButton addConfigButton;
     private JPanel listEditBar;
@@ -33,59 +36,41 @@ public class ConfigurationDialog extends JDialog {
     private JPanel configNamePanel;
     private JScrollPane nestedScrollPane;
     private JButton removeConfigButton;
-    private DefaultListModel<Configuration> configListModel = new DefaultListModel<>();
-
-    private List<Configuration> configurations = Arrays.asList(
-            new Configuration("undefined", "one", 100, 2, Arrays.asList(10d, 20d), Arrays.asList(new DiscretePoint(0, 10)), Environment.Fitness.GLOBAL),
-            new Configuration("undefined", "two", 200, 3, Arrays.asList(15d, 25d, 35d), Arrays.asList(new DiscretePoint(0, 10), new DiscretePoint(2, 20)), Environment.Fitness.SINGULAR)
-    );
+    private DefaultListModel<ConfigTuple> configListModel = new DefaultListModel<>();
+    private Hashtable<Configuration, ConfigPanel> configPanels = new Hashtable<>();
 
     public ConfigurationDialog() {
         $$$setupUI$$$();
 
-        configPanel.setMaximumSize(nestedScrollPane.getPreferredSize());
-        list1.setModel(configListModel);
-        configListModel.addAll(configurations);
+        configChooserList.setModel(configListModel);
 
-        list1.setCellRenderer(new DarkListCellRenderer() {
+        configurations.forEach(this::addConfiguration);
+
+        configChooserList.setCellRenderer(new DarkListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index, final boolean isSelected, final boolean cellHasFocus) {
-                final Configuration configurationValue = (Configuration) value;
-                return super.getListCellRendererComponent(list, configurationValue.getName(), index, isSelected, cellHasFocus);
+                final ConfigTuple configTuple = (ConfigTuple) value;
+                return super.getListCellRendererComponent(list, configTuple.getConfiguration().getName(), index, isSelected, cellHasFocus);
             }
         });
 
-        list1.addListSelectionListener(e -> {
-            final Configuration selectedConfiguration = list1.getSelectedValue();
-            if (selectedConfiguration == null) {
+        configChooserList.addListSelectionListener(e -> {
+            final ConfigTuple selectedTuple = configChooserList.getSelectedValue();
+            if (selectedTuple == null) {
                 if (configListModel.size() == 0) {
                     nestedScrollPane.add(new JLabel("No configuration set"));
                 }
                 return;
             }
-            nameTextField.setText(selectedConfiguration.getName());
-            configPanel.setConfiguration(selectedConfiguration);
+            nameTextField.setText(selectedTuple.getConfiguration().getName());
+            nestedScrollPane.getViewport().setView(selectedTuple.getPanel().$$$getRootComponent$$$());
         });
 
-        list1.setSelectedIndex(0);
+        configChooserList.setSelectedIndex(0);
 
-        nameTextField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyTyped(final KeyEvent e) {
-                list1.repaint();
-            }
-
-            @Override
-            public void keyReleased(final KeyEvent e) {
-                final String text = nameTextField.getText();
-                list1.getSelectedValue().setName(text);
-                list1.repaint();
-            }
-
-            @Override
-            public void keyPressed(final KeyEvent e) {
-                keyTyped(e);
-            }
+        nameTextField.getDocument().addDocumentListener((DocumentEditHandler) e -> {
+            configChooserList.getSelectedValue().getConfiguration().setName(nameTextField.getText());
+            configChooserList.repaint();
         });
 
         configNamePanel.setBorder(
@@ -121,7 +106,7 @@ public class ConfigurationDialog extends JDialog {
             }
         });
         removeConfigButton.addActionListener(e -> {
-            final int[] selectedIndices = list1.getSelectedIndices();
+            final int[] selectedIndices = configChooserList.getSelectedIndices();
             if (selectedIndices.length < 1) {
                 return;
             }
@@ -130,38 +115,30 @@ public class ConfigurationDialog extends JDialog {
 
             if (selectedIndices.length == 1) {
                 configListModel.remove(firstIndex);
-                list1.setSelectedIndex(firstIndex == configListModel.size() - 1 ? firstIndex : firstIndex + 1);
+                configChooserList.setSelectedIndex(firstIndex == configListModel.size() - 1 ? firstIndex : firstIndex + 1);
                 return;
             }
 
             configListModel.removeRange(firstIndex, selectedIndices[selectedIndices.length - 1]);
             if (configListModel.size() > 0) {
-                list1.setSelectedIndex(0);
+                configChooserList.setSelectedIndex(0);
             }
         });
 
         addConfigButton.addActionListener(e -> {
-            final int selectedIndex = list1.getSelectedIndex();
+            final int selectedIndex = configChooserList.getSelectedIndex();
             if (selectedIndex == -1) {
-                configListModel.add(0, new Configuration());
-                list1.setSelectedIndex(0);
+                addConfiguration(0, new Configuration());
+                configChooserList.setSelectedIndex(0);
             } else {
-                configListModel.add(selectedIndex + 1, new Configuration());
-                list1.setSelectedIndex(selectedIndex + 1);
+                addConfiguration(selectedIndex + 1, new Configuration());
+                configChooserList.setSelectedIndex(selectedIndex + 1);
             }
         });
 
-        buttonOK.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onOK();
-            }
-        });
+        buttonOK.addActionListener(e -> onOK());
 
-        buttonCancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onCancel();
-            }
-        });
+        buttonCancel.addActionListener(e -> onCancel());
 
         // call onCancel() when cross is clicked
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -172,17 +149,51 @@ public class ConfigurationDialog extends JDialog {
         });
 
         // call onCancel() on ESCAPE
-        contentPane.registerKeyboardAction(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onCancel();
-            }
-        }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        applyButton.addActionListener(e -> onApply());
     }
 
-    private DefaultListModel<Configuration> getListModel() {
-        return new DefaultListModel<>() {
+    private List<Configuration> configurations = Arrays.asList(
+            new Configuration("undefined", "one", 100, 2, Arrays.asList(10d, 20d), Arrays.asList(new DiscretePoint(0, 10)), Environment.Fitness.GLOBAL),
+            new Configuration("undefined", "two", 200, 3, Arrays.asList(15d, 25d, 35d), Arrays.asList(new DiscretePoint(0, 10), new DiscretePoint(2, 20)), Environment.Fitness.SINGULAR)
+    );
 
-        };
+    public void addConfiguration(Configuration configuration) {
+        final ConfigPanel configPanel = new ConfigPanel();
+        configPanel.setConfiguration(configuration);
+        configPanel.setParent(this);
+        configListModel.addElement(new ConfigTuple(configuration, configPanel));
+    }
+
+    public void addConfiguration(int index, Configuration configuration) {
+        final ConfigPanel configPanel = new ConfigPanel();
+        configPanel.setConfiguration(configuration);
+        configPanel.setParent(this);
+        configListModel.add(index, new ConfigTuple(configuration, configPanel));
+    }
+
+    private void onApply() {
+        applyButton.setEnabled(false);
+    }
+
+    public void triggerChange() {
+        applyButton.setEnabled(true);
+    }
+
+    private void onCancel() {
+        if (applyButton.isEnabled()) {
+            final int unsaved_changes = JOptionPane.showConfirmDialog(
+                    null,
+                    LangService.get("changes.not.saved.msg"),
+                    LangService.get("changes.unsaved"),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+            );
+            if (unsaved_changes == JOptionPane.NO_OPTION) {
+                return;
+            }
+        }
+        dispose();
     }
 
     public static void main(String[] args) {
@@ -196,16 +207,7 @@ public class ConfigurationDialog extends JDialog {
     }
 
     private void onOK() {
-        // add your code here
         dispose();
-    }
-
-    private void onCancel() {
-        // add your code here if necessary
-        dispose();
-    }
-
-    public void createUIComponents() {
     }
 
     /**
@@ -245,15 +247,15 @@ public class ConfigurationDialog extends JDialog {
         splitPane1.setLeftComponent(panel2);
         final JScrollPane scrollPane1 = new JScrollPane();
         panel2.add(scrollPane1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 40), null, null, 0, false));
-        list1 = new JList();
+        configChooserList = new JList();
         final DefaultListModel defaultListModel1 = new DefaultListModel();
         defaultListModel1.addElement("Config 1");
         defaultListModel1.addElement("Config 2");
-        list1.setModel(defaultListModel1);
-        scrollPane1.setViewportView(list1);
+        configChooserList.setModel(defaultListModel1);
+        scrollPane1.setViewportView(configChooserList);
         listEditBar = new JPanel();
         listEditBar.setLayout(new GridLayoutManager(1, 3, new Insets(2, 6, 0, 6), 1, -1));
-        panel2.add(listEditBar, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        panel2.add(listEditBar, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, new Dimension(-1, 40), new Dimension(-1, 40), new Dimension(-1, 40), 0, false));
         addConfigButton = new JButton();
         addConfigButton.setBorderPainted(false);
         addConfigButton.setText("");
@@ -272,7 +274,7 @@ public class ConfigurationDialog extends JDialog {
         splitPane1.setRightComponent(panel3);
         configNamePanel = new JPanel();
         configNamePanel.setLayout(new GridLayoutManager(1, 2, new Insets(2, 6, 2, 6), -1, -1));
-        panel3.add(configNamePanel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, new Dimension(300, -1), null, null, 0, false));
+        panel3.add(configNamePanel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(-1, 40), new Dimension(-1, 40), new Dimension(-1, 40), 0, false));
         final JLabel label1 = new JLabel();
         this.$$$loadLabelText$$$(label1, ResourceBundle.getBundle("lang").getString("name"));
         configNamePanel.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
@@ -280,9 +282,16 @@ public class ConfigurationDialog extends JDialog {
         configNamePanel.add(nameTextField, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         nestedScrollPane = new JScrollPane();
         panel3.add(nestedScrollPane, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        configPanel = new ConfigPanel();
-        nestedScrollPane.setViewportView(configPanel.$$$getRootComponent$$$());
         label1.setLabelFor(nameTextField);
+    }
+
+    public void createUIComponents() {
+    }
+
+    @Value
+    private class ConfigTuple {
+        Configuration configuration;
+        ConfigPanel panel;
     }
 
     /**

@@ -1,13 +1,11 @@
 package evo.search.view;
 
-import com.github.weisj.darklaf.LafManager;
-import com.github.weisj.darklaf.theme.DarculaTheme;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import evo.search.Environment;
 import evo.search.Main;
-import evo.search.ga.DiscreteGene;
+import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.ga.mutators.SwapGeneMutator;
@@ -15,9 +13,8 @@ import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.EventService;
 import evo.search.io.FileService;
 import evo.search.io.MenuService;
-import evo.search.io.entities.Configuration;
+import evo.search.io.entities.Project;
 import evo.search.view.model.*;
-import io.jenetics.Chromosome;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -74,12 +71,17 @@ public class MainForm extends JFrame {
     @Setter
     private MutatorTableModel mutatorTableModel = null;
 
+    @Setter
+    private Project project;
+
     /**
      * Construct the main form for the swing application.
+     *
+     * @param project The project to work on.
      */
-    public MainForm() {
+    public MainForm(Project project) {
+        this.project = project;
         $$$setupUI$$$();
-        setupFrame();
         bindRunButton();
         bindConfigButton();
         setupMutatorTable();
@@ -95,21 +97,9 @@ public class MainForm extends JFrame {
      * @param args cli arguments
      */
     public static void main(String[] args) {
-        setupEnvironment();
-        new MainForm();
-    }
-
-    /**
-     * Set up the static properties.
-     * Installs the swing look and feel.
-     */
-    public static void setupEnvironment() {
-        LafManager.install(new DarculaTheme());
-        UIManager.getDefaults().addResourceBundle("evo.search.lang");
-        UIManager.put("EvoSearch.darker", new Color(0x292929));
-        System.setProperty("-Xdock:name", Main.APP_TITLE);
-        System.setProperty("apple.laf.useScreenMenuBar", "true");
-        System.setProperty("com.apple.mrj.application.apple.menu.about.name", Main.APP_TITLE);
+        Main.setupEnvironment();
+        final Project project = new Project("0", "/", "TestProject");
+        new MainForm(project);
     }
 
     /**
@@ -197,7 +187,7 @@ public class MainForm extends JFrame {
     /**
      * Set up the jFrame for the swing application.
      */
-    private void setupFrame() {
+    public void showFrame() {
         final JMenuBar jMenuBar = new JMenuBar();
         setupMenuBar(jMenuBar);
         setJMenuBar(jMenuBar);
@@ -243,7 +233,7 @@ public class MainForm extends JFrame {
                 return;
             }
 
-            Function<Chromosome<DiscreteGene>, Double> fitnessFunction = chromosome -> {
+            Function<DiscreteChromosome, Double> fitnessFunction = chromosome -> {
                 try {
                     return (double) fitnessMethod.invoke(chromosome);
                 } catch (IllegalAccessException | InvocationTargetException e) {
@@ -269,8 +259,8 @@ public class MainForm extends JFrame {
 
             final List<DiscreteAlterer> selected = getMutatorTableModel().getSelected();
 
-            Environment.getInstance()
-                    .setConfiguration(new Configuration(1000, positions, distances, treasures, Environment.Fitness.GLOBAL));
+            /*Environment.getInstance()
+                    .setConfiguration(new Configuration(1000, positions, distances, treasures, Environment.Fitness.GLOBAL, Configuration.PRE_ALTERERS));*/
             getProgressBar().setMaximum(limit);
             getProgressBar().setVisible(true);
             CompletableFuture.supplyAsync(() ->

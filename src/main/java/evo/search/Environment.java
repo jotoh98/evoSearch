@@ -180,13 +180,13 @@ public class Environment {
      * @param consumer Progress consumer.
      * @return The resulting fittest individual of the evolution.
      */
-    public Genotype<DiscreteGene> evolve(final Function<Chromosome<DiscreteGene>, Double> fitness, final int limit, List<DiscreteAlterer> alterers, Consumer<Integer> consumer) {
+    public Genotype<DiscreteGene> evolve(final Function<DiscreteChromosome, Double> fitness, final int limit, List<DiscreteAlterer> alterers, Consumer<Integer> consumer) {
         if (configuration == null) {
             EventService.LOG_LABEL.trigger(LangService.get("environment.config.missing"));
         }
         EventService.LOG_LABEL.trigger(LangService.get("environment.evolving"));
         Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
-                Environment::fitness,
+                fitness,
                 Codec.of(
                         Genotype.of(DiscreteChromosome.shuffle()),
                         chromosomes -> DiscreteChromosome.of(ISeq.of(chromosomes.chromosome()))

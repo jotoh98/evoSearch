@@ -3,8 +3,10 @@ package evo.search.io;
 import evo.search.Environment;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Experiment;
+import evo.search.io.entities.Project;
 import evo.search.view.LangService;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -14,6 +16,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * File prompting and loading service.
@@ -26,14 +32,39 @@ public class FileService {
      * @return File to load from.
      */
     public static File promptForLoad() {
+        final File file = promptForLoad(LangService.get("environment.save"));
+        if (file != null && !file.getName().endsWith(".json")) {
+            return null;
+        }
+        return file;
+    }
+
+    public static File promptForLoad(String title) {
         JFrame parent = new JFrame();
-        FileDialog fileDialog = new FileDialog(parent, "Save experiment", FileDialog.LOAD);
+        FileDialog fileDialog = new FileDialog(parent, title, FileDialog.LOAD);
         fileDialog.setVisible(true);
         String fileName = fileDialog.getFile();
-        if (fileName == null || !fileName.endsWith(".json")) {
+        if (fileName == null) {
             return null;
         }
         return new File(fileDialog.getDirectory() + fileName);
+    }
+
+
+    public static File promptForDirectory(String title) {
+        System.setProperty("apple.awt.fileDialogForDirectories", "true");
+        final File loadDirectory = promptForLoad(title);
+
+        if (loadDirectory != null && !loadDirectory.isDirectory()) {
+            return null;
+        }
+
+        System.setProperty("apple.awt.fileDialogForDirectories", "false");
+        return loadDirectory;
+    }
+
+    public static File promptForDirectory() {
+        return promptForDirectory(LangService.get("load.directory"));
     }
 
     /**
@@ -137,5 +168,50 @@ public class FileService {
             log.error(LangService.get("could.not.write.file"), e);
             EventService.LOG.trigger(LangService.get("could.not.write.file") + ": " + e.getLocalizedMessage());
         }
+    }
+
+    public static void save(File file, List<Configuration> configurations) {
+        final List<JSONObject> writtenConfigurations = configurations.stream().map(JsonService::write).collect(Collectors.toList());
+        final JSONArray configurationsArray = new JSONArray(writtenConfigurations);
+        try {
+            Files.write(
+                    file.toPath(),
+                    configurationsArray.toString().getBytes(),
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING
+            );
+        } catch (IOException e) {
+            log.error(LangService.get("could.not.write.file"), e);
+            EventService.LOG.trigger(LangService.get("could.not.write.file") + ": " + e.getLocalizedMessage());
+        }
+    }
+
+    public static List<Project> loadProjects(File file) {
+        try {
+            String projectsString = Files.readString(file.toPath());
+            if (projectsString.isEmpty()) {
+                projectsString = "[]";
+                Files.write(file.toPath(), projectsString.getBytes());
+            }
+            return loadMultiple(file, JsonService::readProjects);
+        } catch (IOException e) {
+            e.printStackTrace();
+            log.error("Could not load projects", e);
+        }
+        return Collections.emptyList();
+    }
+
+    public static List<Configuration> loadConfigurations(File file) {
+        return loadMultiple(file, JsonService::readConfigurations);
+    }
+
+    public static <T> List<T> loadMultiple(File file, Function<JSONArray, List<T>> serviceMethod) {
+        try {
+            final String configJson = Files.readString(file.toPath());
+            return serviceMethod.apply(new JSONArray(configJson));
+        } catch (IOException e) {
+            log.error(LangService.get("could.not.read.file"), e);
+        }
+        return Collections.emptyList();
     }
 }

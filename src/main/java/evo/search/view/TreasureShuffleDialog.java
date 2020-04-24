@@ -3,6 +3,7 @@ package evo.search.view;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
+import evo.search.Main;
 import evo.search.ga.DiscretePoint;
 import lombok.Setter;
 
@@ -27,7 +28,7 @@ public class TreasureShuffleDialog extends JDialog {
     private static final int AMOUNT = 10;
 
     static {
-        MainForm.setupEnvironment();
+        Main.setupEnvironment();
     }
 
     private final AtomicBoolean cancelPressed = new AtomicBoolean(false);

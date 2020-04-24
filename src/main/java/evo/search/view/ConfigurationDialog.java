@@ -5,7 +5,9 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import evo.search.Environment;
+import evo.search.Main;
 import evo.search.ga.DiscretePoint;
+import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.view.listener.DocumentEditHandler;
 import lombok.Value;
@@ -17,10 +19,8 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.Arrays;
-import java.util.Hashtable;
 import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class ConfigurationDialog extends JDialog {
     private JPanel contentPane;
@@ -154,8 +154,24 @@ public class ConfigurationDialog extends JDialog {
     }
 
     private List<Configuration> configurations = Arrays.asList(
-            new Configuration("undefined", "one", 100, 2, Arrays.asList(10d, 20d), Arrays.asList(new DiscretePoint(0, 10)), Environment.Fitness.GLOBAL),
-            new Configuration("undefined", "two", 200, 3, Arrays.asList(15d, 25d, 35d), Arrays.asList(new DiscretePoint(0, 10), new DiscretePoint(2, 20)), Environment.Fitness.SINGULAR)
+            Configuration.builder()
+                    .version("undefined")
+                    .name("one")
+                    .limit(1000)
+                    .positions(2)
+                    .distances(Arrays.asList(10d, 20d))
+                    .treasures(Arrays.asList(new DiscretePoint(0, 10)))
+                    .alterers(Collections.singletonList(new SwapPositionsMutator(0.7)))
+                    .build(),
+            Configuration.builder()
+                    .version("undefined")
+                    .name("two")
+                    .limit(100)
+                    .positions(3)
+                    .distances(Arrays.asList(15d, 25d, 35d))
+                    .treasures(Arrays.asList(new DiscretePoint(0, 10), new DiscretePoint(2, 20)))
+                    .fitness(Environment.Fitness.SINGULAR)
+                    .build()
     );
 
     public void addConfiguration(Configuration configuration) {
@@ -180,30 +196,31 @@ public class ConfigurationDialog extends JDialog {
         applyButton.setEnabled(true);
     }
 
-    private void onCancel() {
-        if (applyButton.isEnabled()) {
-            final int unsaved_changes = JOptionPane.showConfirmDialog(
-                    null,
-                    LangService.get("changes.not.saved.msg"),
-                    LangService.get("changes.unsaved"),
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE
-            );
-            if (unsaved_changes == JOptionPane.NO_OPTION) {
-                return;
-            }
-        }
-        dispose();
-    }
-
     public static void main(String[] args) {
-        MainForm.setupEnvironment();
+        Main.setupEnvironment();
         ConfigurationDialog dialog = new ConfigurationDialog();
         dialog.setMinimumSize(new Dimension(768, 300));
         dialog.setTitle(LangService.get("run.configurations"));
         dialog.pack();
         dialog.setVisible(true);
         //System.exit(0);
+    }
+
+    private void onCancel() {
+        if (applyButton.isEnabled()) {
+            final int saveChanges = JOptionPane.showConfirmDialog(
+                    this,
+                    LangService.get("changes.not.saved.msg"),
+                    LangService.get("changes.unsaved"),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+            );
+            if (saveChanges == JOptionPane.YES_OPTION) {
+                onApply();
+                return;
+            }
+        }
+        dispose();
     }
 
     private void onOK() {
@@ -285,15 +302,6 @@ public class ConfigurationDialog extends JDialog {
         label1.setLabelFor(nameTextField);
     }
 
-    public void createUIComponents() {
-    }
-
-    @Value
-    private class ConfigTuple {
-        Configuration configuration;
-        ConfigPanel panel;
-    }
-
     /**
      * @noinspection ALL
      */
@@ -353,6 +361,15 @@ public class ConfigurationDialog extends JDialog {
      */
     public JComponent $$$getRootComponent$$$() {
         return contentPane;
+    }
+
+    public void createUIComponents() {
+    }
+
+    @Value
+    private class ConfigTuple {
+        Configuration configuration;
+        ConfigPanel panel;
     }
 
 }

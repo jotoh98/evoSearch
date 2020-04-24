@@ -4,66 +4,86 @@ import evo.search.Environment;
 import evo.search.Main;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscretePoint;
-import evo.search.view.LangService;
+import evo.search.ga.mutators.DiscreteAlterer;
+import evo.search.ga.mutators.SwapGeneMutator;
+import evo.search.ga.mutators.SwapPositionsMutator;
+import io.jenetics.engine.Engine;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+@NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Builder
 public class Configuration {
 
-    public static final String PRE_VERSION = Main.VERSION;
-    public static final String PRE_NAME = "Unnamed";
-    public static final int PRE_LIMIT = 1000;
-    public static final int PRE_POSITIONS = 3;
-    public static final List<Double> PRE_DISTANCES = new ArrayList<>();
-    public static final List<DiscretePoint> PRE_TREASURES = new ArrayList<>();
-    public static final Environment.Fitness PRE_FITNESS = Environment.Fitness.getDefault();
+    //TODO: add population/offspring/survivors sizes
+    /**
+     * {@link Engine.Builder#offspringSize(int)}
+     * {@link Engine.Builder#survivorsSize(int)}
+     * {@link Engine.Builder#populationSize(int)}
+     */
 
     /**
      * Version for configuration compatibility checks.
      */
-    private String version;
+    @Builder.Default
+    private String version = Main.VERSION;
     /**
      * The configurations name.
      */
-    private String name;
+    @Builder.Default
+    private String name = "Unnamed";
     /**
      * Last execution limit for the evolution method.
      *
      * @see Environment#evolve(Function, int, List, Consumer)
      */
-    private int limit;
+    @Builder.Default
+    private int limit = 1000;
     /**
      * The amount of positions available for the {@link DiscretePoint}s.
      */
-    private int positions;
+    @Builder.Default
+    private int positions = 3;
     /**
      * Input distances to choose a permutation from.
      * Forms single {@link DiscreteChromosome}s.
      */
-    private List<Double> distances;
+    @Builder.Default
+    private List<Double> distances = new ArrayList<>();
     /**
      * List of treasure {@link DiscretePoint}s to search for.
      */
-    private List<DiscretePoint> treasures;
+    @Builder.Default
+    private List<DiscretePoint> treasures = new ArrayList<>();
 
-    private Environment.Fitness fitness;
+    @Builder.Default
+    private Environment.Fitness fitness = Environment.Fitness.getDefault();
 
-    public Configuration(String name, int limit, int position, List<Double> distances, List<DiscretePoint> treasures, Environment.Fitness fitness) {
-        this(Main.VERSION, name, limit, position, distances, treasures, fitness);
-    }
+    @Builder.Default
+    private List<? extends DiscreteAlterer> alterers = new ArrayList<>(
+            Arrays.asList(
+                    new SwapGeneMutator(0.5),
+                    new SwapPositionsMutator(0.5)
+            )
+    );
 
-    public Configuration(int limit, int position, List<Double> distances, List<DiscretePoint> treasures, Environment.Fitness fitness) {
-        this(LangService.get("unknown"), limit, position, distances, treasures, fitness);
-    }
+    @Builder.Default
+    private int offspring = 15;
 
-    public Configuration() {
-        this(PRE_VERSION, PRE_NAME, PRE_LIMIT, PRE_POSITIONS, PRE_DISTANCES, PRE_TREASURES, PRE_FITNESS);
-    }
+    @Builder.Default
+    private int survivors = 10;
+
+    @Builder.Default
+    private int population = 20;
+
 }

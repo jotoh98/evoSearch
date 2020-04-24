@@ -3,6 +3,7 @@ package evo.search.io;
 import com.pploder.events.Event;
 import com.pploder.events.SimpleEvent;
 import evo.search.ga.DiscreteGene;
+import evo.search.io.entities.Project;
 import io.jenetics.Chromosome;
 
 /**
@@ -24,4 +25,8 @@ public class EventService {
      * Event to repaint the {@link evo.search.view.Canvas} upon.
      */
     public static final Event<Chromosome<DiscreteGene>> REPAINT_CANVAS = new SimpleEvent<>();
+
+    public static final Event<Project> INIT_PROJECT = new SimpleEvent<>();
+
+
 }

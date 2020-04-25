@@ -21,12 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
+import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -47,7 +46,6 @@ public class MainForm extends JFrame {
 
     private JPanel rootPanel;
     private JPanel toolbar;
-    private static Method $$$cachedGetBundleMethod$$$ = null;
     private JProgressBar progressBar;
     private JLabel logLabel;
     private JTable mutatorConfigTable;
@@ -89,17 +87,6 @@ public class MainForm extends JFrame {
         bindEvents();
         toolbar.setBorder(new MatteBorder(0, 0, 1, 0, UIManager.getColor("ToolBar.borderColor")));
         bottomBar.setBorder(new MatteBorder(1, 0, 0, 0, UIManager.getColor("ToolBar.borderColor")));
-    }
-
-    /**
-     * Application main method.
-     *
-     * @param args cli arguments
-     */
-    public static void main(String[] args) {
-        Main.setupEnvironment();
-        final Project project = new Project("0", "/", "TestProject");
-        new MainForm(project);
     }
 
     /**
@@ -195,7 +182,14 @@ public class MainForm extends JFrame {
         setTitle(Main.APP_TITLE);
         setMinimumSize(new Dimension(700, 500));
         setContentPane(rootPanel);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(final WindowEvent e) {
+                new ChooserForm();
+                super.windowClosed(e);
+            }
+        });
         setVisible(true);
     }
 
@@ -435,7 +429,7 @@ public class MainForm extends JFrame {
         rootPanel = new JPanel();
         rootPanel.setLayout(new GridBagLayout());
         toolbar = new JPanel();
-        toolbar.setLayout(new GridLayoutManager(1, 3, new Insets(0, 10, 0, 10), -1, -1));
+        toolbar.setLayout(new GridLayoutManager(1, 3, new Insets(3, 10, 3, 10), -1, -1));
         toolbar.setBackground(new Color(-12105140));
         toolbar.setEnabled(false);
         GridBagConstraints gbc;
@@ -455,18 +449,18 @@ public class MainForm extends JFrame {
         runButton.setHideActionText(false);
         runButton.setHorizontalTextPosition(4);
         runButton.setInheritsPopupMenu(true);
-        runButton.setLabel(ResourceBundle.getBundle("lang").getString("run"));
+        runButton.setLabel(this.$$$getMessageFromBundle$$$("lang", "run"));
         runButton.setMargin(new Insets(0, 0, 0, 0));
         runButton.setOpaque(false);
         runButton.setSelected(true);
-        this.$$$loadButtonText$$$(runButton, ResourceBundle.getBundle("lang").getString("run"));
+        this.$$$loadButtonText$$$(runButton, this.$$$getMessageFromBundle$$$("lang", "run"));
         toolbar.add(runButton, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, 1, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final Spacer spacer1 = new Spacer();
         toolbar.add(spacer1, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
         configButton = new JButton();
         configButton.setBorderPainted(true);
         configButton.setContentAreaFilled(false);
-        this.$$$loadButtonText$$$(configButton, ResourceBundle.getBundle("lang").getString("config"));
+        this.$$$loadButtonText$$$(configButton, this.$$$getMessageFromBundle$$$("lang", "config"));
         toolbar.add(configButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         bottomBar = new JPanel();
         bottomBar.setLayout(new GridLayoutManager(1, 3, new Insets(0, 10, 0, 10), -1, -1));
@@ -514,13 +508,13 @@ public class MainForm extends JFrame {
         mainSplit.setLeftComponent(configTabs);
         final JPanel panel2 = new JPanel();
         panel2.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        configTabs.addTab(ResourceBundle.getBundle("lang").getString("general"), panel2);
+        configTabs.addTab(this.$$$getMessageFromBundle$$$("lang", "general"), panel2);
         final JScrollPane scrollPane1 = new JScrollPane();
         panel2.add(scrollPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         configTable = new FlexTable();
         scrollPane1.setViewportView(configTable);
         final JScrollPane scrollPane2 = new JScrollPane();
-        configTabs.addTab(ResourceBundle.getBundle("lang").getString("mutators"), scrollPane2);
+        configTabs.addTab(this.$$$getMessageFromBundle$$$("lang", "mutators"), scrollPane2);
         mutatorConfigTable = new JTable();
         mutatorConfigTable.setName("Mutators");
         mutatorConfigTable.setVisible(true);
@@ -529,7 +523,7 @@ public class MainForm extends JFrame {
         mainSplit.setRightComponent(canvas);
         final JScrollPane scrollPane3 = new JScrollPane();
         splitPane1.setRightComponent(scrollPane3);
-        scrollPane3.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5), null));
+        scrollPane3.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         textArea1 = new JTextArea();
         textArea1.setEditable(false);
         Font textArea1Font = this.$$$getFont$$$("JetBrains Mono", Font.PLAIN, 11, textArea1.getFont());
@@ -559,6 +553,23 @@ public class MainForm extends JFrame {
             }
         }
         return new Font(resultName, style >= 0 ? style : currentFont.getStyle(), size >= 0 ? size : currentFont.getSize());
+    }
+
+    private static Method $$$cachedGetBundleMethod$$$ = null;
+
+    private String $$$getMessageFromBundle$$$(String path, String key) {
+        ResourceBundle bundle;
+        try {
+            Class<?> thisClass = this.getClass();
+            if ($$$cachedGetBundleMethod$$$ == null) {
+                Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
+                $$$cachedGetBundleMethod$$$ = dynamicBundleClass.getMethod("getBundle", String.class, Class.class);
+            }
+            bundle = (ResourceBundle) $$$cachedGetBundleMethod$$$.invoke(null, path, thisClass);
+        } catch (Exception e) {
+            bundle = ResourceBundle.getBundle(path);
+        }
+        return bundle.getString(key);
     }
 
     /**
@@ -593,21 +604,6 @@ public class MainForm extends JFrame {
      */
     public JComponent $$$getRootComponent$$$() {
         return rootPanel;
-    }
-
-    private String $$$getMessageFromBundle$$$(String path, String key) {
-        ResourceBundle bundle;
-        try {
-            Class<?> thisClass = this.getClass();
-            if ($$$cachedGetBundleMethod$$$ == null) {
-                Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
-                $$$cachedGetBundleMethod$$$ = dynamicBundleClass.getMethod("getBundle", String.class, Class.class);
-            }
-            bundle = (ResourceBundle) $$$cachedGetBundleMethod$$$.invoke(null, path, thisClass);
-        } catch (Exception e) {
-            bundle = ResourceBundle.getBundle(path);
-        }
-        return bundle.getString(key);
     }
 
 }

@@ -25,7 +25,7 @@ public class Main {
     public static final String HOME_PATH = System.getProperty("user.home") + File.separator + ".evoSearch";
 
     /**
-     * Main class method wrapper for the {@link MainForm#main(String[])} method.
+     * Main application method.
      *
      * @param args cli and application arguments
      */
@@ -33,11 +33,11 @@ public class Main {
         ProjectService.setupGlobal();
         setupEnvironment();
 
-        ChooserForm.main(args);
         EventService.INIT_PROJECT.addListener(project -> {
             final MainForm mainForm = new MainForm(project);
             mainForm.showFrame();
         });
+        ChooserForm.main(args);
     }
 
 

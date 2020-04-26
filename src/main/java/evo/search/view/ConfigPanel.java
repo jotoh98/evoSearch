@@ -9,7 +9,6 @@ import evo.search.io.entities.Configuration;
 import evo.search.view.listener.DocumentEditHandler;
 import evo.search.view.model.MutatorTableModel;
 import io.jenetics.AbstractAlterer;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -24,13 +23,13 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class ConfigPanel extends JDialog {
-    private JScrollPane contentScrollPane;
     private JSpinner limitSpinner;
     private JSpinner positionsSpinner;
     private JTextArea distancesTextArea;
@@ -42,13 +41,14 @@ public class ConfigPanel extends JDialog {
     private JSpinner populationSpinner;
     private JSpinner offspringSpinner;
     private JSpinner survivorsSpinner;
-
-    private DefaultComboBoxModel<Environment.Fitness> fitnessListModel = new DefaultComboBoxModel<>();
-    private MutatorTableModel mutatorTableModel = new MutatorTableModel();
+    private final DefaultComboBoxModel<Environment.Fitness> fitnessListModel = new DefaultComboBoxModel<>();
+    private final MutatorTableModel mutatorTableModel = new MutatorTableModel();
+    private JPanel rootPanel;
+    private JScrollPane distancesScrollPane;
+    private JScrollPane treasuresScrollPane;
 
     private Configuration configuration;
 
-    @Setter
     private ConfigurationDialog parent;
 
     public static void main(String[] args) {
@@ -80,6 +80,37 @@ public class ConfigPanel extends JDialog {
         mutatorTable.setModel(mutatorTableModel);
         mutatorTableModel.addMutator(false, SwapGeneMutator.class, .5);
         mutatorTableModel.addMutator(false, SwapPositionsMutator.class, .5);
+
+        mutatorScrollPane.addMouseWheelListener(e -> {
+
+        });
+    }
+
+    public void setParent(ConfigurationDialog parent) {
+        this.parent = parent;
+        propagateScroll(mutatorScrollPane);
+        propagateScroll(distancesScrollPane);
+        propagateScroll(treasuresScrollPane);
+    }
+
+    public void propagateScroll(JScrollPane scrollPane) {
+        if (parent == null) {
+            return;
+        }
+        scrollPane.addMouseWheelListener(e -> {
+            final JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
+
+            if (!verticalScrollBar.isShowing()) {
+                parent.getConfigScrollWrapper().dispatchEvent(e);
+                return;
+            }
+
+            if (e.getWheelRotation() < 0 && verticalScrollBar.getValue() == 0) {
+                parent.getConfigScrollWrapper().dispatchEvent(e);
+            } else if (verticalScrollBar.getValue() + scrollPane.getHeight() == verticalScrollBar.getMaximum()) {
+                parent.getConfigScrollWrapper().dispatchEvent(e);
+            }
+        });
     }
 
     private void bindSpinner(JSpinner spinner, int initialValue, Consumer<Integer> valueConsumer) {
@@ -139,19 +170,13 @@ public class ConfigPanel extends JDialog {
     }
 
     private void bindDistances() {
-        final String initText = configuration.getDistances()
-                .stream()
-                .map(String::valueOf)
-                .reduce((s, s2) -> s + ", " + s2)
-                .orElse("");
-        distancesTextArea.setText(initText);
+        printDistances(configuration.getDistances());
 
         distancesTextArea.getDocument().addDocumentListener((DocumentEditHandler) e -> {
             parent.triggerChange();
             final String input = distancesTextArea.getText();
 
-            final List<Double> distances = Arrays.asList(input.split("\\s*,\\s*"))
-                    .stream()
+            final List<Double> distances = Arrays.stream(input.split("\\s*,\\s*"))
                     .map(string -> {
                         try {
                             return Double.parseDouble(string);
@@ -164,6 +189,28 @@ public class ConfigPanel extends JDialog {
 
             configuration.setDistances(distances);
         });
+
+        distancesTextArea.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(final KeyEvent e) {
+                if (e.getKeyChar() == KeyEvent.VK_ENTER) {
+                    printDistances(configuration.getDistances());
+                    e.consume();
+                }
+            }
+        });
+    }
+
+    private void printDistances(List<Double> distances) {
+        distancesTextArea.setText(printConsecutive(distances, String::valueOf));
+    }
+
+    private <T> String printConsecutive(List<T> list, Function<T, String> mapper) {
+        return list
+                .stream()
+                .map(mapper)
+                .reduce((s, s2) -> s + ", " + s2)
+                .orElse("");
     }
 
     private void bindTreasures() {
@@ -237,11 +284,10 @@ public class ConfigPanel extends JDialog {
     }
 
     private void printTreasures(List<DiscretePoint> treasures) {
-        final String text = treasures.stream()
-                .map(discretePoint -> String.format("(%s, %s)", discretePoint.getPosition(), discretePoint.getDistance()))
-                .reduce((s, s2) -> s + ", " + s2)
-                .orElse("");
-        treasuresTextArea.setText(text);
+        treasuresTextArea.setText(printConsecutive(
+                treasures,
+                discretePoint -> String.format("(%s, %s)", discretePoint.getPosition(), discretePoint.getDistance())
+        ));
     }
 
     private void bindFitness() {
@@ -269,7 +315,7 @@ public class ConfigPanel extends JDialog {
             for (MutatorTableModel.MutatorConfig mutatorConfig : mutatorTableModel.getMutatorConfigs()) {
                 if (configAlterer.getClass().equals(mutatorConfig.getMutator())) {
                     mutatorConfig.setSelected(true);
-                    final double probability = ((AbstractAlterer) configAlterer).probability();
+                    final double probability = ((AbstractAlterer<?, ?>) configAlterer).probability();
                     mutatorConfig.setProbability(probability);
                     break;
                 }
@@ -277,6 +323,7 @@ public class ConfigPanel extends JDialog {
         }
 
         mutatorTableModel.addTableModelListener(l -> {
+            parent.triggerChange();
             final List<DiscreteAlterer> mutatorInstances = mutatorTableModel.getMutatorConfigs().stream()
                     .filter(MutatorTableModel.MutatorConfig::isSelected)
                     .map(mutatorConfig -> {
@@ -322,24 +369,27 @@ public class ConfigPanel extends JDialog {
      * @noinspection ALL
      */
     private void $$$setupUI$$$() {
-        contentScrollPane = new JScrollPane();
+        rootPanel = new JPanel();
+        rootPanel.setLayout(new GridBagLayout());
         final JPanel panel1 = new JPanel();
-        panel1.setLayout(new BorderLayout(0, 0));
-        contentScrollPane.setViewportView(panel1);
-        final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridBagLayout());
-        panel1.add(panel2, BorderLayout.NORTH);
-        panel2.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(0, 5, 10, 5), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
+        panel1.setLayout(new GridBagLayout());
+        GridBagConstraints gbc;
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        rootPanel.add(panel1, gbc);
+        panel1.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         final JLabel label1 = new JLabel();
         this.$$$loadLabelText$$$(label1, this.$$$getMessageFromBundle$$$("lang", "limit"));
-        GridBagConstraints gbc;
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weighty = 1.0;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 0, 5);
-        panel2.add(label1, gbc);
+        panel1.add(label1, gbc);
         final JLabel label2 = new JLabel();
         this.$$$loadLabelText$$$(label2, this.$$$getMessageFromBundle$$$("lang", "positions"));
         gbc = new GridBagConstraints();
@@ -347,7 +397,7 @@ public class ConfigPanel extends JDialog {
         gbc.gridy = 1;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 0, 5);
-        panel2.add(label2, gbc);
+        panel1.add(label2, gbc);
         final JLabel label3 = new JLabel();
         this.$$$loadLabelText$$$(label3, this.$$$getMessageFromBundle$$$("lang", "distances"));
         gbc = new GridBagConstraints();
@@ -355,7 +405,7 @@ public class ConfigPanel extends JDialog {
         gbc.gridy = 2;
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.insets = new Insets(5, 0, 0, 5);
-        panel2.add(label3, gbc);
+        panel1.add(label3, gbc);
         final JLabel label4 = new JLabel();
         this.$$$loadLabelText$$$(label4, this.$$$getMessageFromBundle$$$("lang", "treasures"));
         gbc = new GridBagConstraints();
@@ -363,89 +413,89 @@ public class ConfigPanel extends JDialog {
         gbc.gridy = 3;
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.insets = new Insets(5, 0, 0, 5);
-        panel2.add(label4, gbc);
-        final JPanel panel3 = new JPanel();
-        panel3.setLayout(new BorderLayout(0, 0));
+        panel1.add(label4, gbc);
+        final JPanel panel2 = new JPanel();
+        panel2.setLayout(new BorderLayout(0, 0));
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 3;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets = new Insets(5, 3, 0, 3);
-        panel2.add(panel3, gbc);
-        final JPanel panel4 = new JPanel();
-        panel4.setLayout(new GridBagLayout());
-        panel3.add(panel4, BorderLayout.SOUTH);
-        panel4.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
+        panel1.add(panel2, gbc);
+        final JPanel panel3 = new JPanel();
+        panel3.setLayout(new GridBagLayout());
+        panel2.add(panel3, BorderLayout.SOUTH);
+        panel3.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         shuffleButton = new JButton();
         this.$$$loadButtonText$$$(shuffleButton, this.$$$getMessageFromBundle$$$("lang", "shuffle"));
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.WEST;
-        panel4.add(shuffleButton, gbc);
+        panel3.add(shuffleButton, gbc);
         final JPanel spacer1 = new JPanel();
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel4.add(spacer1, gbc);
-        final JScrollPane scrollPane1 = new JScrollPane();
-        scrollPane1.setMinimumSize(new Dimension(50, 54));
-        scrollPane1.setPreferredSize(new Dimension(50, 54));
-        panel3.add(scrollPane1, BorderLayout.CENTER);
+        panel3.add(spacer1, gbc);
+        treasuresScrollPane = new JScrollPane();
+        treasuresScrollPane.setMinimumSize(new Dimension(50, 54));
+        treasuresScrollPane.setPreferredSize(new Dimension(50, 54));
+        panel2.add(treasuresScrollPane, BorderLayout.CENTER);
         treasuresTextArea = new JTextArea();
         treasuresTextArea.setLineWrap(true);
         treasuresTextArea.setMargin(new Insets(2, 6, 2, 6));
         treasuresTextArea.setMinimumSize(new Dimension(2, 17));
         treasuresTextArea.setText("14.0, 15.0, 3.0, 5.5, 8.7, 3.6, 1.0, 4.0, 3.0, 5.5, 8.7, 3.6, 1.0, 4.0");
         treasuresTextArea.setWrapStyleWord(true);
-        scrollPane1.setViewportView(treasuresTextArea);
-        final JScrollPane scrollPane2 = new JScrollPane();
-        scrollPane2.setMinimumSize(new Dimension(50, 54));
-        scrollPane2.setPreferredSize(new Dimension(50, 54));
+        treasuresScrollPane.setViewportView(treasuresTextArea);
+        distancesScrollPane = new JScrollPane();
+        distancesScrollPane.setMinimumSize(new Dimension(50, 54));
+        distancesScrollPane.setPreferredSize(new Dimension(50, 54));
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 2;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets = new Insets(3, 3, 0, 3);
-        panel2.add(scrollPane2, gbc);
+        panel1.add(distancesScrollPane, gbc);
         distancesTextArea = new JTextArea();
         distancesTextArea.setLineWrap(true);
         distancesTextArea.setMargin(new Insets(2, 6, 2, 6));
         distancesTextArea.setMinimumSize(new Dimension(50, 34));
         distancesTextArea.setText("14.0, 15.0, 3.0, 5.5, 8.7, 3.6, 1.0, 4.0, 3.0, 5.5, 8.7, 3.6, 1.0, 4.0");
         distancesTextArea.setWrapStyleWord(true);
-        scrollPane2.setViewportView(distancesTextArea);
+        distancesScrollPane.setViewportView(distancesTextArea);
         final JLabel label5 = new JLabel();
         this.$$$loadLabelText$$$(label5, this.$$$getMessageFromBundle$$$("lang", "fitness"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.anchor = GridBagConstraints.WEST;
-        panel2.add(label5, gbc);
+        panel1.add(label5, gbc);
         fitnessComboBox = new JComboBox();
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 4;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel2.add(fitnessComboBox, gbc);
+        panel1.add(fitnessComboBox, gbc);
         limitSpinner = new JSpinner();
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel2.add(limitSpinner, gbc);
+        panel1.add(limitSpinner, gbc);
         positionsSpinner = new JSpinner();
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 1;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel2.add(positionsSpinner, gbc);
+        panel1.add(positionsSpinner, gbc);
         final JLabel label6 = new JLabel();
         this.$$$loadLabelText$$$(label6, this.$$$getMessageFromBundle$$$("lang", "mutators"));
         gbc = new GridBagConstraints();
@@ -453,7 +503,7 @@ public class ConfigPanel extends JDialog {
         gbc.gridy = 5;
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.insets = new Insets(10, 0, 5, 5);
-        panel2.add(label6, gbc);
+        panel1.add(label6, gbc);
         mutatorScrollPane = new JScrollPane();
         mutatorScrollPane.setHorizontalScrollBarPolicy(31);
         gbc = new GridBagConstraints();
@@ -463,7 +513,7 @@ public class ConfigPanel extends JDialog {
         gbc.anchor = GridBagConstraints.NORTH;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(10, 0, 10, 0);
-        panel2.add(mutatorScrollPane, gbc);
+        panel1.add(mutatorScrollPane, gbc);
         mutatorTable = new JTable();
         mutatorTable.setPreferredScrollableViewportSize(new Dimension(200, 100));
         mutatorScrollPane.setViewportView(mutatorTable);
@@ -474,14 +524,14 @@ public class ConfigPanel extends JDialog {
         gbc.gridy = 6;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 0, 5);
-        panel2.add(label7, gbc);
+        panel1.add(label7, gbc);
         populationSpinner = new JSpinner();
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 6;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel2.add(populationSpinner, gbc);
+        panel1.add(populationSpinner, gbc);
         final JLabel label8 = new JLabel();
         this.$$$loadLabelText$$$(label8, this.$$$getMessageFromBundle$$$("lang", "offspring"));
         gbc = new GridBagConstraints();
@@ -489,14 +539,14 @@ public class ConfigPanel extends JDialog {
         gbc.gridy = 7;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 0, 5);
-        panel2.add(label8, gbc);
+        panel1.add(label8, gbc);
         offspringSpinner = new JSpinner();
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 7;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel2.add(offspringSpinner, gbc);
+        panel1.add(offspringSpinner, gbc);
         final JLabel label9 = new JLabel();
         this.$$$loadLabelText$$$(label9, this.$$$getMessageFromBundle$$$("lang", "survivors"));
         gbc = new GridBagConstraints();
@@ -504,16 +554,16 @@ public class ConfigPanel extends JDialog {
         gbc.gridy = 8;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 0, 5);
-        panel2.add(label9, gbc);
+        panel1.add(label9, gbc);
         survivorsSpinner = new JSpinner();
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 8;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel2.add(survivorsSpinner, gbc);
+        panel1.add(survivorsSpinner, gbc);
         label3.setLabelFor(distancesTextArea);
-        label6.setLabelFor(scrollPane2);
+        label6.setLabelFor(distancesScrollPane);
         label7.setLabelFor(populationSpinner);
         label8.setLabelFor(offspringSpinner);
         label9.setLabelFor(survivorsSpinner);
@@ -594,7 +644,7 @@ public class ConfigPanel extends JDialog {
      * @noinspection ALL
      */
     public JComponent $$$getRootComponent$$$() {
-        return contentScrollPane;
+        return rootPanel;
     }
 
 }

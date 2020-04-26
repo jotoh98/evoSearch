@@ -1,251 +1,247 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="evo.search.view.ConfigPanel">
-  <scrollpane id="92d7c" binding="contentScrollPane">
+  <grid id="76446" binding="rootPanel" layout-manager="GridBagLayout">
     <constraints>
       <xy x="48" y="54" width="500" height="500"/>
     </constraints>
     <properties/>
     <border type="none"/>
     <children>
-      <grid id="91475" layout-manager="BorderLayout" hgap="0" vgap="0">
-        <constraints/>
+      <grid id="f84db" layout-manager="GridBagLayout">
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+          <gridbag weightx="1.0" weighty="0.0"/>
+        </constraints>
         <properties/>
-        <border type="none"/>
+        <border type="empty">
+          <size top="5" left="5" bottom="5" right="5"/>
+        </border>
         <children>
-          <grid id="f84db" layout-manager="GridBagLayout">
-            <constraints border-constraint="North"/>
+          <component id="efd97" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+              <gridbag top="0" left="0" bottom="0" right="5" weightx="0.0" weighty="1.0"/>
+            </constraints>
+            <properties>
+              <text resource-bundle="lang" key="limit"/>
+            </properties>
+          </component>
+          <component id="dbe76" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+              <gridbag top="0" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties>
+              <text resource-bundle="lang" key="positions"/>
+            </properties>
+          </component>
+          <component id="33eeb" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="9" fill="0" indent="0" use-parent-layout="false"/>
+              <gridbag top="5" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties>
+              <labelFor value="4f792"/>
+              <text resource-bundle="lang" key="distances"/>
+            </properties>
+          </component>
+          <component id="ebe58" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="9" fill="0" indent="0" use-parent-layout="false"/>
+              <gridbag top="5" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties>
+              <text resource-bundle="lang" key="treasures"/>
+            </properties>
+          </component>
+          <grid id="d6dca" layout-manager="BorderLayout" hgap="0" vgap="0">
+            <constraints>
+              <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+              <gridbag top="5" left="3" bottom="0" right="3" weightx="1.0" weighty="0.0"/>
+            </constraints>
             <properties/>
-            <border type="empty">
-              <size top="0" left="5" bottom="10" right="5"/>
-            </border>
+            <border type="none"/>
             <children>
-              <component id="efd97" class="javax.swing.JLabel">
-                <constraints>
-                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                  <gridbag top="0" left="0" bottom="0" right="5" weightx="0.0" weighty="1.0"/>
-                </constraints>
-                <properties>
-                  <text resource-bundle="lang" key="limit"/>
-                </properties>
-              </component>
-              <component id="dbe76" class="javax.swing.JLabel">
-                <constraints>
-                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                  <gridbag top="0" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties>
-                  <text resource-bundle="lang" key="positions"/>
-                </properties>
-              </component>
-              <component id="33eeb" class="javax.swing.JLabel">
-                <constraints>
-                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="9" fill="0" indent="0" use-parent-layout="false"/>
-                  <gridbag top="5" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties>
-                  <labelFor value="4f792"/>
-                  <text resource-bundle="lang" key="distances"/>
-                </properties>
-              </component>
-              <component id="ebe58" class="javax.swing.JLabel">
-                <constraints>
-                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="9" fill="0" indent="0" use-parent-layout="false"/>
-                  <gridbag top="5" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties>
-                  <text resource-bundle="lang" key="treasures"/>
-                </properties>
-              </component>
-              <grid id="d6dca" layout-manager="BorderLayout" hgap="0" vgap="0">
-                <constraints>
-                  <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
-                  <gridbag top="5" left="3" bottom="0" right="3" weightx="1.0" weighty="0.0"/>
-                </constraints>
+              <grid id="183d4" layout-manager="GridBagLayout">
+                <constraints border-constraint="South"/>
                 <properties/>
-                <border type="none"/>
+                <border type="empty">
+                  <size top="5" left="0" bottom="5" right="0"/>
+                </border>
                 <children>
-                  <grid id="183d4" layout-manager="GridBagLayout">
-                    <constraints border-constraint="South"/>
-                    <properties/>
-                    <border type="empty">
-                      <size top="5" left="0" bottom="5" right="0"/>
-                    </border>
-                    <children>
-                      <component id="1688c" class="javax.swing.JButton" binding="shuffleButton" default-binding="true">
-                        <constraints>
-                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                          <gridbag weightx="0.0" weighty="0.0"/>
-                        </constraints>
-                        <properties>
-                          <text resource-bundle="lang" key="shuffle"/>
-                        </properties>
-                      </component>
-                      <hspacer id="50026">
-                        <constraints>
-                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
-                          <gridbag weightx="1.0" weighty="0.0"/>
-                        </constraints>
-                      </hspacer>
-                    </children>
-                  </grid>
-                  <scrollpane id="aec16">
-                    <constraints border-constraint="Center"/>
+                  <component id="1688c" class="javax.swing.JButton" binding="shuffleButton" default-binding="true">
+                    <constraints>
+                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                      <gridbag weightx="0.0" weighty="0.0"/>
+                    </constraints>
                     <properties>
-                      <minimumSize width="50" height="54"/>
-                      <preferredSize width="50" height="54"/>
+                      <text resource-bundle="lang" key="shuffle"/>
                     </properties>
-                    <border type="none"/>
-                    <children>
-                      <component id="85945" class="javax.swing.JTextArea" binding="treasuresTextArea">
-                        <constraints/>
-                        <properties>
-                          <lineWrap value="true"/>
-                          <margin top="2" left="6" bottom="2" right="6"/>
-                          <minimumSize width="2" height="17"/>
-                          <text value="14.0, 15.0, 3.0, 5.5, 8.7, 3.6, 1.0, 4.0, 3.0, 5.5, 8.7, 3.6, 1.0, 4.0"/>
-                          <wrapStyleWord value="true"/>
-                        </properties>
-                      </component>
-                    </children>
-                  </scrollpane>
+                  </component>
+                  <hspacer id="50026">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                      <gridbag weightx="1.0" weighty="0.0"/>
+                    </constraints>
+                  </hspacer>
                 </children>
               </grid>
-              <scrollpane id="f90e2">
-                <constraints>
-                  <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
-                  <gridbag top="3" left="3" bottom="0" right="3" weightx="0.0" weighty="0.0"/>
-                </constraints>
+              <scrollpane id="aec16" binding="treasuresScrollPane">
+                <constraints border-constraint="Center"/>
                 <properties>
                   <minimumSize width="50" height="54"/>
                   <preferredSize width="50" height="54"/>
                 </properties>
                 <border type="none"/>
                 <children>
-                  <component id="4f792" class="javax.swing.JTextArea" binding="distancesTextArea">
+                  <component id="85945" class="javax.swing.JTextArea" binding="treasuresTextArea">
                     <constraints/>
                     <properties>
                       <lineWrap value="true"/>
                       <margin top="2" left="6" bottom="2" right="6"/>
-                      <minimumSize width="50" height="34"/>
+                      <minimumSize width="2" height="17"/>
                       <text value="14.0, 15.0, 3.0, 5.5, 8.7, 3.6, 1.0, 4.0, 3.0, 5.5, 8.7, 3.6, 1.0, 4.0"/>
                       <wrapStyleWord value="true"/>
                     </properties>
                   </component>
                 </children>
               </scrollpane>
-              <component id="d5502" class="javax.swing.JLabel">
-                <constraints>
-                  <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                  <gridbag weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties>
-                  <text resource-bundle="lang" key="fitness"/>
-                </properties>
-              </component>
-              <component id="2dc5" class="javax.swing.JComboBox" binding="fitnessComboBox">
-                <constraints>
-                  <grid row="4" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-                  <gridbag weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties/>
-              </component>
-              <component id="5b91f" class="javax.swing.JSpinner" binding="limitSpinner">
-                <constraints>
-                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-                  <gridbag weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties/>
-              </component>
-              <component id="16a72" class="javax.swing.JSpinner" binding="positionsSpinner">
-                <constraints>
-                  <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-                  <gridbag weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties/>
-              </component>
-              <component id="5a5c2" class="javax.swing.JLabel">
-                <constraints>
-                  <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="9" fill="0" indent="0" use-parent-layout="false"/>
-                  <gridbag top="10" left="0" bottom="5" right="5" weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties>
-                  <labelFor value="f90e2"/>
-                  <text resource-bundle="lang" key="mutators"/>
-                </properties>
-              </component>
-              <scrollpane id="f4f8b" binding="mutatorScrollPane">
-                <constraints>
-                  <grid row="5" column="1" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
-                  <gridbag top="10" left="0" bottom="10" right="0" weightx="1.0" weighty="0.0"/>
-                </constraints>
-                <properties>
-                  <horizontalScrollBarPolicy value="31"/>
-                </properties>
-                <border type="none"/>
-                <children>
-                  <component id="a838" class="javax.swing.JTable" binding="mutatorTable">
-                    <constraints/>
-                    <properties>
-                      <preferredScrollableViewportSize width="200" height="100"/>
-                    </properties>
-                  </component>
-                </children>
-              </scrollpane>
-              <component id="6fade" class="javax.swing.JLabel">
-                <constraints>
-                  <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                  <gridbag top="0" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties>
-                  <labelFor value="accd8"/>
-                  <text resource-bundle="lang" key="population"/>
-                </properties>
-              </component>
-              <component id="accd8" class="javax.swing.JSpinner" binding="populationSpinner">
-                <constraints>
-                  <grid row="6" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-                  <gridbag weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties/>
-              </component>
-              <component id="64426" class="javax.swing.JLabel">
-                <constraints>
-                  <grid row="7" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                  <gridbag top="0" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties>
-                  <labelFor value="783a4"/>
-                  <text resource-bundle="lang" key="offspring"/>
-                </properties>
-              </component>
-              <component id="783a4" class="javax.swing.JSpinner" binding="offspringSpinner">
-                <constraints>
-                  <grid row="7" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-                  <gridbag weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties/>
-              </component>
-              <component id="97c62" class="javax.swing.JLabel">
-                <constraints>
-                  <grid row="8" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                  <gridbag top="0" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties>
-                  <labelFor value="a4212"/>
-                  <text resource-bundle="lang" key="survivors"/>
-                </properties>
-              </component>
-              <component id="a4212" class="javax.swing.JSpinner" binding="survivorsSpinner">
-                <constraints>
-                  <grid row="8" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-                  <gridbag weightx="0.0" weighty="0.0"/>
-                </constraints>
-                <properties/>
-              </component>
             </children>
           </grid>
+          <scrollpane id="f90e2" binding="distancesScrollPane">
+            <constraints>
+              <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+              <gridbag top="3" left="3" bottom="0" right="3" weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties>
+              <minimumSize width="50" height="54"/>
+              <preferredSize width="50" height="54"/>
+            </properties>
+            <border type="none"/>
+            <children>
+              <component id="4f792" class="javax.swing.JTextArea" binding="distancesTextArea">
+                <constraints/>
+                <properties>
+                  <lineWrap value="true"/>
+                  <margin top="2" left="6" bottom="2" right="6"/>
+                  <minimumSize width="50" height="34"/>
+                  <text value="14.0, 15.0, 3.0, 5.5, 8.7, 3.6, 1.0, 4.0, 3.0, 5.5, 8.7, 3.6, 1.0, 4.0"/>
+                  <wrapStyleWord value="true"/>
+                </properties>
+              </component>
+            </children>
+          </scrollpane>
+          <component id="d5502" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+              <gridbag weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties>
+              <text resource-bundle="lang" key="fitness"/>
+            </properties>
+          </component>
+          <component id="2dc5" class="javax.swing.JComboBox" binding="fitnessComboBox">
+            <constraints>
+              <grid row="4" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+              <gridbag weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties/>
+          </component>
+          <component id="5b91f" class="javax.swing.JSpinner" binding="limitSpinner">
+            <constraints>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+              <gridbag weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties/>
+          </component>
+          <component id="16a72" class="javax.swing.JSpinner" binding="positionsSpinner">
+            <constraints>
+              <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+              <gridbag weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties/>
+          </component>
+          <component id="5a5c2" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="9" fill="0" indent="0" use-parent-layout="false"/>
+              <gridbag top="10" left="0" bottom="5" right="5" weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties>
+              <labelFor value="f90e2"/>
+              <text resource-bundle="lang" key="mutators"/>
+            </properties>
+          </component>
+          <scrollpane id="f4f8b" binding="mutatorScrollPane">
+            <constraints>
+              <grid row="5" column="1" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
+              <gridbag top="10" left="0" bottom="10" right="0" weightx="1.0" weighty="0.0"/>
+            </constraints>
+            <properties>
+              <horizontalScrollBarPolicy value="31"/>
+            </properties>
+            <border type="none"/>
+            <children>
+              <component id="a838" class="javax.swing.JTable" binding="mutatorTable">
+                <constraints/>
+                <properties>
+                  <preferredScrollableViewportSize width="200" height="100"/>
+                </properties>
+              </component>
+            </children>
+          </scrollpane>
+          <component id="6fade" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+              <gridbag top="0" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties>
+              <labelFor value="accd8"/>
+              <text resource-bundle="lang" key="population"/>
+            </properties>
+          </component>
+          <component id="accd8" class="javax.swing.JSpinner" binding="populationSpinner">
+            <constraints>
+              <grid row="6" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+              <gridbag weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties/>
+          </component>
+          <component id="64426" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="7" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+              <gridbag top="0" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties>
+              <labelFor value="783a4"/>
+              <text resource-bundle="lang" key="offspring"/>
+            </properties>
+          </component>
+          <component id="783a4" class="javax.swing.JSpinner" binding="offspringSpinner">
+            <constraints>
+              <grid row="7" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+              <gridbag weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties/>
+          </component>
+          <component id="97c62" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="8" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+              <gridbag top="0" left="0" bottom="0" right="5" weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties>
+              <labelFor value="a4212"/>
+              <text resource-bundle="lang" key="survivors"/>
+            </properties>
+          </component>
+          <component id="a4212" class="javax.swing.JSpinner" binding="survivorsSpinner">
+            <constraints>
+              <grid row="8" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+              <gridbag weightx="0.0" weighty="0.0"/>
+            </constraints>
+            <properties/>
+          </component>
         </children>
       </grid>
     </children>
-  </scrollpane>
+  </grid>
 </form>

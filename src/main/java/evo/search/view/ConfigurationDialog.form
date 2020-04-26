@@ -135,7 +135,7 @@
                     </constraints>
                     <properties>
                       <borderPainted value="false"/>
-                      <toolTipText resource-bundle="lang" key="config.add"/>
+                      <toolTipText resource-bundle="lang" key="configuration.delete"/>
                     </properties>
                   </component>
                   <hspacer id="e5993">
@@ -189,7 +189,7 @@
                   </component>
                 </children>
               </grid>
-              <scrollpane id="62fee" binding="nestedScrollPane">
+              <scrollpane id="62fee" binding="configScrollWrapper">
                 <constraints>
                   <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                 </constraints>

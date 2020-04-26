@@ -13,20 +13,14 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.ListDataEvent;
-import javax.swing.event.ListDataListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
 import java.io.File;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class ChooserForm extends JFrame {
@@ -38,29 +32,25 @@ public class ChooserForm extends JFrame {
 
     private DefaultListModel<Project> projectsListModel = new DefaultListModel<>();
 
-    List<Project> projectList = new ArrayList<>(Arrays.asList(
-            new Project("alpha-0", "/larry/whatsup", "Hello there"),
-            new Project("1.0", "/larry/where/is/this/damn/path", "General Kenobi!")
-    ));
-
     public ChooserForm() {
 
         $$$setupUI$$$();
 
 
-        for (int i = 0; i < 25; i++) {
-            final ProjectListItem comp = new ProjectListItem(projectList.get(0));
-            comp.bindSelectionEvent(project -> {
-                EventService.INIT_PROJECT.trigger(project);
+        ProjectService.tests();
+        ProjectService.getProjects().forEach(project -> {
+            final ProjectListItem listItem = new ProjectListItem(project);
+            listItem.bindSelectionEvent(selectedProject -> {
+                EventService.INIT_PROJECT.trigger(selectedProject);
                 dispose();
             });
-            comp.bindDeleteEvent(e -> {
-                listPanel.remove(comp);
+            listItem.bindDeleteEvent(e -> {
+                listPanel.remove(listItem);
                 listPanel.revalidate();
                 listPanel.repaint();
             });
-            listPanel.add(comp);
-        }
+            listPanel.add(listItem);
+        });
 
         final Spacer spacer1 = new Spacer();
         listPanel.add(spacer1, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));

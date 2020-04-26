@@ -1,6 +1,6 @@
 package evo.search.view.render;
 
-import evo.search.view.Canvas;
+import evo.search.view.part.Canvas;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

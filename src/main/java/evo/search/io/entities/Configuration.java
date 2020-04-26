@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +24,8 @@ import java.util.function.Function;
 @AllArgsConstructor
 @Data
 @Builder
-public class Configuration {
+@Slf4j
+public class Configuration implements Cloneable {
 
     //TODO: add population/offspring/survivors sizes
     /**
@@ -86,4 +88,13 @@ public class Configuration {
     @Builder.Default
     private int population = 20;
 
+    @Override
+    public Configuration clone() {
+        try {
+            return (Configuration) super.clone();
+        } catch (CloneNotSupportedException e) {
+            log.info("Configuration could not be cloned", e);
+        }
+        return null;
+    }
 }

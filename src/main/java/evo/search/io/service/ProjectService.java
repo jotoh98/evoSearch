@@ -1,6 +1,9 @@
 package evo.search.io.service;
 
+import evo.search.Environment;
 import evo.search.Main;
+import evo.search.ga.DiscretePoint;
+import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.FileService;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
@@ -21,7 +24,34 @@ public class ProjectService {
     private static final String PROPERTIES = "pref.properties";
 
     @Getter
-    private static final List<Project> projects = new ArrayList<>();
+    private static final List<Project> projects = new ArrayList<>(Arrays.asList(
+            new Project("alpha-0", "/larry/whatsup", "Hello there"),
+            new Project("1.0", "/larry/where/is/this/damn/path", "General Kenobi!")
+    ));
+
+    public static void tests() {
+        Project project = new Project("1.0", "/larry/where/is/this/damn/path", "The Konfiguratorrrr!");
+        project.getConfigurations().add(Configuration.builder()
+                .version("undefined")
+                .name("one")
+                .limit(1000)
+                .positions(2)
+                .distances(Arrays.asList(10d, 20d))
+                .treasures(Arrays.asList(new DiscretePoint(0, 10)))
+                .alterers(Collections.singletonList(new SwapPositionsMutator(0.7)))
+                .build());
+        project.getConfigurations().add(
+                Configuration.builder()
+                        .version("undefined")
+                        .name("two")
+                        .limit(100)
+                        .positions(3)
+                        .distances(Arrays.asList(15d, 25d, 35d))
+                        .treasures(Arrays.asList(new DiscretePoint(0, 10), new DiscretePoint(2, 20)))
+                        .fitness(Environment.Fitness.SINGULAR)
+                        .build());
+        projects.add(project);
+    }
 
     public static Project setupProject(File file) {
         final Project newProject = new Project("0", file.getPath(), "Untitled");

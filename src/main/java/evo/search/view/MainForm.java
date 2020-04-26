@@ -1,5 +1,6 @@
 package evo.search.view;
 
+import com.github.weisj.darklaf.ui.list.DarkListCellRenderer;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
@@ -13,8 +14,10 @@ import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.EventService;
 import evo.search.io.FileService;
 import evo.search.io.MenuService;
+import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
 import evo.search.view.model.*;
+import evo.search.view.part.Canvas;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
@@ -32,7 +37,6 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -50,12 +54,14 @@ public class MainForm extends JFrame {
     private JLabel logLabel;
     private JTable mutatorConfigTable;
     private JTabbedPane configTabs;
-    private JButton runButton;
+    private final List<Configuration> configurations = new ArrayList<>();
     private JSplitPane mainSplit;
     private Canvas canvas;
     private JPanel bottomBar;
     private JTextArea textArea1;
-    private JButton configButton;
+    private final ConfigComboModel configComboModel = new ConfigComboModel();
+    private JButton startButton;
+    private FlexTable configTable;
 
     /**
      * Custom table model for the simple configuration table.
@@ -71,6 +77,9 @@ public class MainForm extends JFrame {
 
     @Setter
     private Project project;
+    private JComboBox<Object> configComboBox;
+    private JButton addFirstConfigButton;
+
 
     /**
      * Construct the main form for the swing application.
@@ -87,6 +96,56 @@ public class MainForm extends JFrame {
         bindEvents();
         toolbar.setBorder(new MatteBorder(0, 0, 1, 0, UIManager.getColor("ToolBar.borderColor")));
         bottomBar.setBorder(new MatteBorder(1, 0, 0, 0, UIManager.getColor("ToolBar.borderColor")));
+
+        configComboModel.addAll(project.getConfigurations());
+        configComboBox.setModel(configComboModel);
+        configComboBox.setRenderer(new DarkListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index, final boolean isSelected, final boolean cellHasFocus) {
+                if (value instanceof Configuration) {
+                    return super.getListCellRendererComponent(list, ((Configuration) value).getName(), index, isSelected, cellHasFocus);
+                }
+                return super.getListCellRendererComponent(list, "Edit configurations", index, isSelected, cellHasFocus);
+            }
+        });
+
+        configComboModel.addListDataListener(new ListDataListener() {
+            @Override
+            public void intervalAdded(final ListDataEvent e) {
+
+            }
+
+            @Override
+            public void intervalRemoved(final ListDataEvent e) {
+                configListEmpty();
+            }
+
+            @Override
+            public void contentsChanged(final ListDataEvent e) {
+
+            }
+        });
+
+        configListEmpty();
+
+        configComboBox.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(final MouseEvent e) {
+                configComboBox.setEnabled(configComboModel.getSize() > 1);
+                super.mousePressed(e);
+            }
+        });
+
+        addFirstConfigButton.addActionListener(e -> {
+            ConfigurationDialog configurationDialog = new ConfigurationDialog(project.getConfigurations());
+            configurationDialog.showFrame();
+        });
+    }
+
+    public void configListEmpty() {
+        boolean listEmpty = configComboModel.getSize() == 1;
+        configComboBox.setVisible(!listEmpty);
+        addFirstConfigButton.setVisible(listEmpty);
     }
 
     /**
@@ -143,29 +202,10 @@ public class MainForm extends JFrame {
         });
     }
 
-    private FlexTable configTable;
-
     /**
      * Bind the configuration button to its behaviour.
      */
     private void bindConfigButton() {
-        final AtomicInteger mainDividerLocation = new AtomicInteger(300);
-        final AtomicInteger dividerSize = new AtomicInteger(9);
-        getConfigButton().addActionListener(e -> {
-            /*if (getMainSplit().isEnabled()) {
-                mainDividerLocation.set(getMainSplit().getDividerLocation());
-                dividerSize.set(getMainSplit().getDividerSize());
-                getMainSplit().setDividerSize(0);
-                getMainSplit().setEnabled(false);
-                getConfigTabs().setVisible(false);
-            } else {
-                getMainSplit().setDividerLocation(mainDividerLocation.get());
-                getMainSplit().setDividerSize(dividerSize.get());
-                getMainSplit().setEnabled(true);
-                getConfigTabs().setVisible(true);
-            }*/
-            ConfigurationDialog.main(new String[]{});
-        });
         getMainSplit().setDividerSize(0);
         getMainSplit().setEnabled(false);
         getConfigTabs().setVisible(false);
@@ -197,7 +237,7 @@ public class MainForm extends JFrame {
      * Bind the run button to its behaviour.
      */
     private void bindRunButton() {
-        getRunButton().addActionListener(event -> {
+        getStartButton().addActionListener(event -> {
             if (getMutatorTableModel() == null) {
                 EventService.LOG_LABEL.trigger(LangService.get("error.creating.config.table"));
                 return;
@@ -429,7 +469,7 @@ public class MainForm extends JFrame {
         rootPanel = new JPanel();
         rootPanel.setLayout(new GridBagLayout());
         toolbar = new JPanel();
-        toolbar.setLayout(new GridLayoutManager(1, 3, new Insets(3, 10, 3, 10), -1, -1));
+        toolbar.setLayout(new GridLayoutManager(1, 4, new Insets(3, 10, 3, 10), -1, -1));
         toolbar.setBackground(new Color(-12105140));
         toolbar.setEnabled(false);
         GridBagConstraints gbc;
@@ -439,29 +479,34 @@ public class MainForm extends JFrame {
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         rootPanel.add(toolbar, gbc);
-        runButton = new JButton();
-        runButton.setAlignmentY(0.0f);
-        runButton.setBackground(new Color(-4866622));
-        runButton.setBorderPainted(true);
-        runButton.setContentAreaFilled(false);
-        runButton.setEnabled(true);
-        runButton.setFocusPainted(false);
-        runButton.setHideActionText(false);
-        runButton.setHorizontalTextPosition(4);
-        runButton.setInheritsPopupMenu(true);
-        runButton.setLabel(this.$$$getMessageFromBundle$$$("lang", "run"));
-        runButton.setMargin(new Insets(0, 0, 0, 0));
-        runButton.setOpaque(false);
-        runButton.setSelected(true);
-        this.$$$loadButtonText$$$(runButton, this.$$$getMessageFromBundle$$$("lang", "run"));
-        toolbar.add(runButton, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, 1, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        startButton = new JButton();
+        startButton.setAlignmentY(0.0f);
+        startButton.setBackground(new Color(-4866622));
+        startButton.setBorderPainted(true);
+        startButton.setContentAreaFilled(false);
+        startButton.setEnabled(true);
+        startButton.setFocusPainted(false);
+        startButton.setHideActionText(false);
+        startButton.setHorizontalTextPosition(4);
+        startButton.setInheritsPopupMenu(true);
+        startButton.setLabel(this.$$$getMessageFromBundle$$$("lang", "run"));
+        startButton.setMargin(new Insets(0, 0, 0, 0));
+        startButton.setOpaque(false);
+        startButton.setSelected(true);
+        this.$$$loadButtonText$$$(startButton, this.$$$getMessageFromBundle$$$("lang", "run"));
+        toolbar.add(startButton, new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, 1, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final Spacer spacer1 = new Spacer();
-        toolbar.add(spacer1, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
-        configButton = new JButton();
-        configButton.setBorderPainted(true);
-        configButton.setContentAreaFilled(false);
-        this.$$$loadButtonText$$$(configButton, this.$$$getMessageFromBundle$$$("lang", "config"));
-        toolbar.add(configButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        toolbar.add(spacer1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        configComboBox = new JComboBox();
+        final DefaultComboBoxModel defaultComboBoxModel1 = new DefaultComboBoxModel();
+        defaultComboBoxModel1.addElement("Edit Configurations");
+        configComboBox.setModel(defaultComboBoxModel1);
+        toolbar.add(configComboBox, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        addFirstConfigButton = new JButton();
+        addFirstConfigButton.setMargin(new Insets(1, 2, 1, 2));
+        this.$$$loadButtonText$$$(addFirstConfigButton, this.$$$getMessageFromBundle$$$("lang", "config.add"));
+        addFirstConfigButton.setVisible(true);
+        toolbar.add(addFirstConfigButton, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         bottomBar = new JPanel();
         bottomBar.setLayout(new GridLayoutManager(1, 3, new Insets(0, 10, 0, 10), -1, -1));
         bottomBar.setBackground(new Color(-12105140));

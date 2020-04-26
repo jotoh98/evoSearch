@@ -10,6 +10,8 @@ import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.view.listener.DocumentEditHandler;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
 
 import javax.swing.*;
@@ -20,8 +22,13 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.*;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ConfigurationDialog extends JDialog {
     private JPanel contentPane;
@@ -32,20 +39,137 @@ public class ConfigurationDialog extends JDialog {
     private JList<ConfigTuple> configChooserList;
     private JTextField nameTextField;
     private JButton addConfigButton;
+    private final DefaultListModel<ConfigTuple> configListModel = new DefaultListModel<>();
     private JPanel listEditBar;
-    private ConfigPanel configPanel;
     private JPanel configNamePanel;
-    private JScrollPane nestedScrollPane;
     private JButton removeConfigButton;
-    private DefaultListModel<ConfigTuple> configListModel = new DefaultListModel<>();
-    private Hashtable<Configuration, ConfigPanel> configPanels = new Hashtable<>();
+    @Getter
+    private JScrollPane configScrollWrapper;
+    @Setter
+    private Consumer<List<Configuration>> savingConsumer = e -> {
+    };
 
-    public ConfigurationDialog() {
+    public ConfigurationDialog(List<Configuration> configurations) {
         $$$setupUI$$$();
+        customUISetup();
 
+        configurations.stream()
+                .map(Configuration::clone)
+                .forEach(this::addConfiguration);
+
+        setupChooserList();
+
+        bindEmptyBehaviour();
+        bindConfigListModel();
+        bindConfigListButtons();
+
+        nameTextField.getDocument().addDocumentListener((DocumentEditHandler) e -> {
+            configChooserList.getSelectedValue().getConfiguration().setName(nameTextField.getText());
+            configChooserList.repaint();
+        });
+
+        buttonOK.addActionListener(e -> onOK());
+        buttonCancel.addActionListener(e -> onCancel());
+        applyButton.addActionListener(e -> onApply());
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                onCancel();
+            }
+        });
+        contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+
+        getRootPane().setDefaultButton(buttonOK);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        setContentPane(contentPane);
+        setModal(true);
+        setPreferredSize(new Dimension(600, 400));
+        setMinimumSize(new Dimension(300, 200));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 700));
+    }
+
+    public static void main(String[] args) {
+        List<Configuration> configurations = Arrays.asList(
+                Configuration.builder()
+                        .version("undefined")
+                        .name("one")
+                        .limit(1000)
+                        .positions(2)
+                        .distances(Arrays.asList(10d, 20d))
+                        .treasures(Arrays.asList(new DiscretePoint(0, 10)))
+                        .alterers(Collections.singletonList(new SwapPositionsMutator(0.7)))
+                        .build(),
+                Configuration.builder()
+                        .version("undefined")
+                        .name("two")
+                        .limit(100)
+                        .positions(3)
+                        .distances(Arrays.asList(15d, 25d, 35d))
+                        .treasures(Arrays.asList(new DiscretePoint(0, 10), new DiscretePoint(2, 20)))
+                        .fitness(Environment.Fitness.SINGULAR)
+                        .build()
+        );
+
+        Main.setupEnvironment();
+        ConfigurationDialog dialog = new ConfigurationDialog(configurations);
+        dialog.showFrame();
+    }
+
+    private void bindConfigListModel() {
+        configListModel.addListDataListener(new ListDataListener() {
+            @Override
+            public void intervalAdded(final ListDataEvent e) {
+                removeConfigButton.setEnabled(configListModel.size() > 0);
+            }
+
+            @Override
+            public void intervalRemoved(final ListDataEvent e) {
+                bindEmptyBehaviour();
+            }
+
+            @Override
+            public void contentsChanged(final ListDataEvent e) {
+
+            }
+        });
+    }
+
+    private void bindConfigListButtons() {
+        addConfigButton.addActionListener(e -> {
+            triggerChange();
+            final int selectedIndex = configChooserList.getSelectedIndex();
+            if (selectedIndex == -1) {
+                addConfiguration(0, new Configuration());
+                configChooserList.setSelectedIndex(0);
+            } else {
+                addConfiguration(selectedIndex + 1, new Configuration());
+                configChooserList.setSelectedIndex(selectedIndex + 1);
+            }
+        });
+
+        removeConfigButton.addActionListener(e -> {
+            triggerChange();
+            final int[] selectedIndices = configChooserList.getSelectedIndices();
+            if (selectedIndices.length < 1) {
+                return;
+            }
+
+            final int firstIndex = selectedIndices[0];
+
+            if (selectedIndices.length == 1) {
+                configListModel.remove(firstIndex);
+                configChooserList.setSelectedIndex(firstIndex == configListModel.size() ? firstIndex - 1 : firstIndex);
+                return;
+            }
+
+            configListModel.removeRange(firstIndex, selectedIndices[selectedIndices.length - 1]);
+            if (configListModel.size() > 0) {
+                configChooserList.setSelectedIndex(0);
+            }
+        });
+    }
+
+    private void setupChooserList() {
         configChooserList.setModel(configListModel);
-
-        configurations.forEach(this::addConfiguration);
 
         configChooserList.setCellRenderer(new DarkListCellRenderer() {
             @Override
@@ -58,22 +182,16 @@ public class ConfigurationDialog extends JDialog {
         configChooserList.addListSelectionListener(e -> {
             final ConfigTuple selectedTuple = configChooserList.getSelectedValue();
             if (selectedTuple == null) {
-                if (configListModel.size() == 0) {
-                    nestedScrollPane.add(new JLabel("No configuration set"));
-                }
                 return;
             }
             nameTextField.setText(selectedTuple.getConfiguration().getName());
-            nestedScrollPane.getViewport().setView(selectedTuple.getPanel().$$$getRootComponent$$$());
+            configScrollWrapper.getViewport().setView(selectedTuple.getPanel().$$$getRootComponent$$$());
         });
 
         configChooserList.setSelectedIndex(0);
+    }
 
-        nameTextField.getDocument().addDocumentListener((DocumentEditHandler) e -> {
-            configChooserList.getSelectedValue().getConfiguration().setName(nameTextField.getText());
-            configChooserList.repaint();
-        });
-
+    private void customUISetup() {
         configNamePanel.setBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("EvoSearch.darker"))
         );
@@ -83,106 +201,26 @@ public class ConfigurationDialog extends JDialog {
         bottomPane.setBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, UIManager.getColor("SplitPane.dividerLineColor"))
         );
-
         addConfigButton.setIcon(UIManager.getIcon("Spinner.plus.icon"));
         removeConfigButton.setIcon(UIManager.getIcon("Spinner.minus.icon"));
-        setContentPane(contentPane);
-        setModal(true);
-        getRootPane().setDefaultButton(buttonOK);
-
-        configListModel.addListDataListener(new ListDataListener() {
-            @Override
-            public void intervalAdded(final ListDataEvent e) {
-                removeConfigButton.setEnabled(configListModel.size() > 0);
-            }
-
-            @Override
-            public void intervalRemoved(final ListDataEvent e) {
-                removeConfigButton.setEnabled(configListModel.size() > 0);
-            }
-
-            @Override
-            public void contentsChanged(final ListDataEvent e) {
-
-            }
-        });
-        removeConfigButton.addActionListener(e -> {
-            final int[] selectedIndices = configChooserList.getSelectedIndices();
-            if (selectedIndices.length < 1) {
-                return;
-            }
-
-            final int firstIndex = selectedIndices[0];
-
-            if (selectedIndices.length == 1) {
-                configListModel.remove(firstIndex);
-                configChooserList.setSelectedIndex(firstIndex == configListModel.size() - 1 ? firstIndex : firstIndex + 1);
-                return;
-            }
-
-            configListModel.removeRange(firstIndex, selectedIndices[selectedIndices.length - 1]);
-            if (configListModel.size() > 0) {
-                configChooserList.setSelectedIndex(0);
-            }
-        });
-
-        addConfigButton.addActionListener(e -> {
-            final int selectedIndex = configChooserList.getSelectedIndex();
-            if (selectedIndex == -1) {
-                addConfiguration(0, new Configuration());
-                configChooserList.setSelectedIndex(0);
-            } else {
-                addConfiguration(selectedIndex + 1, new Configuration());
-                configChooserList.setSelectedIndex(selectedIndex + 1);
-            }
-        });
-
-        buttonOK.addActionListener(e -> onOK());
-
-        buttonCancel.addActionListener(e -> onCancel());
-
-        // call onCancel() when cross is clicked
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                onCancel();
-            }
-        });
-
-        // call onCancel() on ESCAPE
-        contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-        applyButton.addActionListener(e -> onApply());
     }
 
-    private List<Configuration> configurations = Arrays.asList(
-            Configuration.builder()
-                    .version("undefined")
-                    .name("one")
-                    .limit(1000)
-                    .positions(2)
-                    .distances(Arrays.asList(10d, 20d))
-                    .treasures(Arrays.asList(new DiscretePoint(0, 10)))
-                    .alterers(Collections.singletonList(new SwapPositionsMutator(0.7)))
-                    .build(),
-            Configuration.builder()
-                    .version("undefined")
-                    .name("two")
-                    .limit(100)
-                    .positions(3)
-                    .distances(Arrays.asList(15d, 25d, 35d))
-                    .treasures(Arrays.asList(new DiscretePoint(0, 10), new DiscretePoint(2, 20)))
-                    .fitness(Environment.Fitness.SINGULAR)
-                    .build()
-    );
+    private void bindEmptyBehaviour() {
+        boolean listEmpty = configListModel.size() == 0;
+        removeConfigButton.setEnabled(!listEmpty);
+        if (listEmpty) {
+            configScrollWrapper.getViewport().setView(new JLabel("No configuration set"));
+        }
+    }
 
-    public void addConfiguration(Configuration configuration) {
+    public void addConfiguration(final Configuration configuration) {
         final ConfigPanel configPanel = new ConfigPanel();
         configPanel.setConfiguration(configuration);
         configPanel.setParent(this);
         configListModel.addElement(new ConfigTuple(configuration, configPanel));
     }
 
-    public void addConfiguration(int index, Configuration configuration) {
+    public void addConfiguration(final int index, final Configuration configuration) {
         final ConfigPanel configPanel = new ConfigPanel();
         configPanel.setConfiguration(configuration);
         configPanel.setParent(this);
@@ -190,21 +228,29 @@ public class ConfigurationDialog extends JDialog {
     }
 
     private void onApply() {
+        if (applyButton.isEnabled()) {
+            saveConfigurations();
+        }
         applyButton.setEnabled(false);
+    }
+
+    private void saveConfigurations() {
+        List<Configuration> configurations = IntStream.range(0, configListModel.size())
+                .mapToObj(configListModel::getElementAt)
+                .map(ConfigTuple::getConfiguration)
+                .collect(Collectors.toList());
+        savingConsumer.accept(configurations);
     }
 
     public void triggerChange() {
         applyButton.setEnabled(true);
     }
 
-    public static void main(String[] args) {
-        Main.setupEnvironment();
-        ConfigurationDialog dialog = new ConfigurationDialog();
-        dialog.setMinimumSize(new Dimension(768, 300));
-        dialog.setTitle(LangService.get("run.configurations"));
-        dialog.pack();
-        dialog.setVisible(true);
-        //System.exit(0);
+    public void showFrame() {
+        setMinimumSize(new Dimension(768, 300));
+        setTitle(LangService.get("run.configurations"));
+        pack();
+        setVisible(true);
     }
 
     private void onCancel() {
@@ -281,7 +327,7 @@ public class ConfigurationDialog extends JDialog {
         listEditBar.add(addConfigButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(30, 30), new Dimension(30, 30), new Dimension(30, 30), 0, false));
         removeConfigButton = new JButton();
         removeConfigButton.setBorderPainted(false);
-        removeConfigButton.setToolTipText(this.$$$getMessageFromBundle$$$("lang", "config.add"));
+        removeConfigButton.setToolTipText(this.$$$getMessageFromBundle$$$("lang", "configuration.delete"));
         listEditBar.add(removeConfigButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(30, 30), new Dimension(30, 30), new Dimension(30, 30), 0, false));
         final Spacer spacer2 = new Spacer();
         listEditBar.add(spacer2, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
@@ -298,8 +344,8 @@ public class ConfigurationDialog extends JDialog {
         configNamePanel.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         nameTextField = new JTextField();
         configNamePanel.add(nameTextField, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
-        nestedScrollPane = new JScrollPane();
-        panel3.add(nestedScrollPane, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        configScrollWrapper = new JScrollPane();
+        panel3.add(configScrollWrapper, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         label1.setLabelFor(nameTextField);
     }
 

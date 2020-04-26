@@ -5,6 +5,7 @@ import com.github.weisj.darklaf.theme.DarculaTheme;
 import evo.search.io.EventService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.ChooserForm;
+import evo.search.view.ConfigurationDialog;
 import evo.search.view.MainForm;
 import org.jetbrains.annotations.NonNls;
 
@@ -36,6 +37,10 @@ public class Main {
         EventService.INIT_PROJECT.addListener(project -> {
             final MainForm mainForm = new MainForm(project);
             mainForm.showFrame();
+        });
+        EventService.OPEN_CONFIG.addListener(configurations -> {
+            ConfigurationDialog configurationDialog = new ConfigurationDialog(configurations);
+            configurationDialog.showFrame();
         });
         ChooserForm.main(args);
     }

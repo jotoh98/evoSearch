@@ -1,7 +1,7 @@
 package evo.search.view.model;
 
-import evo.search.io.EventService;
 import evo.search.io.entities.Configuration;
+import evo.search.io.service.EventService;
 import evo.search.view.LangService;
 
 import javax.swing.*;

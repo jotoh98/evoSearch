@@ -1,14 +1,11 @@
 package evo.search.io.service;
 
-import evo.search.Environment;
 import evo.search.Main;
-import evo.search.ga.DiscretePoint;
-import evo.search.ga.mutators.SwapPositionsMutator;
-import evo.search.io.FileService;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.dom4j.Document;
 
 import java.io.File;
 import java.io.FileReader;
@@ -22,38 +19,13 @@ public class ProjectService {
     private static final String HIDDEN = ".evo";
     private static final String CONFIG = "config.json";
     private static final String PROPERTIES = "pref.properties";
+    private static final String CONFIG_XML = "config.xml";
+    private static final String PROJECT_XML = "project.xml";
 
     @Getter
-    private static final List<Project> projects = new ArrayList<>(Arrays.asList(
-            new Project("alpha-0", "/larry/whatsup", "Hello there"),
-            new Project("1.0", "/larry/where/is/this/damn/path", "General Kenobi!")
-    ));
+    private static final List<Project> projects = new ArrayList<>();
 
-    public static void tests() {
-        Project project = new Project("1.0", "/larry/where/is/this/damn/path", "The Konfiguratorrrr!");
-        project.getConfigurations().add(Configuration.builder()
-                .version("undefined")
-                .name("one")
-                .limit(1000)
-                .positions(2)
-                .distances(Arrays.asList(10d, 20d))
-                .treasures(Arrays.asList(new DiscretePoint(0, 10)))
-                .alterers(Collections.singletonList(new SwapPositionsMutator(0.7)))
-                .build());
-        project.getConfigurations().add(
-                Configuration.builder()
-                        .version("undefined")
-                        .name("two")
-                        .limit(100)
-                        .positions(3)
-                        .distances(Arrays.asList(15d, 25d, 35d))
-                        .treasures(Arrays.asList(new DiscretePoint(0, 10), new DiscretePoint(2, 20)))
-                        .fitness(Environment.Fitness.SINGULAR)
-                        .build());
-        projects.add(project);
-    }
-
-    public static Project setupProject(File file) {
+    public static Project newProject(File file) {
         final Project newProject = new Project("0", file.getPath(), "Untitled");
 
         final String hiddenPath = file.getPath() + File.separator + HIDDEN;
@@ -80,6 +52,71 @@ public class ProjectService {
         }
         FileService.save(new File(hiddenPath + File.separator + CONFIG), Collections.emptyList());
         return newProject;
+    }
+
+    public static void addProject(Project project) {
+        projects.add(project);
+    }
+
+    public static boolean setupNewProject(File file, Project project) {
+        if (file == null || !file.isDirectory()) {
+            log.error("Project destination is no directory.");
+            return false;
+        }
+        if (file.list() == null || Objects.requireNonNull(file.list()).length != 0) {
+            log.error("Project destination is not empty.");
+            return false;
+        }
+        final String hiddenPath = file.getPath() + File.separator + HIDDEN;
+        if (getDir(hiddenPath) == null) {
+            log.error("Project setup didn't complete.");
+        }
+        File projectXmlFile = getFile(hiddenPath + File.separator + PROJECT_XML);
+        if (projectXmlFile == null) {
+            log.error("Project setup didn't complete.");
+            return false;
+        }
+        Document document = XmlService.write(project);
+        XmlService.write(projectXmlFile, document);
+
+        return true;
+    }
+
+    private static File getFile(String path) {
+        final File file = new File(path);
+
+        try {
+            if (file.exists() || file.createNewFile()) {
+                return file;
+            }
+        } catch (IOException e) {
+            log.error("Could not create directory '" + path + "'", e);
+        }
+
+        return null;
+    }
+
+    private static File getDir(String path) {
+        final File file = new File(path);
+
+        if (file.exists() || file.mkdirs()) {
+            return file;
+        }
+
+        return null;
+    }
+
+    private static File getGlobalDir() {
+        return getFile(Main.HOME_PATH);
+    }
+
+    public static File getProjectsRegisterFile() {
+        return getFile(Main.HOME_PATH + File.separator + PROJECT_XML);
+    }
+
+    public static boolean isSetUp() {
+        File configXml = new File(Main.HOME_PATH + File.separator + PROJECT_XML);
+        return configXml.exists();
     }
 
     public static Project loadProject(File file) {
@@ -116,7 +153,6 @@ public class ProjectService {
         return project;
     }
 
-
     public static boolean isProject(File file) {
         final String[] list = file.list();
         if (list != null) {
@@ -125,31 +161,38 @@ public class ProjectService {
         return false;
     }
 
-    public static void setupGlobal() {
-        final File file = new File(Main.HOME_PATH);
-        if (!file.exists() && !file.mkdirs()) {
-            log.error("Could not create directory '" + Main.HOME_PATH + "'");
-            return;
+    public static void setupService() {
+        if (!isSetUp()) {
+            writeProjectsRegister(Collections.emptyList());
         }
-
-        final String projectsPath = Main.HOME_PATH + File.separator + "projects.json";
-
-        final File projectsFile = new File(projectsPath);
-        try {
-            if (!projectsFile.exists() && !projectsFile.createNewFile()) {
-                log.error("Could not create file '" + projectsPath + "'");
-                return;
-            }
-        } catch (IOException e) {
-            log.error("Could not create file '" + projectsPath + "'", e);
-        }
-
-        loadProjects();
+        readProjectsRegister();
     }
 
-    public static void loadProjects() {
-        projects.addAll(
-                FileService.loadProjects(new File(Main.HOME_PATH + File.separator + "projects.json"))
-        );
+    public static void readProjectsRegister() {
+        File projectsRegisterFile = getProjectsRegisterFile();
+        if (projectsRegisterFile == null) {
+            log.error("Not able to get globally registered projects.");
+            return;
+        }
+        Document parsedDocument = XmlService.read(projectsRegisterFile);
+        projects.addAll(XmlService.readRegister(parsedDocument));
+    }
+
+    public static void writeProjectsRegister(List<Project> projects) {
+        File projectsRegisterFile = getProjectsRegisterFile();
+        if (projectsRegisterFile == null) {
+            log.error("Not able to get globally registered projects.");
+            return;
+        }
+        Document document = XmlService.writeRegister(projects);
+        XmlService.write(projectsRegisterFile, document);
+    }
+
+    public static void removeProjectRegister(Project project) {
+        projects.remove(project);
+    }
+
+    public static void saveRegistered() {
+        writeProjectsRegister(projects);
     }
 }

@@ -1,4 +1,4 @@
-package evo.search.io;
+package evo.search.io.service;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,4 +1,4 @@
-package evo.search.io;
+package evo.search.io.service;
 
 import com.pploder.events.Event;
 import com.pploder.events.SimpleEvent;

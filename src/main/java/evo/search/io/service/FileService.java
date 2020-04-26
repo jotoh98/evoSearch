@@ -1,4 +1,4 @@
-package evo.search.io;
+package evo.search.io.service;
 
 import evo.search.Environment;
 import evo.search.io.entities.Configuration;

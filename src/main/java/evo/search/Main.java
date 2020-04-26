@@ -2,7 +2,7 @@ package evo.search;
 
 import com.github.weisj.darklaf.LafManager;
 import com.github.weisj.darklaf.theme.DarculaTheme;
-import evo.search.io.EventService;
+import evo.search.io.service.EventService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.ChooserForm;
 import evo.search.view.ConfigurationDialog;
@@ -31,7 +31,7 @@ public class Main {
      * @param args cli and application arguments
      */
     public static void main(String[] args) {
-        ProjectService.setupGlobal();
+        ProjectService.setupService();
         setupEnvironment();
 
         EventService.INIT_PROJECT.addListener(project -> {

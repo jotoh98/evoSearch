@@ -2,6 +2,7 @@ package evo.search.view.model;
 
 import evo.search.io.entities.Configuration;
 import evo.search.io.service.EventService;
+import evo.search.io.service.ProjectService;
 import evo.search.view.LangService;
 
 import javax.swing.*;
@@ -32,15 +33,14 @@ public class ConfigComboModel extends DefaultComboBoxModel<Object> {
     }
 
     @Override
-    public void setSelectedItem(final Object anObject) {
-        if (anObject.equals(EDIT_TEXT)) {
-            if (getSelectedItem() == null) {
-                super.setSelectedItem(getElementAt(1));
-                EventService.OPEN_CONFIG.trigger(asList());
-            }
+    public void setSelectedItem(Object anObject) {
+        if (!anObject.equals(EDIT_TEXT)) {
+            super.setSelectedItem(anObject);
+            ProjectService.getCurrentProject()
+                    .setSelectedConfiguration(getIndexOf(anObject));
             return;
         }
-        super.setSelectedItem(anObject);
+        EventService.OPEN_CONFIG.trigger(asList());
     }
 
     public List<Configuration> asList() {

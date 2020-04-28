@@ -247,6 +247,6 @@ public class JsonService {
         final String version = object.getString(VERSION);
         final String name = object.getString(NAME);
         final String path = object.getString(PATH);
-        return new Project(name, version, path);
+        return new Project();
     }
 }

@@ -5,6 +5,7 @@ import io.jenetics.Chromosome;
 import io.jenetics.util.ISeq;
 import lombok.AllArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -28,7 +29,7 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
      * @return A valid shuffled chromosome.
      */
     public static DiscreteChromosome shuffle() {
-        List<Double> distances = Environment.getInstance().getConfiguration().getDistances();
+        List<Double> distances = new ArrayList<>(Environment.getInstance().getConfiguration().getDistances());
         Collections.shuffle(distances);
         return of(distances);
     }

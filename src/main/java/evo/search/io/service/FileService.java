@@ -1,43 +1,31 @@
 package evo.search.io.service;
 
-import evo.search.Environment;
+import evo.search.Main;
 import evo.search.io.entities.Configuration;
-import evo.search.io.entities.Experiment;
-import evo.search.io.entities.Project;
 import evo.search.view.LangService;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.DocumentHelper;
+import org.dom4j.io.SAXReader;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
-import java.util.Collections;
+import java.nio.file.Path;
+import java.util.Hashtable;
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 /**
  * File prompting and loading service.
  */
 @Slf4j
 public class FileService {
-    /**
-     * Prompt the user via dialog for a file to load from.
-     *
-     * @return File to load from.
-     */
-    public static File promptForLoad() {
-        final File file = promptForLoad(LangService.get("environment.save"));
-        if (file != null && !file.getName().endsWith(".json")) {
-            return null;
-        }
-        return file;
-    }
 
     public static File promptForLoad(String title) {
         JFrame parent = new JFrame();
@@ -49,7 +37,6 @@ public class FileService {
         }
         return new File(fileDialog.getDirectory() + fileName);
     }
-
 
     public static File promptForDirectory(String title) {
         System.setProperty("apple.awt.fileDialogForDirectories", "true");
@@ -67,151 +54,79 @@ public class FileService {
         return promptForDirectory(LangService.get("load.directory"));
     }
 
-    /**
-     * Prompt the user via dialog for a file to save to.
-     *
-     * @return File to save to.
-     */
-    public static File promptForSave() {
-        JFrame parent = new JFrame();
+    static void save(File configFolder, List<Configuration> configurations) {
+        Hashtable<String, Integer> configurationNumber = new Hashtable<>();
 
-        //TODO: i18n for dialogs
-        FileDialog fileDialog = new FileDialog(parent, LangService.get("environment.save"), FileDialog.SAVE);
-        fileDialog.setVisible(true);
-        String fileName = fileDialog.getFile();
-        if (fileName == null) {
-            return null;
-        }
-        if (!fileName.endsWith(".json")) {
-            fileName += ".json";
-        }
-        File selectedFile = new File(fileDialog.getDirectory() + fileName);
-        try {
-            selectedFile.createNewFile();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return selectedFile;
+        configurations.forEach(configuration -> {
+            String fileName = configuration.getName();
+
+            if (configurationNumber.containsKey(configuration.getName())) {
+                configurationNumber.put(fileName, configurationNumber.get(fileName) + 1);
+                fileName = fileName + configurationNumber.get(fileName).toString();
+            }
+            configurationNumber.putIfAbsent(fileName, 0);
+
+            final String configFilePath = configFolder.getPath() + File.separator + fileName + ".xml";
+
+            write(new File(configFilePath), configuration.serialize());
+        });
     }
 
-    /**
-     * Load an {@link Environment} from a given {@link File}.
-     *
-     * @param file File which contains the json representation of an {@link Environment}.
-     */
-    public static Experiment loadExperiment(File file) {
-        try {
-            final String jsonString = Files.readString(file.toPath());
-            final Experiment experiment = JsonService.readExperiment(new JSONObject(jsonString));
-            EventService.LOG_LABEL.trigger(LangService.get("environment.loaded"));
-            EventService.REPAINT_CANVAS.trigger();
-            return experiment;
+    public static void write(File file, Document document) {
+        try (FileWriter fileWriter = new FileWriter(file)) {
+            document.write(fileWriter);
         } catch (IOException e) {
-            EventService.LOG.trigger(e.getLocalizedMessage());
-            log.error(LangService.get("could.not.read.file"), e);
-        } catch (JSONException e) {
-            EventService.LOG.trigger(LangService.get("environment.config.broken") + ": " + e.getLocalizedMessage());
-            EventService.LOG_LABEL.trigger(LangService.get("environment.config.broken"));
+            log.error("Could not serialize document in XML file: " + file.getPath(), e);
         }
+    }
+
+    public static Document read(File file) {
+        SAXReader reader = new SAXReader();
+        Document document = DocumentHelper.createDocument();
+        try {
+            document = reader.read(file);
+        } catch (DocumentException | MalformedURLException e) {
+            log.error("Could not parse XML file: " + file.getPath(), e);
+        }
+        return document;
+    }
+
+    static void clearFolder(final File folder) {
+        for (final String configFileName : Objects.requireNonNull(folder).list()) {
+            try {
+                Files.deleteIfExists(Path.of(folder.getPath(), configFileName));
+            } catch (IOException ignored) {
+            }
+        }
+    }
+
+    static File getFile(String path) {
+        final File file = new File(path);
+
+        try {
+            if (file.exists() || file.createNewFile()) {
+                return file;
+            }
+        } catch (IOException e) {
+            log.error("Could not create directory '" + path + "'", e);
+        }
+
         return null;
     }
 
-    /**
-     * Save an {@link Experiment} to a given {@link File}.
-     *
-     * @param file       File to save the json representation of the {@link Experiment} to.
-     * @param experiment Experiment to save.
-     */
-    public static void saveExperiment(File file, Experiment experiment) {
-        try {
-            final JSONObject jsonObject = JsonService.write(experiment);
-            Files.write(
-                    file.toPath(),
-                    jsonObject.toString().getBytes(),
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.TRUNCATE_EXISTING
-            );
-        } catch (IOException | JSONException e) {
-            log.error(LangService.get("could.not.write.file"), e);
-            EventService.LOG.trigger(LangService.get("could.not.write.file") + ": " + e.getLocalizedMessage());
+    static File getDir(String path) {
+        final File file = new File(path);
+
+        if (file.exists() || file.mkdirs()) {
+            return file;
         }
+
+        EventService.LOG.trigger("Could not create directory " + path);
+        return null;
     }
 
-    /**
-     * Save an {@link Configuration} to a given {@link File}.
-     *
-     * @param file          File to save the json representation of the {@link Configuration} to.
-     * @param configuration Configuration to save.
-     */
-    public static void saveConfiguration(File file, Configuration configuration) {
 
-    }
-
-    private static void save(File file, Object object) {
-        try {
-            final JSONObject jsonObject;
-            if (object instanceof Configuration) {
-                jsonObject = JsonService.write((Configuration) object);
-            } else if (object instanceof Experiment) {
-                jsonObject = JsonService.write((Experiment) object);
-            } else {
-                throw new IllegalArgumentException(LangService.get("unknown.data.type"));
-            }
-            Files.write(
-                    file.toPath(),
-                    jsonObject.toString().getBytes(),
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.TRUNCATE_EXISTING
-            );
-        } catch (IOException |
-                JSONException | IllegalArgumentException e) {
-            log.error(LangService.get("could.not.write.file"), e);
-            EventService.LOG.trigger(LangService.get("could.not.write.file") + ": " + e.getLocalizedMessage());
-        }
-    }
-
-    public static void save(File file, List<Configuration> configurations) {
-        final List<JSONObject> writtenConfigurations = configurations.stream().map(JsonService::write).collect(Collectors.toList());
-        final JSONArray configurationsArray = new JSONArray(writtenConfigurations);
-        try {
-            Files.write(
-                    file.toPath(),
-                    configurationsArray.toString().getBytes(),
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.TRUNCATE_EXISTING
-            );
-        } catch (IOException e) {
-            log.error(LangService.get("could.not.write.file"), e);
-            EventService.LOG.trigger(LangService.get("could.not.write.file") + ": " + e.getLocalizedMessage());
-        }
-    }
-
-    public static List<Project> loadProjects(File file) {
-        try {
-            String projectsString = Files.readString(file.toPath());
-            if (projectsString.isEmpty()) {
-                projectsString = "[]";
-                Files.write(file.toPath(), projectsString.getBytes());
-            }
-            return loadMultiple(file, JsonService::readProjects);
-        } catch (IOException e) {
-            e.printStackTrace();
-            log.error("Could not load projects", e);
-        }
-        return Collections.emptyList();
-    }
-
-    public static List<Configuration> loadConfigurations(File file) {
-        return loadMultiple(file, JsonService::readConfigurations);
-    }
-
-    public static <T> List<T> loadMultiple(File file, Function<JSONArray, List<T>> serviceMethod) {
-        try {
-            final String configJson = Files.readString(file.toPath());
-            return serviceMethod.apply(new JSONArray(configJson));
-        } catch (IOException e) {
-            log.error(LangService.get("could.not.read.file"), e);
-        }
-        return Collections.emptyList();
+    private static File getGlobalDir() {
+        return getFile(Main.HOME_PATH);
     }
 }

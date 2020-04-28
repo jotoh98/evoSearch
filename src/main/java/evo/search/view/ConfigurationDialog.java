@@ -9,9 +9,11 @@ import evo.search.Main;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
+import evo.search.io.entities.Project;
+import evo.search.io.service.EventService;
+import evo.search.io.service.ProjectService;
 import evo.search.view.listener.DocumentEditHandler;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.Value;
 
 import javax.swing.*;
@@ -21,12 +23,12 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -45,47 +47,8 @@ public class ConfigurationDialog extends JDialog {
     private JButton removeConfigButton;
     @Getter
     private JScrollPane configScrollWrapper;
-    @Setter
-    private Consumer<List<Configuration>> savingConsumer = e -> {
-    };
 
-    public ConfigurationDialog(List<Configuration> configurations) {
-        $$$setupUI$$$();
-        customUISetup();
-
-        configurations.stream()
-                .map(Configuration::clone)
-                .forEach(this::addConfiguration);
-
-        setupChooserList();
-
-        bindEmptyBehaviour();
-        bindConfigListModel();
-        bindConfigListButtons();
-
-        nameTextField.getDocument().addDocumentListener((DocumentEditHandler) e -> {
-            configChooserList.getSelectedValue().getConfiguration().setName(nameTextField.getText());
-            configChooserList.repaint();
-        });
-
-        buttonOK.addActionListener(e -> onOK());
-        buttonCancel.addActionListener(e -> onCancel());
-        applyButton.addActionListener(e -> onApply());
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                onCancel();
-            }
-        });
-        contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-
-        getRootPane().setDefaultButton(buttonOK);
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        setContentPane(contentPane);
-        setModal(true);
-        setPreferredSize(new Dimension(600, 400));
-        setMinimumSize(new Dimension(300, 200));
-        setMaximumSize(new Dimension(Integer.MAX_VALUE, 700));
-    }
+    private static Method $$$cachedGetBundleMethod$$$ = null;
 
     public static void main(String[] args) {
         List<Configuration> configurations = Arrays.asList(
@@ -234,12 +197,43 @@ public class ConfigurationDialog extends JDialog {
         applyButton.setEnabled(false);
     }
 
-    private void saveConfigurations() {
-        List<Configuration> configurations = IntStream.range(0, configListModel.size())
-                .mapToObj(configListModel::getElementAt)
-                .map(ConfigTuple::getConfiguration)
-                .collect(Collectors.toList());
-        savingConsumer.accept(configurations);
+    public ConfigurationDialog(List<Configuration> configurations) {
+        $$$setupUI$$$();
+        customUISetup();
+
+        configurations.stream()
+                .map(Configuration::clone)
+                .forEach(this::addConfiguration);
+
+        setupChooserList();
+
+        bindEmptyBehaviour();
+        bindConfigListModel();
+        bindConfigListButtons();
+
+        nameTextField.getDocument().addDocumentListener((DocumentEditHandler) e -> {
+            triggerChange();
+            configChooserList.getSelectedValue().getConfiguration().setName(nameTextField.getText());
+            configChooserList.repaint();
+        });
+
+        buttonOK.addActionListener(e -> onOK());
+        buttonCancel.addActionListener(e -> onCancel());
+        applyButton.addActionListener(e -> onApply());
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                onCancel();
+            }
+        });
+        contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+
+        getRootPane().setDefaultButton(buttonOK);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        setContentPane(contentPane);
+        setModal(true);
+        setPreferredSize(new Dimension(600, 400));
+        setMinimumSize(new Dimension(300, 200));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 700));
     }
 
     public void triggerChange() {
@@ -253,6 +247,18 @@ public class ConfigurationDialog extends JDialog {
         setVisible(true);
     }
 
+    private void saveConfigurations() {
+        List<Configuration> configurations = IntStream.range(0, configListModel.size())
+                .mapToObj(configListModel::getElementAt)
+                .map(ConfigTuple::getConfiguration)
+                .collect(Collectors.toList());
+
+        Project currentProject = ProjectService.getCurrentProject();
+        ProjectService.saveConfigurations(new File(currentProject.getPath()), configurations);
+        currentProject.setConfigurations(configurations);
+        EventService.CONFIGS_CHANGED.trigger(configurations);
+    }
+
     private void onCancel() {
         if (applyButton.isEnabled()) {
             final int saveChanges = JOptionPane.showConfirmDialog(
@@ -263,7 +269,7 @@ public class ConfigurationDialog extends JDialog {
                     JOptionPane.WARNING_MESSAGE
             );
             if (saveChanges == JOptionPane.YES_OPTION) {
-                onApply();
+                onOK();
                 return;
             }
         }
@@ -271,10 +277,99 @@ public class ConfigurationDialog extends JDialog {
     }
 
     private void onOK() {
+        onApply();
         dispose();
     }
 
-    private static Method $$$cachedGetBundleMethod$$$ = null;
+    /**
+     * Method generated by IntelliJ IDEA GUI Designer
+     * >>> IMPORTANT!! <<<
+     * DO NOT edit this method OR call it in your code!
+     *
+     * @noinspection ALL
+     */
+    private void $$$setupUI$$$() {
+        contentPane = new JPanel();
+        contentPane.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, 0));
+        bottomPane = new JPanel();
+        bottomPane.setLayout(new GridLayoutManager(1, 2, new Insets(6, 10, 6, 10), -1, -1));
+        contentPane.add(bottomPane, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_FIXED, 1, null, null, null, 0, false));
+        final Spacer spacer1 = new Spacer();
+        bottomPane.add(spacer1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        final JPanel panel1 = new JPanel();
+        panel1.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        bottomPane.add(panel1, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        buttonOK = new JButton();
+        this.$$$loadButtonText$$$(buttonOK, this.$$$getMessageFromBundle$$$("lang", "ok"));
+        panel1.add(buttonOK, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        buttonCancel = new JButton();
+        this.$$$loadButtonText$$$(buttonCancel, this.$$$getMessageFromBundle$$$("lang", "cancel"));
+        panel1.add(buttonCancel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        applyButton = new JButton();
+        applyButton.setEnabled(false);
+        this.$$$loadButtonText$$$(applyButton, this.$$$getMessageFromBundle$$$("lang", "apply"));
+        panel1.add(applyButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JSplitPane splitPane1 = new JSplitPane();
+        splitPane1.setDividerLocation(150);
+        contentPane.add(splitPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
+        final JPanel panel2 = new JPanel();
+        panel2.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
+        panel2.setMinimumSize(new Dimension(150, 24));
+        splitPane1.setLeftComponent(panel2);
+        final JScrollPane scrollPane1 = new JScrollPane();
+        panel2.add(scrollPane1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 40), null, null, 0, false));
+        configChooserList = new JList();
+        final DefaultListModel defaultListModel1 = new DefaultListModel();
+        defaultListModel1.addElement("Config 1");
+        defaultListModel1.addElement("Config 2");
+        configChooserList.setModel(defaultListModel1);
+        scrollPane1.setViewportView(configChooserList);
+        listEditBar = new JPanel();
+        listEditBar.setLayout(new GridLayoutManager(1, 3, new Insets(2, 6, 0, 6), 1, -1));
+        panel2.add(listEditBar, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, new Dimension(-1, 40), new Dimension(-1, 40), new Dimension(-1, 40), 0, false));
+        addConfigButton = new JButton();
+        addConfigButton.setBorderPainted(false);
+        addConfigButton.setText("");
+        addConfigButton.setToolTipText(this.$$$getMessageFromBundle$$$("lang", "config.add"));
+        listEditBar.add(addConfigButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(30, 30), new Dimension(30, 30), new Dimension(30, 30), 0, false));
+        removeConfigButton = new JButton();
+        removeConfigButton.setBorderPainted(false);
+        removeConfigButton.setToolTipText(this.$$$getMessageFromBundle$$$("lang", "configuration.delete"));
+        listEditBar.add(removeConfigButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(30, 30), new Dimension(30, 30), new Dimension(30, 30), 0, false));
+        final Spacer spacer2 = new Spacer();
+        listEditBar.add(spacer2, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        final JPanel panel3 = new JPanel();
+        panel3.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
+        panel3.setMinimumSize(new Dimension(550, 200));
+        panel3.setPreferredSize(new Dimension(500, 200));
+        splitPane1.setRightComponent(panel3);
+        configNamePanel = new JPanel();
+        configNamePanel.setLayout(new GridLayoutManager(1, 2, new Insets(2, 6, 2, 6), -1, -1));
+        panel3.add(configNamePanel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(-1, 40), new Dimension(-1, 40), new Dimension(-1, 40), 0, false));
+        final JLabel label1 = new JLabel();
+        this.$$$loadLabelText$$$(label1, this.$$$getMessageFromBundle$$$("lang", "name"));
+        configNamePanel.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        nameTextField = new JTextField();
+        configNamePanel.add(nameTextField, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        configScrollWrapper = new JScrollPane();
+        panel3.add(configScrollWrapper, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        label1.setLabelFor(nameTextField);
+    }
+
+    private String $$$getMessageFromBundle$$$(String path, String key) {
+        ResourceBundle bundle;
+        try {
+            Class<?> thisClass = this.getClass();
+            if ($$$cachedGetBundleMethod$$$ == null) {
+                Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
+                $$$cachedGetBundleMethod$$$ = dynamicBundleClass.getMethod("getBundle", String.class, Class.class);
+            }
+            bundle = (ResourceBundle) $$$cachedGetBundleMethod$$$.invoke(null, path, thisClass);
+        } catch (Exception e) {
+            bundle = ResourceBundle.getBundle(path);
+        }
+        return bundle.getString(key);
+    }
 
     /**
      * @noinspection ALL
@@ -335,96 +430,6 @@ public class ConfigurationDialog extends JDialog {
      */
     public JComponent $$$getRootComponent$$$() {
         return contentPane;
-    }
-
-    /**
-     * Method generated by IntelliJ IDEA GUI Designer
-     * >>> IMPORTANT!! <<<
-     * DO NOT edit this method OR call it in your code!
-     *
-     * @noinspection ALL
-     */
-    private void $$$setupUI$$$() {
-        contentPane = new JPanel();
-        contentPane.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, 0));
-        bottomPane = new JPanel();
-        bottomPane.setLayout(new GridLayoutManager(1, 2, new Insets(6, 10, 6, 10), -1, -1));
-        contentPane.add(bottomPane, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_FIXED, 1, null, null, null, 0, false));
-        final Spacer spacer1 = new Spacer();
-        bottomPane.add(spacer1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
-        final JPanel panel1 = new JPanel();
-        panel1.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
-        bottomPane.add(panel1, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        buttonOK = new JButton();
-        this.$$$loadButtonText$$$(buttonOK, ResourceBundle.getBundle("lang").getString("ok"));
-        panel1.add(buttonOK, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        buttonCancel = new JButton();
-        this.$$$loadButtonText$$$(buttonCancel, ResourceBundle.getBundle("lang").getString("cancel"));
-        panel1.add(buttonCancel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        applyButton = new JButton();
-        applyButton.setEnabled(false);
-        this.$$$loadButtonText$$$(applyButton, ResourceBundle.getBundle("lang").getString("apply"));
-        panel1.add(applyButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JSplitPane splitPane1 = new JSplitPane();
-        splitPane1.setDividerLocation(150);
-        contentPane.add(splitPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
-        final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        panel2.setMinimumSize(new Dimension(150, 24));
-        splitPane1.setLeftComponent(panel2);
-        final JScrollPane scrollPane1 = new JScrollPane();
-        panel2.add(scrollPane1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 40), null, null, 0, false));
-        configChooserList = new JList();
-        final DefaultListModel defaultListModel1 = new DefaultListModel();
-        defaultListModel1.addElement("Config 1");
-        defaultListModel1.addElement("Config 2");
-        configChooserList.setModel(defaultListModel1);
-        scrollPane1.setViewportView(configChooserList);
-        listEditBar = new JPanel();
-        listEditBar.setLayout(new GridLayoutManager(1, 3, new Insets(2, 6, 0, 6), 1, -1));
-        panel2.add(listEditBar, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, new Dimension(-1, 40), new Dimension(-1, 40), new Dimension(-1, 40), 0, false));
-        addConfigButton = new JButton();
-        addConfigButton.setBorderPainted(false);
-        addConfigButton.setText("");
-        addConfigButton.setToolTipText(ResourceBundle.getBundle("lang").getString("config.add"));
-        listEditBar.add(addConfigButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(30, 30), new Dimension(30, 30), new Dimension(30, 30), 0, false));
-        removeConfigButton = new JButton();
-        removeConfigButton.setBorderPainted(false);
-        removeConfigButton.setToolTipText(ResourceBundle.getBundle("lang").getString("configuration.delete"));
-        listEditBar.add(removeConfigButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(30, 30), new Dimension(30, 30), new Dimension(30, 30), 0, false));
-        final Spacer spacer2 = new Spacer();
-        listEditBar.add(spacer2, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
-        final JPanel panel3 = new JPanel();
-        panel3.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        panel3.setMinimumSize(new Dimension(550, 200));
-        panel3.setPreferredSize(new Dimension(500, 200));
-        splitPane1.setRightComponent(panel3);
-        configNamePanel = new JPanel();
-        configNamePanel.setLayout(new GridLayoutManager(1, 2, new Insets(2, 6, 2, 6), -1, -1));
-        panel3.add(configNamePanel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(-1, 40), new Dimension(-1, 40), new Dimension(-1, 40), 0, false));
-        final JLabel label1 = new JLabel();
-        this.$$$loadLabelText$$$(label1, ResourceBundle.getBundle("lang").getString("name"));
-        configNamePanel.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        nameTextField = new JTextField();
-        configNamePanel.add(nameTextField, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
-        configScrollWrapper = new JScrollPane();
-        panel3.add(configScrollWrapper, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        label1.setLabelFor(nameTextField);
-    }
-
-    private String $$$getMessageFromBundle$$$(String path, String key) {
-        ResourceBundle bundle;
-        try {
-            Class<?> thisClass = this.getClass();
-            if ($$$cachedGetBundleMethod$$$ == null) {
-                Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
-                $$$cachedGetBundleMethod$$$ = dynamicBundleClass.getMethod("getBundle", String.class, Class.class);
-            }
-            bundle = (ResourceBundle) $$$cachedGetBundleMethod$$$.invoke(null, path, thisClass);
-        } catch (Exception e) {
-            bundle = ResourceBundle.getBundle(path);
-        }
-        return bundle.getString(key);
     }
 
     public void createUIComponents() {

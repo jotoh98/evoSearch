@@ -39,16 +39,56 @@ import java.util.stream.Collectors;
 @Setter
 public class Environment {
 
-    @AllArgsConstructor
-    public enum Fitness {
-        SINGULAR(Environment::fitnessSingular),
-        GLOBAL(Environment::fitness);
-
-        private Function<DiscreteChromosome, Double> method;
-
-        public static Fitness getDefault() {
-            return GLOBAL;
+    /**
+     * Evolving the individuals.
+     *
+     * @param newConfiguration The evolutions configuration holding all information about the environment.
+     * @param progressConsumer Progress consumer.
+     * @return The resulting fittest individual of the evolution.
+     */
+    public Genotype<DiscreteGene> evolve(Configuration newConfiguration, Consumer<Integer> progressConsumer) {
+        if (newConfiguration == null) {
+            EventService.LOG_LABEL.trigger(LangService.get("environment.config.missing"));
+            return null;
         }
+        setConfiguration(newConfiguration);
+
+
+        Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
+                configuration.getFitness().getMethod(),
+                Codec.of(
+                        Genotype.of(DiscreteChromosome.shuffle()),
+                        chromosomes -> DiscreteChromosome.of(ISeq.of(chromosomes.chromosome()))
+                )
+        );
+
+        final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine.builder(problem).optimize(Optimize.MINIMUM);
+
+        List<? extends DiscreteAlterer> alterers = configuration.getAlterers();
+        if (alterers.size() > 0) {
+            final DiscreteAlterer first = alterers.remove(0);
+            final DiscreteAlterer[] rest = alterers.toArray(DiscreteAlterer[]::new);
+            evolutionBuilder.alterers(first, rest);
+        }
+
+        try {
+            evolutionBuilder
+                    .offspringSize(configuration.getOffspring())
+                    .survivorsSize(configuration.getSurvivors())
+                    .populationSize(configuration.getPopulation());
+        } catch (IllegalArgumentException e) {
+            EventService.LOG_LABEL.trigger("Configuration was incorrect: " + e.getMessage());
+            return null;
+        }
+
+
+        EventService.LOG_LABEL.trigger(LangService.get("environment.evolving"));
+        final AtomicInteger progressCounter = new AtomicInteger();
+        return evolutionBuilder.build()
+                .stream()
+                .limit(configuration.getLimit())
+                .peek(result -> progressConsumer.accept(progressCounter.incrementAndGet()))
+                .collect(EvolutionResult.toBestGenotype());
     }
 
     /**
@@ -171,43 +211,16 @@ public class Environment {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Evolving the individuals.
-     *
-     * @param fitness  Fitness function for the evolutionary algorithm.
-     * @param limit    Amount of iterations to evolve the population.
-     * @param alterers List of mutators to alter the individuals during evolution.
-     * @param consumer Progress consumer.
-     * @return The resulting fittest individual of the evolution.
-     */
-    public Genotype<DiscreteGene> evolve(final Function<DiscreteChromosome, Double> fitness, final int limit, List<DiscreteAlterer> alterers, Consumer<Integer> consumer) {
-        if (configuration == null) {
-            EventService.LOG_LABEL.trigger(LangService.get("environment.config.missing"));
+    @Getter
+    @AllArgsConstructor
+    public enum Fitness {
+        SINGULAR(Environment::fitnessSingular),
+        GLOBAL(Environment::fitness);
+
+        private Function<DiscreteChromosome, Double> method;
+
+        public static Fitness getDefault() {
+            return GLOBAL;
         }
-        EventService.LOG_LABEL.trigger(LangService.get("environment.evolving"));
-        Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
-                fitness,
-                Codec.of(
-                        Genotype.of(DiscreteChromosome.shuffle()),
-                        chromosomes -> DiscreteChromosome.of(ISeq.of(chromosomes.chromosome()))
-                )
-        );
-
-        final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine.builder(problem).optimize(Optimize.MINIMUM);
-
-        if (alterers.size() > 0) {
-            final DiscreteAlterer first = alterers.remove(0);
-            final DiscreteAlterer[] rest = alterers.toArray(DiscreteAlterer[]::new);
-            evolutionBuilder.alterers(first, rest);
-        }
-
-        final AtomicInteger progressCounter = new AtomicInteger();
-        final Genotype<DiscreteGene> individual = evolutionBuilder.build()
-                .stream()
-                .limit(limit)
-                .peek(result -> consumer.accept(progressCounter.incrementAndGet()))
-                .collect(EvolutionResult.toBestGenotype());
-
-        return individual;
     }
 }

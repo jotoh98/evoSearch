@@ -6,7 +6,6 @@ import evo.search.io.service.EventService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.ChooserForm;
 import evo.search.view.ConfigurationDialog;
-import evo.search.view.MainForm;
 import org.jetbrains.annotations.NonNls;
 
 import javax.swing.*;
@@ -23,6 +22,9 @@ public class Main {
 
     public static final String VERSION = Main.class.getPackage().getImplementationVersion();
 
+    @NonNls
+    public static final String UNKNOWN_VERSION = "unknown";
+
     public static final String HOME_PATH = System.getProperty("user.home") + File.separator + ".evoSearch";
 
     /**
@@ -33,11 +35,6 @@ public class Main {
     public static void main(String[] args) {
         ProjectService.setupService();
         setupEnvironment();
-
-        EventService.INIT_PROJECT.addListener(project -> {
-            final MainForm mainForm = new MainForm(project);
-            mainForm.showFrame();
-        });
         EventService.OPEN_CONFIG.addListener(configurations -> {
             ConfigurationDialog configurationDialog = new ConfigurationDialog(configurations);
             configurationDialog.showFrame();

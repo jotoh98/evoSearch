@@ -3,14 +3,14 @@ package evo.search.view.part;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import evo.search.Main;
-import evo.search.io.entities.Project;
+import evo.search.io.entities.IndexEntry;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.time.LocalDateTime;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
@@ -20,14 +20,14 @@ public class ProjectListItem extends JPanel {
     private JLabel versionLabel;
     private JLabel pathLabel;
 
-    private Project project;
+    private IndexEntry entry;
 
-    public ProjectListItem(Project project) {
+    public ProjectListItem(IndexEntry entry) {
         setupUI();
-        this.project = project;
-        nameLabel.setText(this.project.getName());
-        versionLabel.setText(this.project.getVersion());
-        pathLabel.setText(this.project.getPath());
+        this.entry = entry;
+        nameLabel.setText(this.entry.getName());
+        versionLabel.setText(this.entry.getVersion());
+        pathLabel.setText(this.entry.getPath());
 
         deleteButton.setIcon(UIManager.getIcon("TextField.search.clear.icon"));
         deleteButton.setVisible(false);
@@ -64,7 +64,7 @@ public class ProjectListItem extends JPanel {
 
     public static void main(String[] args) {
         Main.setupEnvironment();
-        final ProjectListItem projectListItem = new ProjectListItem(new Project("0.0.1", "/jotoh/usr/lol", "Untitled Project 1"));
+        final ProjectListItem projectListItem = new ProjectListItem(new IndexEntry("0.0.1", "/jotoh/usr/lol", "Untitled Project 1", LocalDateTime.now()));
         final JFrame jFrame = new JFrame();
         jFrame.add(projectListItem);
         jFrame.setSize(300, 80);
@@ -78,11 +78,11 @@ public class ProjectListItem extends JPanel {
         deleteButton.addActionListener(actionListener);
     }
 
-    public void bindSelectionEvent(Consumer<Project> projectSelection) {
+    public void bindSelectionEvent(Consumer<IndexEntry> projectSelection) {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(final MouseEvent e) {
-                projectSelection.accept(project);
+                projectSelection.accept(entry);
             }
         });
     }

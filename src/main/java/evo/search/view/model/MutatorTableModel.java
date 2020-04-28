@@ -2,24 +2,26 @@ package evo.search.view.model;
 
 import evo.search.Environment;
 import evo.search.ga.mutators.DiscreteAlterer;
+import evo.search.io.entities.Configuration;
 import evo.search.view.LangService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * This table model displays all registered {@link DiscreteAlterer} classes to select and configure
- * for the {@link Environment#evolve(Function, int, List, Consumer)} method.
+ * for the {@link Environment#evolve(Configuration, Consumer)} method.
  */
 @Slf4j
 public class MutatorTableModel extends AbstractTableModel {
@@ -96,11 +98,17 @@ public class MutatorTableModel extends AbstractTableModel {
         switch (column) {
             case 0:
                 config.setSelected((boolean) aValue);
-                return;
+                break;
             case 1:
                 throw new IllegalStateException("You cannot edit existing mutator class names.");
             case 2:
                 config.setProbability(Double.parseDouble(aValue.toString()));
+        }
+        Object[] listeners = listenerList.getListenerList();
+        for (int i = listeners.length - 2; i >= 0; i -= 2) {
+            if (listeners[i] == TableModelListener.class) {
+                ((TableModelListener) listeners[i + 1]).tableChanged(new TableModelEvent(this, row, row, column, TableModelEvent.UPDATE));
+            }
         }
     }
 

@@ -5,13 +5,13 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import evo.search.Main;
 import evo.search.io.entities.Project;
-import evo.search.io.service.EventService;
 import evo.search.io.service.FileService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.part.ProjectListItem;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -27,105 +27,20 @@ import java.util.ResourceBundle;
 public class ChooserForm extends JFrame {
     private JButton addButton;
     private JPanel rootPanel;
-    private JPanel optionsPane;
+    private static Method $$$cachedGetBundleMethod$$$ = null;
     private JButton openButton;
     private JPanel listPanel;
-
-    private DefaultListModel<Project> projectsListModel = new DefaultListModel<>();
-
-    private static Method $$$cachedGetBundleMethod$$$ = null;
+    private JPanel optionPane;
 
     public ChooserForm() {
 
         $$$setupUI$$$();
 
-        ProjectService.getProjects().forEach(project -> {
-            final ProjectListItem listItem = new ProjectListItem(project);
-            listItem.bindSelectionEvent(selectedProject -> {
-                openMainForm(selectedProject);
-            });
-            listItem.bindDeleteEvent(e -> {
-                listPanel.remove(listItem);
-                listPanel.revalidate();
-                listPanel.repaint();
-                ProjectService.removeProjectRegister(project);
-            });
-            listPanel.add(listItem);
-        });
-
-        final Spacer spacer1 = new Spacer();
-        listPanel.add(spacer1, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-
-        optionsPane.setBackground(UIManager.getColor("EvoSearch.darker"));
-        addButton.setIcon(UIManager.getIcon("Spinner.plus.icon"));
-        openButton.setIcon(UIManager.getIcon("FileView.directoryIcon"));
-
+        fillProjectList();
+        addCreationListener();
         setupFrame();
-        addButton.addActionListener(e -> {
-            final File directory = FileService.promptForDirectory();
-            if (directory != null) {
-                if (directory.list() != null && Objects.requireNonNull(directory.list()).length > 0) {
-                    JOptionPane.showConfirmDialog(
-                            this,
-                            LangService.get("project.not.created") + " " + LangService.get("directory.not.empty") + ".",
-                            LangService.get("directory.not.empty"),
-                            JOptionPane.DEFAULT_OPTION,
-                            JOptionPane.INFORMATION_MESSAGE
-                    );
-                }
-
-                final Project untitledProject = new Project("0", directory.getPath(), "Untitled");
-                if (ProjectService.setupNewProject(Objects.requireNonNull(directory), untitledProject)) {
-                    ProjectService.addProject(untitledProject);
-                    openMainForm(untitledProject);
-                }
-            }
-        });
-
-        openButton.addActionListener(e -> {
-            final File directory = FileService.promptForDirectory();
-            if (directory != null) {
-                if (!ProjectService.isProject(directory)) {
-                    JOptionPane.showConfirmDialog(
-                            this,
-                            LangService.get("project.not.opened") + " " + LangService.get("directory.no.project") + ".",
-                            LangService.get("directory.no.project"),
-                            JOptionPane.DEFAULT_OPTION,
-                            JOptionPane.INFORMATION_MESSAGE
-                    );
-                } else {
-                    final Project project = ProjectService.loadProject(directory);
-                    EventService.INIT_PROJECT.trigger(project);
-                }
-            } else {
-                JOptionPane.showConfirmDialog(
-                        this,
-                        LangService.get("project.not.opened") + " " + LangService.get("directory.not.chosen") + ".",
-                        LangService.get("directory.not.chosen"),
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.INFORMATION_MESSAGE
-                );
-            }
-        });
-
-        Arrays.asList(addButton, openButton).forEach(jButton ->
-                jButton.addMouseListener(new MouseAdapter() {
-
-                    final Color backup = jButton.getForeground();
-
-                    @Override
-                    public void mouseEntered(final MouseEvent e) {
-                        jButton.setForeground(UIManager.getColor("EvoSearch.reddish"));
-                        super.mouseEntered(e);
-                    }
-
-                    @Override
-                    public void mouseExited(final MouseEvent e) {
-                        jButton.setForeground(backup);
-                        super.mouseExited(e);
-                    }
-                })
-        );
+        addOpenListener();
+        setOptionPaneUI();
 
         addWindowListener(new WindowAdapter() {
             @Override
@@ -133,6 +48,95 @@ public class ChooserForm extends JFrame {
                 ProjectService.saveRegistered();
                 super.windowClosing(e);
             }
+        });
+    }
+
+    private void fillProjectList() {
+        ProjectService.getIndexEntries().forEach(project -> {
+            final ProjectListItem listItem = new ProjectListItem(project);
+            listItem.bindSelectionEvent(selectedProject -> {
+                Project projectFromDir = ProjectService
+                        .loadProjectFromDirectory(new File(selectedProject.getPath()));
+                projectFromDir.setPath(selectedProject.getPath());
+                ProjectService.setCurrentProject(projectFromDir);
+                openMainForm();
+            });
+            listItem.bindDeleteEvent(e -> {
+                listPanel.remove(listItem);
+                listPanel.revalidate();
+                listPanel.repaint();
+                ProjectService.getIndexEntries().remove(project);
+            });
+            listPanel.add(listItem);
+        });
+        final Spacer verticalSpacer = new Spacer();
+        listPanel.add(verticalSpacer, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+
+    }
+
+    private void addCreationListener() {
+        addButton.addActionListener(e -> {
+            final File directory = FileService.promptForDirectory();
+            if (directory == null) {
+                return;
+            }
+            if (ProjectService.containsHidden(directory)) {
+                JOptionPane.showConfirmDialog(
+                        this,
+                        LangService.get("project.not.created") + " " + LangService.get("directory.already.set.up") + ".",
+                        LangService.get("directory.not.empty"),
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+            }
+
+            final Project untitledProject = new Project();
+            untitledProject.setPath(directory.getPath());
+            untitledProject.setName("Untitled");
+            untitledProject.setVersion(Main.VERSION);
+            if (ProjectService.setupNewProject(Objects.requireNonNull(directory), untitledProject)) {
+                ProjectService.addProjectEntry(untitledProject);
+                ProjectService.setCurrentProject(untitledProject);
+                openMainForm();
+            }
+        });
+    }
+
+    private void addOpenListener() {
+        openButton.addActionListener(e -> {
+            final File directory = FileService.promptForDirectory();
+            if (directory == null) {
+                JOptionPane.showConfirmDialog(
+                        this,
+                        LangService.get("project.not.opened") + " " + LangService.get("directory.not.chosen") + ".",
+                        LangService.get("directory.not.chosen"),
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+                return;
+            }
+            if (!ProjectService.containsHidden(directory)) {
+                JOptionPane.showConfirmDialog(
+                        this,
+                        LangService.get("project.not.opened") + " " + LangService.get("directory.no.project") + ".",
+                        LangService.get("directory.no.project"),
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+                return;
+            }
+
+            final Project openedProject = ProjectService.loadProjectFromDirectory(directory);
+
+            if (openedProject == null) {
+                return;
+            }
+
+            if (!ProjectService.isProjectRegistered(openedProject)) {
+                ProjectService.addProjectEntry(openedProject);
+            }
+            ProjectService.setCurrentProject(openedProject);
+            openMainForm();
         });
     }
 
@@ -151,10 +155,85 @@ public class ChooserForm extends JFrame {
         setVisible(true);
     }
 
-    private void openMainForm(final Project project) {
-        EventService.INIT_PROJECT.trigger(project);
+    private void setOptionPaneUI() {
+        optionPane.setBackground(UIManager.getColor("EvoSearch.darker"));
+        addButton.setIcon(UIManager.getIcon("Spinner.plus.icon"));
+        openButton.setIcon(UIManager.getIcon("FileView.directoryIcon"));
+        Arrays.asList(addButton, openButton).forEach(jButton ->
+                jButton.addMouseListener(new MouseAdapter() {
+
+                    final Color backup = jButton.getForeground();
+
+                    @Override
+                    public void mouseEntered(final MouseEvent e) {
+                        jButton.setForeground(UIManager.getColor("EvoSearch.reddish"));
+                        super.mouseEntered(e);
+                    }
+
+                    @Override
+                    public void mouseExited(final MouseEvent e) {
+                        jButton.setForeground(backup);
+                        super.mouseExited(e);
+                    }
+                })
+        );
+    }
+
+    private void openMainForm() {
         ProjectService.saveRegistered();
+        MainForm mainForm = new MainForm();
+        mainForm.showFrame();
         dispose();
+    }
+
+    /**
+     * Method generated by IntelliJ IDEA GUI Designer
+     * >>> IMPORTANT!! <<<
+     * DO NOT edit this method OR call it in your code!
+     *
+     * @noinspection ALL
+     */
+    private void $$$setupUI$$$() {
+        createUIComponents();
+        rootPanel = new JPanel();
+        rootPanel.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), 0, 0));
+        final JScrollPane scrollPane1 = new JScrollPane();
+        rootPanel.add(scrollPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(300, -1), null, 0, false));
+        scrollPane1.setViewportView(listPanel);
+        optionPane = new JPanel();
+        optionPane.setLayout(new GridLayoutManager(4, 1, new Insets(0, 0, 0, 0), -1, -1));
+        optionPane.setBackground(new Color(-14868446));
+        rootPanel.add(optionPane, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(100, -1), new Dimension(300, -1), 0, false));
+        optionPane.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
+        addButton = new JButton();
+        addButton.setBorderPainted(false);
+        addButton.setContentAreaFilled(false);
+        this.$$$loadButtonText$$$(addButton, this.$$$getMessageFromBundle$$$("lang", "create.new"));
+        optionPane.add(addButton, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(139, 30), null, 0, false));
+        openButton = new JButton();
+        openButton.setBorderPainted(false);
+        openButton.setContentAreaFilled(false);
+        this.$$$loadButtonText$$$(openButton, this.$$$getMessageFromBundle$$$("lang", "open"));
+        optionPane.add(openButton, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(139, 30), null, 0, false));
+        final Spacer spacer1 = new Spacer();
+        optionPane.add(spacer1, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(139, 14), null, 0, false));
+        final Spacer spacer2 = new Spacer();
+        optionPane.add(spacer2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(139, 14), null, 0, false));
+    }
+
+    private String $$$getMessageFromBundle$$$(String path, String key) {
+        ResourceBundle bundle;
+        try {
+            Class<?> thisClass = this.getClass();
+            if ($$$cachedGetBundleMethod$$$ == null) {
+                Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
+                $$$cachedGetBundleMethod$$$ = dynamicBundleClass.getMethod("getBundle", String.class, Class.class);
+            }
+            bundle = (ResourceBundle) $$$cachedGetBundleMethod$$$.invoke(null, path, thisClass);
+        } catch (Exception e) {
+            bundle = ResourceBundle.getBundle(path);
+        }
+        return bundle.getString(key);
     }
 
     /**
@@ -185,60 +264,10 @@ public class ChooserForm extends JFrame {
     }
 
     /**
-     * Method generated by IntelliJ IDEA GUI Designer
-     * >>> IMPORTANT!! <<<
-     * DO NOT edit this method OR call it in your code!
-     *
-     * @noinspection ALL
-     */
-    private void $$$setupUI$$$() {
-        createUIComponents();
-        rootPanel = new JPanel();
-        rootPanel.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), 0, 0));
-        final JScrollPane scrollPane1 = new JScrollPane();
-        rootPanel.add(scrollPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(300, -1), null, 0, false));
-        scrollPane1.setViewportView(listPanel);
-        optionsPane = new JPanel();
-        optionsPane.setLayout(new GridLayoutManager(4, 1, new Insets(0, 0, 0, 0), -1, -1));
-        optionsPane.setBackground(new Color(-14868446));
-        rootPanel.add(optionsPane, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(100, -1), new Dimension(300, -1), 0, false));
-        optionsPane.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10), null));
-        addButton = new JButton();
-        addButton.setBorderPainted(false);
-        addButton.setContentAreaFilled(false);
-        this.$$$loadButtonText$$$(addButton, ResourceBundle.getBundle("lang").getString("create.new"));
-        optionsPane.add(addButton, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(139, 30), null, 0, false));
-        openButton = new JButton();
-        openButton.setBorderPainted(false);
-        openButton.setContentAreaFilled(false);
-        this.$$$loadButtonText$$$(openButton, ResourceBundle.getBundle("lang").getString("open"));
-        optionsPane.add(openButton, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(139, 30), null, 0, false));
-        final Spacer spacer1 = new Spacer();
-        optionsPane.add(spacer1, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(139, 14), null, 0, false));
-        final Spacer spacer2 = new Spacer();
-        optionsPane.add(spacer2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(139, 14), null, 0, false));
-    }
-
-    /**
      * @noinspection ALL
      */
     public JComponent $$$getRootComponent$$$() {
         return rootPanel;
-    }
-
-    private String $$$getMessageFromBundle$$$(String path, String key) {
-        ResourceBundle bundle;
-        try {
-            Class<?> thisClass = this.getClass();
-            if ($$$cachedGetBundleMethod$$$ == null) {
-                Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
-                $$$cachedGetBundleMethod$$$ = dynamicBundleClass.getMethod("getBundle", String.class, Class.class);
-            }
-            bundle = (ResourceBundle) $$$cachedGetBundleMethod$$$.invoke(null, path, thisClass);
-        } catch (Exception e) {
-            bundle = ResourceBundle.getBundle(path);
-        }
-        return bundle.getString(key);
     }
 
     private void createUIComponents() {

@@ -1,12 +1,15 @@
-package evo.search.io;
+package evo.search.io.service;
 
-import evo.search.Configuration;
 import evo.search.Environment;
-import evo.search.Run;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
+import evo.search.ga.mutators.DiscreteAlterer;
+import evo.search.io.entities.Configuration;
+import evo.search.io.entities.Experiment;
+import evo.search.io.entities.Project;
 import evo.search.view.LangService;
+import io.jenetics.AbstractAlterer;
 import io.jenetics.util.ISeq;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -15,6 +18,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Json service to serialize and deserialize {@link Environment}s and members.
@@ -22,14 +26,25 @@ import java.util.Objects;
 public class JsonService {
 
     private static final String VERSION = "ver";
+    private static final String NAME = "name";
     private static final String DISTANCE = "distance";
     private static final String DISTANCES = "distance";
     private static final String POSITION = "position";
     private static final String POSITIONS = "positions";
     private static final String TREASURES = "treasures";
-    private static final String HISTORY = "history";
+    private static final String INDIVIDUALS = "individuals";
     private static final String CHROMOSOME = "chromosome";
     private static final String LIMIT = "limit";
+    private static final String CONFIGURATION = "configuration";
+    private static final String FITNESS = "fitness";
+    private static final String PROBABILITY = "probability";
+    private static final String METHOD = "method";
+    private static final String POPULATION = "population";
+    private static final String OFFSPRING = "offspring";
+    private static final String SURVIVORS = "survivors";
+    private static final String ALTERERS = "alterers";
+    private static final String PATH = "path";
+
 
     /**
      * Serialize a {@link DiscretePoint}.
@@ -66,38 +81,52 @@ public class JsonService {
     }
 
     /**
-     * Serialize a {@link Run}.
+     * Serialize a {@link Configuration}.
      *
-     * @param run Run to serialize.
-     * @return Json object for the {@link Run}.
-     */
-    public static JSONObject write(Run run) {
-        return write(run.getIndividual())
-                .accumulate(LIMIT, run.getLimit());
-    }
-
-    /**
-     * Serialize an {@link Environment}.
-     *
-     * @param configuration Experiment to serialize.
-     * @return Json object for the {@link Environment}.
+     * @param configuration Configuration to serialize.
+     * @return Json object for the {@link Configuration}.
      */
     public static JSONObject write(Configuration configuration) {
         JSONObject jsonObject = new JSONObject()
                 .accumulate(VERSION, configuration.getVersion())
+                .accumulate(NAME, configuration.getName())
                 .accumulate(POSITIONS, configuration.getPositions())
                 .accumulate(DISTANCES, configuration.getDistances())
-                .accumulate(LIMIT, configuration.getLimit());
+                .accumulate(LIMIT, configuration.getLimit())
+                .accumulate(FITNESS, configuration.getFitness().name())
+                .accumulate(POPULATION, configuration.getPopulation())
+                .accumulate(OFFSPRING, configuration.getOffspring())
+                .accumulate(SURVIVORS, configuration.getSurvivors());
 
         if (configuration.getTreasures().size() == 0) {
             jsonObject.put(TREASURES, new ArrayList<>());
         }
-        if (configuration.getHistory().size() == 0) {
-            jsonObject.put(HISTORY, new ArrayList<>());
+
+        if (configuration.getAlterers().size() == 0) {
+            jsonObject.put(ALTERERS, new ArrayList<>());
         }
 
+        configuration.getAlterers().forEach(alterer -> jsonObject.append(ALTERERS, write(alterer)));
         configuration.getTreasures().forEach(discretePoint -> jsonObject.append(TREASURES, write(discretePoint)));
-        configuration.getHistory().forEach(discreteChromosome -> jsonObject.append(HISTORY, write(discreteChromosome)));
+        return jsonObject;
+    }
+
+    public static JSONObject write(DiscreteAlterer alterer) {
+        return new JSONObject()
+                .accumulate(METHOD, alterer.getClass().getSimpleName())
+                .accumulate(PROBABILITY, ((AbstractAlterer<?, ?>) alterer).probability());
+    }
+
+    /**
+     * Serialize an {@link Experiment}.
+     *
+     * @param experiment Experiment to serialize.
+     * @return Json object for the {@link Experiment}.
+     */
+    public static JSONObject write(Experiment experiment) {
+        final JSONObject jsonObject = new JSONObject()
+                .accumulate(CONFIGURATION, write(experiment.getConfiguration()));
+        experiment.getIndividuals().forEach(run -> jsonObject.append(INDIVIDUALS, write(run)));
         return jsonObject;
     }
 
@@ -143,17 +172,25 @@ public class JsonService {
         return new DiscreteChromosome(ISeq.of(discreteGenes));
     }
 
-    public static Run readRun(JSONObject jsonObject) {
-        final int limit = jsonObject.getInt(LIMIT);
-        final DiscreteChromosome discreteChromosome = readDiscreteChromosome(jsonObject.getJSONArray(CHROMOSOME));
-        return new Run(limit, discreteChromosome);
+    public static Experiment readExperiment(JSONObject jsonObject) {
+        final Configuration configuration = readConfiguration(jsonObject.getJSONObject(CONFIGURATION));
+
+        final ArrayList<DiscreteChromosome> individuals = new ArrayList<>();
+
+        jsonObject.getJSONArray(INDIVIDUALS).forEach(object -> {
+            if (object instanceof JSONArray) {
+                individuals.add(readDiscreteChromosome((JSONArray) object));
+            }
+        });
+
+        return new Experiment(configuration, individuals);
     }
 
     /**
-     * Deserialize an {@link Environment}s json.
+     * Deserialize an {@link Configuration}s json.
      * Writes the experiment directly to the singleton.
      *
-     * @param jsonObject Json to deserialize into an {@link Environment}.
+     * @param jsonObject Json to deserialize into an {@link Configuration}.
      * @return The saved configuration.
      */
     public static Configuration readConfiguration(JSONObject jsonObject) {
@@ -164,6 +201,8 @@ public class JsonService {
             EventService.LOG_LABEL.trigger(LangService.get("version.undefined"));
             EventService.LOG.trigger(LangService.get("version.undefined"));
         }
+
+        final String name = jsonObject.getString(NAME);
 
         int positions = jsonObject.getInt(POSITIONS);
 
@@ -176,12 +215,38 @@ public class JsonService {
         final List<DiscretePoint> treasures = new ArrayList<>();
         jsonObject.getJSONArray(TREASURES).forEach(o -> treasures.add(readDiscretePoint((JSONObject) o)));
 
-        final List<Run> history = new ArrayList<>();
-        jsonObject.getJSONArray(HISTORY).forEach(o -> history.add(readRun((JSONObject) o)));
+        return Configuration.builder()
+                .version(version)
+                .name(name)
+                .limit(1000)
+                .positions(positions)
+                .distances(distances)
+                .treasures(treasures)
+                .build();
+    }
 
-        final Configuration configuration = new Configuration(version, positions, distances, treasures);
+    public static List<Configuration> readConfigurations(JSONArray jsonArray) {
+        return readArray(jsonArray, JsonService::readConfiguration);
+    }
 
-        configuration.getHistory().addAll(history);
-        return configuration;
+    public static <T> List<T> readArray(JSONArray jsonArray, Function<JSONObject, T> method) {
+        final ArrayList<T> resultList = new ArrayList<>();
+        jsonArray.forEach(object -> {
+            if (object instanceof JSONObject) {
+                resultList.add(method.apply((JSONObject) object));
+            }
+        });
+        return resultList;
+    }
+
+    public static List<Project> readProjects(JSONArray jsonArray) {
+        return readArray(jsonArray, JsonService::readProject);
+    }
+
+    private static Project readProject(JSONObject object) {
+        final String version = object.getString(VERSION);
+        final String name = object.getString(NAME);
+        final String path = object.getString(PATH);
+        return new Project();
     }
 }

@@ -1,4 +1,4 @@
-package evo.search.io;
+package evo.search.io.service;
 
 import javax.swing.*;
 import java.awt.*;
@@ -6,7 +6,7 @@ import java.awt.event.ActionEvent;
 import java.util.function.Consumer;
 
 /**
- * DSL {@link JMenu} service.
+ * DSL {@link JMenu} and {@link JPopupMenu} service.
  */
 public class MenuService {
 
@@ -32,6 +32,29 @@ public class MenuService {
             }
         }
         return jMenu;
+    }
+
+    /**
+     * Construct a named popup menu with some children.
+     *
+     * @param text     Name of the popup menu.
+     * @param children Items in the popup menu.
+     * @return A named popup menu with given items.
+     */
+    public static JPopupMenu popupMenu(String text, Object... children) {
+        final JPopupMenu jPopupMenu = new JPopupMenu();
+        for (Object child : children) {
+            if (child instanceof JMenuItem) {
+                jPopupMenu.add((JMenuItem) child);
+            } else if (child instanceof Action) {
+                jPopupMenu.add((Action) child);
+            } else if (child instanceof JSeparator) {
+                jPopupMenu.addSeparator();
+            } else if (child instanceof Component) {
+                jPopupMenu.add((Component) child);
+            }
+        }
+        return jPopupMenu;
     }
 
     /**

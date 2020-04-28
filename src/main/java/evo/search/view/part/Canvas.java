@@ -1,4 +1,4 @@
-package evo.search.view;
+package evo.search.view.part;
 
 import evo.search.Environment;
 import evo.search.ga.DiscreteGene;
@@ -57,7 +57,6 @@ public class Canvas extends JPanel {
      * Canvas constructor. Sets initial scale and the offset to the center of the canvas.
      */
     public Canvas() {
-        //setLayout(new FlowLayout(FlowLayout.LEADING));
         add(popover);
         popover.setVisible(false);
         transformation.setScale(10);

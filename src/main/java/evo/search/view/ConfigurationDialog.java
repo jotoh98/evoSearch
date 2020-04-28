@@ -48,8 +48,6 @@ public class ConfigurationDialog extends JDialog {
     @Getter
     private JScrollPane configScrollWrapper;
 
-    private static Method $$$cachedGetBundleMethod$$$ = null;
-
     public static void main(String[] args) {
         List<Configuration> configurations = Arrays.asList(
                 Configuration.builder()
@@ -320,8 +318,6 @@ public class ConfigurationDialog extends JDialog {
         panel2.add(scrollPane1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 40), null, null, 0, false));
         configChooserList = new JList();
         final DefaultListModel defaultListModel1 = new DefaultListModel();
-        defaultListModel1.addElement("Config 1");
-        defaultListModel1.addElement("Config 2");
         configChooserList.setModel(defaultListModel1);
         scrollPane1.setViewportView(configChooserList);
         listEditBar = new JPanel();
@@ -355,6 +351,8 @@ public class ConfigurationDialog extends JDialog {
         panel3.add(configScrollWrapper, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         label1.setLabelFor(nameTextField);
     }
+
+    private static Method $$$cachedGetBundleMethod$$$ = null;
 
     private String $$$getMessageFromBundle$$$(String path, String key) {
         ResourceBundle bundle;

@@ -27,7 +27,6 @@ import java.util.ResourceBundle;
 public class ChooserForm extends JFrame {
     private JButton addButton;
     private JPanel rootPanel;
-    private static Method $$$cachedGetBundleMethod$$$ = null;
     private JButton openButton;
     private JPanel listPanel;
     private JPanel optionPane;
@@ -220,6 +219,8 @@ public class ChooserForm extends JFrame {
         final Spacer spacer2 = new Spacer();
         optionPane.add(spacer2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(139, 14), null, 0, false));
     }
+
+    private static Method $$$cachedGetBundleMethod$$$ = null;
 
     private String $$$getMessageFromBundle$$$(String path, String key) {
         ResourceBundle bundle;

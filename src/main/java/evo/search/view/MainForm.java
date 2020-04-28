@@ -60,7 +60,6 @@ public class MainForm extends JFrame {
     private final ConfigComboModel configComboModel = new ConfigComboModel();
     private JButton startButton;
     private FlexTable configTable;
-    private static Method $$$cachedGetBundleMethod$$$ = null;
     private JComboBox<Object> configComboBox;
     private JButton addFirstConfigButton;
     private JLabel versionLabel;
@@ -548,6 +547,8 @@ public class MainForm extends JFrame {
         }
         return new Font(resultName, style >= 0 ? style : currentFont.getStyle(), size >= 0 ? size : currentFont.getSize());
     }
+
+    private static Method $$$cachedGetBundleMethod$$$ = null;
 
     private String $$$getMessageFromBundle$$$(String path, String key) {
         ResourceBundle bundle;

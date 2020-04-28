@@ -8,16 +8,17 @@ import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.dom4j.io.SAXReader;
+import org.xml.sax.SAXException;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -55,7 +56,7 @@ public class FileService {
     }
 
     static void save(File configFolder, List<Configuration> configurations) {
-        Hashtable<String, Integer> configurationNumber = new Hashtable<>();
+        HashMap<String, Integer> configurationNumber = new HashMap<>();
 
         configurations.forEach(configuration -> {
             String fileName = configuration.getName();
@@ -73,8 +74,9 @@ public class FileService {
     }
 
     public static void write(File file, Document document) {
-        try (FileWriter fileWriter = new FileWriter(file)) {
-            document.write(fileWriter);
+        try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+            fileOutputStream.write(document.asXML().getBytes());
+            fileOutputStream.flush();
         } catch (IOException e) {
             log.error("Could not serialize document in XML file: " + file.getPath(), e);
         }
@@ -82,6 +84,10 @@ public class FileService {
 
     public static Document read(File file) {
         SAXReader reader = new SAXReader();
+        try {
+            reader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        } catch (SAXException ignored) {
+        }
         Document document = DocumentHelper.createDocument();
         try {
             document = reader.read(file);

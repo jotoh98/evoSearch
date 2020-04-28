@@ -42,7 +42,6 @@ public class ShuffleDialog<T> extends JDialog {
     private JProgressBar shuffleProgressBar;
     private JFormattedTextField minDistanceTextField;
     private JFormattedTextField maxDistanceTextField;
-    private static Method $$$cachedGetBundleMethod$$$ = null;
     private final AtomicBoolean processCanceled = new AtomicBoolean(false);
     @Setter
     private Consumer<List<T>> treasureConsumer = discretePoints -> {
@@ -196,6 +195,8 @@ public class ShuffleDialog<T> extends JDialog {
         panel4.add(shuffleProgressBar, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         label3.setLabelFor(amountSpinner);
     }
+
+    private static Method $$$cachedGetBundleMethod$$$ = null;
 
     private String $$$getMessageFromBundle$$$(String path, String key) {
         ResourceBundle bundle;

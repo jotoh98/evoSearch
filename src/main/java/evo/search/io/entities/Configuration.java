@@ -95,9 +95,8 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
         try {
             return (Configuration) super.clone();
         } catch (CloneNotSupportedException e) {
-            log.info("Configuration could not be cloned", e);
+            throw new RuntimeException("Configuration could not be cloned", e);
         }
-        return null;
     }
 
     private static DiscreteAlterer parseAlterer(Element element) {

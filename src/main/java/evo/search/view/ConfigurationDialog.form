@@ -91,10 +91,7 @@
                   <component id="ef089" class="javax.swing.JList" binding="configChooserList" default-binding="true">
                     <constraints/>
                     <properties>
-                      <model>
-                        <item value="Config 1"/>
-                        <item value="Config 2"/>
-                      </model>
+                      <model/>
                     </properties>
                   </component>
                 </children>

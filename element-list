@@ -1,7 +1,10 @@
 evo.search
 evo.search.ga
 evo.search.ga.mutators
-evo.search.io
+evo.search.io.entities
+evo.search.io.service
 evo.search.view
+evo.search.view.listener
 evo.search.view.model
+evo.search.view.part
 evo.search.view.render

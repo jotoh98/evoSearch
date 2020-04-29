@@ -47,6 +47,7 @@ public class ConfigurationDialog extends JDialog {
     private JButton removeConfigButton;
     @Getter
     private JScrollPane configScrollWrapper;
+    private JButton duplicateConfigButton;
 
     public static void main(String[] args) {
         List<Configuration> configurations = Arrays.asList(
@@ -94,17 +95,48 @@ public class ConfigurationDialog extends JDialog {
         });
     }
 
+    public ConfigurationDialog(List<Configuration> configurations) {
+        $$$setupUI$$$();
+        customUISetup();
+
+        configurations.stream()
+                .map(Configuration::clone)
+                .forEach(this::showConfiguration);
+
+        setupChooserList();
+
+        bindEmptyBehaviour();
+        bindConfigListModel();
+        bindConfigListButtons();
+
+        nameTextField.getDocument().addDocumentListener((DocumentEditHandler) e -> {
+            triggerChange();
+            configChooserList.getSelectedValue().getConfiguration().setName(nameTextField.getText());
+            configChooserList.repaint();
+        });
+
+        buttonOK.addActionListener(e -> onOK());
+        buttonCancel.addActionListener(e -> onCancel());
+        applyButton.addActionListener(e -> onApply());
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                onCancel();
+            }
+        });
+        contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+
+        getRootPane().setDefaultButton(buttonOK);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        setContentPane(contentPane);
+        setModal(true);
+        setPreferredSize(new Dimension(600, 400));
+        setMinimumSize(new Dimension(300, 200));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 700));
+    }
+
     private void bindConfigListButtons() {
         addConfigButton.addActionListener(e -> {
-            triggerChange();
-            final int selectedIndex = configChooserList.getSelectedIndex();
-            if (selectedIndex == -1) {
-                addConfiguration(0, new Configuration());
-                configChooserList.setSelectedIndex(0);
-            } else {
-                addConfiguration(selectedIndex + 1, new Configuration());
-                configChooserList.setSelectedIndex(selectedIndex + 1);
-            }
+            addConfiguration(new Configuration());
         });
 
         removeConfigButton.addActionListener(e -> {
@@ -127,6 +159,19 @@ public class ConfigurationDialog extends JDialog {
                 configChooserList.setSelectedIndex(0);
             }
         });
+        duplicateConfigButton.addActionListener(e -> duplicateSelectedConfiguration());
+    }
+
+    private void addConfiguration(final Configuration configuration) {
+        triggerChange();
+        final int selectedIndex = configChooserList.getSelectedIndex();
+        if (selectedIndex == -1) {
+            showConfiguration(0, configuration);
+            configChooserList.setSelectedIndex(0);
+        } else {
+            showConfiguration(selectedIndex + 1, configuration);
+            configChooserList.setSelectedIndex(selectedIndex + 1);
+        }
     }
 
     private void setupChooserList() {
@@ -162,8 +207,6 @@ public class ConfigurationDialog extends JDialog {
         bottomPane.setBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, UIManager.getColor("SplitPane.dividerLineColor"))
         );
-        addConfigButton.setIcon(UIManager.getIcon("Spinner.plus.icon"));
-        removeConfigButton.setIcon(UIManager.getIcon("Spinner.minus.icon"));
     }
 
     private void bindEmptyBehaviour() {
@@ -174,18 +217,20 @@ public class ConfigurationDialog extends JDialog {
         }
     }
 
-    public void addConfiguration(final Configuration configuration) {
+    private void duplicateSelectedConfiguration() {
+        triggerChange();
+        ConfigTuple selectedConfig = configChooserList.getSelectedValue();
+        if (selectedConfig != null) {
+            addConfiguration(selectedConfig.configuration.clone());
+        }
+
+    }
+
+    public void showConfiguration(final Configuration configuration) {
         final ConfigPanel configPanel = new ConfigPanel();
         configPanel.setConfiguration(configuration);
         configPanel.setParent(this);
         configListModel.addElement(new ConfigTuple(configuration, configPanel));
-    }
-
-    public void addConfiguration(final int index, final Configuration configuration) {
-        final ConfigPanel configPanel = new ConfigPanel();
-        configPanel.setConfiguration(configuration);
-        configPanel.setParent(this);
-        configListModel.add(index, new ConfigTuple(configuration, configPanel));
     }
 
     private void onApply() {
@@ -195,43 +240,11 @@ public class ConfigurationDialog extends JDialog {
         applyButton.setEnabled(false);
     }
 
-    public ConfigurationDialog(List<Configuration> configurations) {
-        $$$setupUI$$$();
-        customUISetup();
-
-        configurations.stream()
-                .map(Configuration::clone)
-                .forEach(this::addConfiguration);
-
-        setupChooserList();
-
-        bindEmptyBehaviour();
-        bindConfigListModel();
-        bindConfigListButtons();
-
-        nameTextField.getDocument().addDocumentListener((DocumentEditHandler) e -> {
-            triggerChange();
-            configChooserList.getSelectedValue().getConfiguration().setName(nameTextField.getText());
-            configChooserList.repaint();
-        });
-
-        buttonOK.addActionListener(e -> onOK());
-        buttonCancel.addActionListener(e -> onCancel());
-        applyButton.addActionListener(e -> onApply());
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                onCancel();
-            }
-        });
-        contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-
-        getRootPane().setDefaultButton(buttonOK);
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        setContentPane(contentPane);
-        setModal(true);
-        setPreferredSize(new Dimension(600, 400));
-        setMinimumSize(new Dimension(300, 200));
-        setMaximumSize(new Dimension(Integer.MAX_VALUE, 700));
+    public void showConfiguration(final int index, final Configuration configuration) {
+        final ConfigPanel configPanel = new ConfigPanel();
+        configPanel.setConfiguration(configuration);
+        configPanel.setParent(this);
+        configListModel.add(index, new ConfigTuple(configuration, configPanel));
     }
 
     public void triggerChange() {
@@ -321,19 +334,25 @@ public class ConfigurationDialog extends JDialog {
         configChooserList.setModel(defaultListModel1);
         scrollPane1.setViewportView(configChooserList);
         listEditBar = new JPanel();
-        listEditBar.setLayout(new GridLayoutManager(1, 3, new Insets(2, 6, 0, 6), 1, -1));
+        listEditBar.setLayout(new GridLayoutManager(1, 4, new Insets(2, 6, 0, 6), 1, -1));
         panel2.add(listEditBar, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, new Dimension(-1, 40), new Dimension(-1, 40), new Dimension(-1, 40), 0, false));
         addConfigButton = new JButton();
         addConfigButton.setBorderPainted(false);
-        addConfigButton.setText("");
+        addConfigButton.setIcon(new ImageIcon(getClass().getResource("/icon/plus.png")));
         addConfigButton.setToolTipText(this.$$$getMessageFromBundle$$$("lang", "config.add"));
         listEditBar.add(addConfigButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(30, 30), new Dimension(30, 30), new Dimension(30, 30), 0, false));
         removeConfigButton = new JButton();
         removeConfigButton.setBorderPainted(false);
+        removeConfigButton.setIcon(new ImageIcon(getClass().getResource("/icon/minus.png")));
         removeConfigButton.setToolTipText(this.$$$getMessageFromBundle$$$("lang", "configuration.delete"));
         listEditBar.add(removeConfigButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(30, 30), new Dimension(30, 30), new Dimension(30, 30), 0, false));
         final Spacer spacer2 = new Spacer();
-        listEditBar.add(spacer2, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        listEditBar.add(spacer2, new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        duplicateConfigButton = new JButton();
+        duplicateConfigButton.setBorderPainted(false);
+        duplicateConfigButton.setIcon(new ImageIcon(getClass().getResource("/icon/copy.png")));
+        duplicateConfigButton.setToolTipText(this.$$$getMessageFromBundle$$$("lang", "config.add"));
+        listEditBar.add(duplicateConfigButton, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(30, 30), new Dimension(30, 30), new Dimension(30, 30), 0, false));
         final JPanel panel3 = new JPanel();
         panel3.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
         panel3.setMinimumSize(new Dimension(550, 200));
@@ -428,9 +447,6 @@ public class ConfigurationDialog extends JDialog {
      */
     public JComponent $$$getRootComponent$$$() {
         return contentPane;
-    }
-
-    public void createUIComponents() {
     }
 
     @Value

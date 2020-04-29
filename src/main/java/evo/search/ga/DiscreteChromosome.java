@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Chromosome consisting of a permutations of the distances
@@ -20,7 +21,7 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
     /**
      * Sequence of {@link DiscreteGene}s forming the chromosome.
      */
-    private ISeq<DiscreteGene> genes;
+    private final ISeq<DiscreteGene> genes;
 
     /**
      * Shuffle a new {@link DiscreteChromosome} from the distances in the
@@ -55,6 +56,17 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
      */
     public static DiscreteChromosome of(ISeq<DiscreteGene> genes) {
         return new DiscreteChromosome(genes.copy().toISeq());
+    }
+
+    /**
+     * Generate a new {@link DiscreteChromosome} from the given sequence of points.
+     * Simply maps the points to according {@link DiscreteGene}s.
+     *
+     * @param points Sequence of points to copy into the new instance.
+     * @return A chromosome with the given sequence of genes.
+     */
+    public static DiscreteChromosome ofPoints(List<DiscretePoint> points) {
+        return new DiscreteChromosome(ISeq.of(points.stream().map(DiscreteGene::new).collect(Collectors.toList())));
     }
 
     /**

@@ -1,8 +1,8 @@
 /target/
-/paper/paper.aux
-/paper/paper.log
+/paper/thesis.aux
+/paper/thesis.log
 /paper/paper.pdf
-/paper/paper.synctex.gz
-/paper/paper.tex
+/paper/thesis.synctex.gz
+/paper/thesis.toc
 /docs/
 /src/main/resources/icon_lib/

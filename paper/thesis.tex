@@ -1,26 +1,29 @@
-\documentclass[runningheads]{llncs}
+% !TEX encoding = UTF-8 Unicode
+\documentclass[12pt,a4paper,oneside]{article}
 \setcounter{tocdepth}{3}
-
 \usepackage{graphicx}
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{titling}
 \usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
 
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\N}{\mathbb{N}}
 \newcommand\pmat[1]{\ensuremath{\begin{pmatrix}#1\end{pmatrix}}}
 \newcommand\set[2]{\ensuremath{\left\{#1\;\middle|\;#2\right\}}}
 
-\title{Evolution‰re Punkt-Suche in der diskretisierten Ebene}
-\author{Jonathan Tobias Haﬂel}
-\institute{Institut f¸r Informatik\\Rheinische Friedrich-Wilhelms Universit‰t Bonn}
+\newtheorem{definition}{Definition}
+
+\title{Evolution√§re Punkt-Suche in der diskretisierten Ebene}
+\author{Jonathan Tobias Ha√üel}
+%\institute{Institut f√ºr Informatik\\Rheinische Friedrich-Wilhelms Universit√§t Bonn}
 
 \begin{document}
 
 \begin{titlepage}
 	\centering
-	{\LARGE Institut f¸r Informatik\\Rheinische Friedrich-Wilhelms Universit‰t Bonn\\}
+	{\LARGE Institut f√ºr Informatik\\Rheinische Friedrich-Wilhelms Universit√§t Bonn\\}
 	\vspace{2cm}
 	{\large Bachelor-Arbeit zur Erlangung des akademischen Grades\\
 	\vspace{.5cm}
@@ -34,7 +37,7 @@
 	\vspace{1cm}
 	\raggedright
 	\theauthor\\
-	Schnorrenbergstraﬂe 2, 53229 Bonn\\
+	Schnorrenbergstra√üe 2, 53229 Bonn\\
 	3113185\\
 	6. Semester\\
 	\vspace{1cm}
@@ -46,28 +49,33 @@
 \end{titlepage}
 
 \section{Abstract}
-Die optimale Strategie, um einen Punkt in der Ebene ohne Hinweise zu finden, ist, in einer Spirale vom Ausgangspunkt aus die Fl‰che exhaustiv nach dem Punkt abzusuchen. Diese Arbeit besch‰ftigt sich mit der Frage, ob durch evolution‰res Lernen eine solche optimale Strategie erlernt werden kann.\\
-Zuerst wird das Suchproblem auf einer Geraden betrachtet. Dabei wird festgestellt, ob ein entsprechender, evolution‰rer Algorithmus die dazugehˆrige optimale Strategie, n‰mlich die Verdopplungsstrategie, erlernen kann.
+Die optimale Strategie, um einen Punkt in der Ebene ohne Hinweise zu finden, ist, in einer Spirale vom Ausgangspunkt aus die Fl√§che exhaustiv nach dem Punkt abzusuchen. Diese Arbeit besch√§ftigt sich mit der Frage, ob durch evolution√§res Lernen eine solche optimale Strategie erlernt werden kann.\\
+Zuerst wird das Suchproblem auf einer Geraden betrachtet. Dabei wird festgestellt, ob ein entsprechender, evolution√§rer Algorithmus die dazugeh√∂rige optimale Strategie, n√§mlich die Verdopplungsstrategie, erlernen kann.
 
 \section{Vorwort}
-Im Zuge einer Projektarbeit mit dem Thema "Computational Geometry" habe ich viele Erfahrungen zur Hinweis-basierten Suche gesammelt. In dieser Konfiguration wurden dem Suchenden Hinweise in verschiedenen Formen geliefert, die zwar den Suchraum einschr‰nkten, die Entwicklungszeit f¸r Gegenstrategien deutlich erhˆhten. Diese gesteigerte Komplexit‰t dr‰ngte mich schon im Projekt zu der Annahme, dass maschinelles Lernen sowohl auf Hinweis-basierten Szenarien als auch, wie in diesem Fall, ohne einschr‰nkende Hinweise einen deutlichen Vorteil f¸r die Entwicklungszeit bedeuten kˆnnten.
-Andererseits wurde mein Interesse f¸r Evolution‰re Algorithmen im Zuge meines Studiums in den entsprechenden Vorlesungen geweckt, es lag also Nahe, dass das in meiner Arbeit behandelte Thema evolution‰re Aspekte enthalten w¸rde.
+Im Zuge einer Projektarbeit mit dem Thema "Computational Geometry" habe ich viel Erfahrung zur Hinweis-basierten Suche gesammelt. In dieser Situation wurden dem Suchenden Hinweise in verschiedenen Formen geliefert, die zwar den Suchraum einschr√§nkten, die Entwicklungszeit f√ºr Gegenstrategien deutlich erh√∂hten. Diese gesteigerte Komplexit√§t dr√§ngte mich schon im Projekt zu der Annahme, dass maschinelles Lernen sowohl auf Hinweis-basierten Szenarien als auch, wie in diesem Fall, ohne einschr√§nkende Hinweise einen deutlichen Vorteil f√ºr die Entwicklungszeit bedeuten k√∂nnten.
+Andererseits wurde mein Interesse f√ºr Evolution√§re Algorithmen im Zuge meines Studiums in den entsprechenden Vorlesungen geweckt, es lag also Nahe, dass das in meiner Arbeit behandelte Thema Aspekte evolution√§ren Lernens enthalten w√ºrde.
 
 \tableofcontents
 \newpage
 
+\section{Evolution√§re Algorithmen}
+Ein evolution√§rer Algorithmus beschreibt einen Suchprozess, der, gepaart mit Optimierungs-Mechanismen, eine g√ºnstige L√∂sung f√ºr ein eingegebenes Problem finden soll. Dabei werden nach der darwinistischen Theorie 
+
+Ein Suchraum √ºber zu optimierende Parameter wird aufgespannt 
+
 \section{Definitionen}
 
 \begin{definition}[Diskreter Teilraum]
-Sei $P$ die Anzahl aller verf¸gbaren diskreten Teilr‰ume und $p\in(0,1,\dots,P-1)$ der eindeutige Index des jeweiligen diskreten Teilraums. Dann ist ein diskreter Teilraum die Teilmenge:
+Sei $P$ als Anzahl aller verf√ºgbaren diskreten Teilr√§ume gegeben und sei $p\in(0,1,\dots,P-1)$ der eindeutige Index des jeweiligen diskreten Teilraums. Dann ist ein diskreter Teilraum die Teilmenge:
 \begin{align}
 \R^2 \supset U^P_p = \set{a x}{x=\pmat{\cos{\gamma}\\\sin{\gamma}},a\in\R_+,\gamma = \frac{p}{P} \cdot 2\pi}
 \end{align}
 \end{definition}
 \begin{definition}[Diskreter Punkt]
-Sei $P$ die Anzahl aller verf¸gbaren diskreten Teilr‰ume.
+Sei $P$ die Anzahl aller verf√ºgbaren diskreten Teilr√§ume.
 Dann ist ein diskreter Punkt $A^P = (p,d)$ ein Tupel, dass aus einem ganzzahligen Positions-Wert $p\in\N$ und einer Distanz $d\in\R$ vom Ursprung besteht.
-Weiterhin existieren Abbildungen $f_x$ und $f_y$, sodass $A^P$ in kartesische Koordinatendarstellung $(f_x,f_y)$ ¸bertragbar ist, n‰mlich:
+Weiterhin existieren Abbildungen $f_x$ und $f_y$, sodass $A^P$ in kartesische Koordinatendarstellung $(f_x,f_y)$ √ºbertragbar ist, n√§mlich:
 \begin{align}
 \gamma = \frac{p(A^P)}{P} \cdot 2 \pi\\
 f_x(A^P) = d(A^P)\cdot \sin{\gamma}\\
@@ -75,13 +83,13 @@ f_x(A^P) = d(A^P)\cdot \cos{\gamma}
 \end{align}
 \end{definition}
 \begin{definition}[Individuum]
-Sei $P$ die Anzahl aller verf¸gbaren diskreten Teilr‰ume.
+Sei $P$ die Anzahl aller verf√ºgbaren diskreten Teilr√§ume.
 Dann ist ein Individuum ein $n$-Tupel $I^P=(A^P_1,\dots,A^P_n)$ von diskreten Punkten.\\
-‹bertragen auf die Problemstellung der Punkt-Suche wird der diskretisierte Suchraum in der Reihenfolge der Punkte im Tupel abgesucht.
+√úbertragen auf die Problemstellung der Punkt-Suche wird der diskretisierte Suchraum in der Reihenfolge der Punkte im Tupel abgesucht.
 \end{definition}
-\begin{definition}
-Sei $P$ die Anzahl aller verf¸gbaren diskreten Teilr‰ume, ein diskreter Punkt $T^P$ der zu findende Punkt und der diskreten Punkt $S^P$ der suchende Punkt.
-Dann ist die Suchfunktion folgendermaﬂen definiert:
+\begin{definition}[Punkt gefunden]
+Sei $P$ die Anzahl aller verf√ºgbaren diskreten Teilr√§ume, ein diskreter Punkt $T^P$ der zu findende Punkt und der diskreten Punkt $S^P$ der suchende Punkt.
+Dann ist die Suchfunktion folgenderma√üen definiert:
 \begin{align}
     finds(S^P,T^P)=(p(S^P) \iff p(T^P) \land d(S^P) \geq d(T^P))
 \end{align}
@@ -90,22 +98,5 @@ Dann ist die Suchfunktion folgendermaﬂen definiert:
 \begin{thebibliography}{8}
 \bibitem{ref_article1}
 Author, F.: Article title. Journal \textbf{2}(5), 99--110 (2016)
-
-\bibitem{ref_lncs1}
-Author, F., Author, S.: Title of a proceedings paper. In: Editor,
-F., Editor, S. (eds.) CONFERENCE 2016, LNCS, vol. 9999, pp. 1--13.
-Springer, Heidelberg (2016). \doi{10.10007/1234567890}
-
-\bibitem{ref_book1}
-Author, F., Author, S., Author, T.: Book title. 2nd edn. Publisher,
-Location (1999)
-
-\bibitem{ref_proc1}
-Author, A.-B.: Contribution title. In: 9th International Proceedings
-on Proceedings, pp. 1--2. Publisher, Location (2010)
-
-\bibitem{ref_url1}
-LNCS Homepage, \url{http://www.springer.com/lncs}. Last accessed 4
-Oct 2017
 \end{thebibliography}
 \end{document}

@@ -184,7 +184,13 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
                     setPopulation(Integer.parseInt(value));
                     break;
                 case "fitness":
-                    setFitness(Environment.Fitness.valueOf(value));
+                    Environment.Fitness fitness;
+                    try {
+                        fitness = Environment.Fitness.valueOf(value);
+                    } catch (IllegalArgumentException ignored) {
+                        fitness = Environment.Fitness.getDefault();
+                    }
+                    setFitness(fitness);
                     break;
             }
         });

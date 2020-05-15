@@ -69,7 +69,7 @@ public class FileService {
 
             final String configFilePath = configFolder.getPath() + File.separator + fileName + ".xml";
 
-            write(new File(configFilePath), configuration.serialize());
+            write(new File(configFilePath), DocumentHelper.createDocument(configuration.serialize()));
         });
     }
 

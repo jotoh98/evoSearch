@@ -1,6 +1,6 @@
 package evo.search.io.entities;
 
-import org.dom4j.Document;
+import org.dom4j.Element;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -10,9 +10,9 @@ class ConfigurationSerializationTest {
     @Test
     void serializationTest() {
         Configuration build = Configuration.builder().build();
-        Document serializedDocument = build.serialize();
+        Element element = build.serialize();
 
-        Configuration parsed = new Configuration().parse(serializedDocument);
+        Configuration parsed = Configuration.parseConfiguration(element);
         //TODO: fix equals over config alterers (this$alterers missing) to cut .toString() method
         assertEquals(build.toString(), parsed.toString());
     }

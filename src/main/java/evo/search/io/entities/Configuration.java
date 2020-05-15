@@ -15,8 +15,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dom4j.Attribute;
-import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.tree.DefaultElement;
 
@@ -36,7 +34,7 @@ import java.util.function.Consumer;
 @Builder
 @Data
 @Slf4j
-public class Configuration implements Cloneable, XmlEntity<Configuration> {
+public class Configuration implements Cloneable, XmlEntity {
 
     /**
      * Version for configuration compatibility checks.
@@ -116,7 +114,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
 
         try {
             return (DiscreteAlterer) Class
-                    .forName(methodAttribute.getName())
+                    .forName(methodAttribute.getValue())
                     .getConstructor(double.class)
                     .newInstance(probability);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException ignored) {
@@ -146,7 +144,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
             probability = ((AbstractAlterer<?, ?>) alterer).probability();
         }
         return new DefaultElement("alterer")
-                .addAttribute("method", alterer.getClass().getSimpleName())
+                .addAttribute("method", alterer.getClass().getName())
                 .addAttribute("probability", Double.toString(probability));
     }
 
@@ -154,12 +152,15 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
         return XmlService.writePoint("treasure", point);
     }
 
+    public static Configuration parseConfiguration(Element element) {
+        Configuration configuration = new Configuration();
+        configuration.parse(element);
+        return configuration;
+    }
+
     @Override
-    public Configuration parse(final Document document) {
-        final Element rootElement = document.getRootElement();
-
-        Element properties = rootElement.element("properties");
-
+    public void parse(final Element element) {
+        Element properties = element.element("properties");
         XmlService.readProperties(properties, (name, value) -> {
             switch (name) {
                 case "version":
@@ -195,12 +196,11 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
             }
         });
 
-
-        final Element treasuresElement = rootElement.element("treasures");
+        final Element treasuresElement = element.element("treasures");
         if (treasuresElement != null) {
             final ArrayList<DiscretePoint> treasures = new ArrayList<>();
-            XmlService.forEach("treasure", treasuresElement, element -> {
-                DiscretePoint discretePoint = parseTreasure(element);
+            XmlService.forEach("treasure", treasuresElement, treasureElement -> {
+                DiscretePoint discretePoint = parseTreasure(treasureElement);
                 if (discretePoint != null) {
                     treasures.add(discretePoint);
                 }
@@ -209,12 +209,12 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
         }
 
 
-        final Element distancesElement = rootElement.element("distances");
+        final Element distancesElement = element.element("distances");
         if (distancesElement != null) {
             final ArrayList<Double> distances = new ArrayList<>();
-            XmlService.forEach("distance", distancesElement, element -> {
+            XmlService.forEach("distance", distancesElement, distanceElement -> {
                 try {
-                    final double distance = Double.parseDouble(element.getText());
+                    final double distance = Double.parseDouble(distanceElement.getText());
                     distances.add(distance);
                 } catch (NumberFormatException ignored) {
                 }
@@ -222,12 +222,12 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
             setDistances(distances);
         }
 
-        final Element alterersElement = rootElement.element("alterers");
+        final Element alterersElement = element.element("alterers");
         if (alterersElement != null) {
             final ArrayList<DiscreteAlterer> alterers = new ArrayList<>();
-            XmlService.forEach("alterer", alterersElement, element -> {
+            XmlService.forEach("alterer", alterersElement, altererElement -> {
                 try {
-                    DiscreteAlterer alterer = parseAlterer(element);
+                    DiscreteAlterer alterer = parseAlterer(altererElement);
                     if (alterer != null) {
                         alterers.add(alterer);
                     }
@@ -236,12 +236,10 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
             });
             setAlterers(alterers);
         }
-
-        return this;
     }
 
     @Override
-    public Document serialize() {
+    public Element serialize() {
         final Element root = new DefaultElement("configuration");
         final Element propertiesElement = root.addElement("properties");
 
@@ -266,6 +264,6 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
         final Element alterersElement = root.addElement("alterers");
         XmlService.appendElementList(alterersElement, getAlterers(), Configuration::writeAlterer);
 
-        return DocumentHelper.createDocument(root);
+        return root;
     }
 }

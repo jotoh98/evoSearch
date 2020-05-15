@@ -75,7 +75,7 @@
                       <gridbag weightx="0.0" weighty="0.0"/>
                     </constraints>
                     <properties>
-                      <text resource-bundle="lang" key="shuffle"/>
+                      <text resource-bundle="lang" key="generate"/>
                     </properties>
                   </component>
                   <hspacer id="50026">
@@ -90,7 +90,7 @@
                       <gridbag weightx="0.0" weighty="0.0"/>
                     </constraints>
                     <properties>
-                      <text resource-bundle="lang" key="permutate"/>
+                      <text resource-bundle="lang" key="shuffle"/>
                     </properties>
                   </component>
                 </children>
@@ -279,7 +279,7 @@
                   <gridbag weightx="0.0" weighty="0.0"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="lang" key="shuffle"/>
+                  <text resource-bundle="lang" key="generate"/>
                 </properties>
               </component>
               <component id="9fa3a" class="javax.swing.JButton" binding="permutateDistancesButton">
@@ -288,7 +288,7 @@
                   <gridbag weightx="0.0" weighty="0.0"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="lang" key="permutate"/>
+                  <text resource-bundle="lang" key="shuffle"/>
                 </properties>
               </component>
             </children>

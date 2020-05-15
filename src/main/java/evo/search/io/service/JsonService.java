@@ -6,7 +6,6 @@ import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.io.entities.Configuration;
-import evo.search.io.entities.Experiment;
 import evo.search.io.entities.Project;
 import evo.search.view.LangService;
 import io.jenetics.AbstractAlterer;
@@ -118,19 +117,6 @@ public class JsonService {
     }
 
     /**
-     * Serialize an {@link Experiment}.
-     *
-     * @param experiment Experiment to serialize.
-     * @return Json object for the {@link Experiment}.
-     */
-    public static JSONObject write(Experiment experiment) {
-        final JSONObject jsonObject = new JSONObject()
-                .accumulate(CONFIGURATION, write(experiment.getConfiguration()));
-        experiment.getIndividuals().forEach(run -> jsonObject.append(INDIVIDUALS, write(run)));
-        return jsonObject;
-    }
-
-    /**
      * Deserialize an {@link DiscretePoint}s json.
      *
      * @param jsonObject Json to deserialize into an {@link DiscretePoint}.
@@ -170,20 +156,6 @@ public class JsonService {
                 .toArray(DiscreteGene[]::new);
 
         return new DiscreteChromosome(ISeq.of(discreteGenes));
-    }
-
-    public static Experiment readExperiment(JSONObject jsonObject) {
-        final Configuration configuration = readConfiguration(jsonObject.getJSONObject(CONFIGURATION));
-
-        final ArrayList<DiscreteChromosome> individuals = new ArrayList<>();
-
-        jsonObject.getJSONArray(INDIVIDUALS).forEach(object -> {
-            if (object instanceof JSONArray) {
-                individuals.add(readDiscreteChromosome((JSONArray) object));
-            }
-        });
-
-        return new Experiment(configuration, individuals);
     }
 
     /**

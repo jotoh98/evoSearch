@@ -101,7 +101,7 @@ public class ConfigurationDialog extends JDialog {
 
         configurations.stream()
                 .map(Configuration::clone)
-                .forEach(this::showConfiguration);
+                .forEach(this::addToSelection);
 
         setupChooserList();
 
@@ -166,10 +166,10 @@ public class ConfigurationDialog extends JDialog {
         triggerChange();
         final int selectedIndex = configChooserList.getSelectedIndex();
         if (selectedIndex == -1) {
-            showConfiguration(0, configuration);
+            addToSelection(0, configuration);
             configChooserList.setSelectedIndex(0);
         } else {
-            showConfiguration(selectedIndex + 1, configuration);
+            addToSelection(selectedIndex + 1, configuration);
             configChooserList.setSelectedIndex(selectedIndex + 1);
         }
     }
@@ -226,7 +226,7 @@ public class ConfigurationDialog extends JDialog {
 
     }
 
-    public void showConfiguration(final Configuration configuration) {
+    public void addToSelection(final Configuration configuration) {
         final ConfigPanel configPanel = new ConfigPanel();
         configPanel.setConfiguration(configuration);
         configPanel.setParent(this);
@@ -240,7 +240,7 @@ public class ConfigurationDialog extends JDialog {
         applyButton.setEnabled(false);
     }
 
-    public void showConfiguration(final int index, final Configuration configuration) {
+    public void addToSelection(final int index, final Configuration configuration) {
         final ConfigPanel configPanel = new ConfigPanel();
         configPanel.setConfiguration(configuration);
         configPanel.setParent(this);

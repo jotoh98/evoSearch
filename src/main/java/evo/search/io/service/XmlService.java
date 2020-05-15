@@ -68,7 +68,7 @@ public class XmlService {
                 .addAttribute("version", Main.VERSION);
 
         Element projectsNode = root.addElement("entries");
-        appendElementList(projectsNode, projects, IndexEntry::createElement);
+        appendElementList(projectsNode, projects, IndexEntry::serialize);
         return configDocument;
     }
 
@@ -84,7 +84,7 @@ public class XmlService {
             return Collections.emptyList();
         }
 
-        return readElementList("entry", projects, IndexEntry::parse).stream()
+        return readElementList("entry", projects, IndexEntry::parseElement).stream()
                 .peek(project -> {
                     if (project == null) {
                         log.info("A project is broken. It will be deleted.");
@@ -101,13 +101,33 @@ public class XmlService {
     }
 
     public static <T> void appendElementList(Element parent, List<T> list, Function<T, Element> action) {
-        list.stream().map(action).forEach(parent::add);
+        list.stream().map(action).filter(Objects::nonNull).forEach(parent::add);
+    }
+
+    public static <T> Element appendElementList(String parentName, Iterable<T> list, Function<T, Element> mapper) {
+        Element parent = DocumentHelper.createElement(parentName);
+        list.forEach(item -> {
+            Element apply = mapper.apply(item);
+            if (apply != null) {
+                parent.add(apply);
+            }
+        });
+        return parent;
     }
 
     public static Element writePoint(String name, DiscretePoint point) {
         return new DefaultElement(name)
                 .addAttribute("position", String.valueOf(point.getPosition()))
                 .addAttribute("distance", String.valueOf(point.getDistance()));
+    }
+
+    public static DiscretePoint readPoint(Element element) {
+        final Attribute positionAttribute = element.attribute("position");
+        final Attribute distanceAttribute = element.attribute("distance");
+        if (positionAttribute == null || distanceAttribute == null) {
+            return null;
+        }
+        return new DiscretePoint(Integer.parseInt(positionAttribute.getValue()), Double.parseDouble(distanceAttribute.getValue()));
     }
 
     public static <T> Element simpleElement(String name, T content) {

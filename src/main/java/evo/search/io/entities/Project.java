@@ -4,8 +4,7 @@ import evo.search.io.service.XmlService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
 import org.dom4j.tree.DefaultElement;
 
 import java.io.File;
@@ -16,7 +15,7 @@ import java.util.List;
 @Slf4j
 @Data
 @RequiredArgsConstructor
-public class Project implements XmlEntity<Project> {
+public class Project implements XmlEntity {
     String version;
     String path;
     String name;
@@ -30,7 +29,7 @@ public class Project implements XmlEntity<Project> {
     }
 
     @Override
-    public Document serialize() {
+    public Element serialize() {
         DefaultElement projectElement = new DefaultElement("project");
         Arrays.asList(
                 XmlService.writeProperty("name", name),
@@ -38,12 +37,12 @@ public class Project implements XmlEntity<Project> {
                 XmlService.writeProperty("path", path),
                 XmlService.writeProperty("selectedConfiguration", selectedConfiguration)
         ).forEach(projectElement::add);
-        return DocumentHelper.createDocument(projectElement);
+        return projectElement;
     }
 
     @Override
-    public Project parse(final Document projectSettings) {
-        XmlService.readProperties(projectSettings.getRootElement(), (key, value) -> {
+    public void parse(final Element element) {
+        XmlService.readProperties(element, (key, value) -> {
             switch (key) {
                 case "name":
                     setName(value);
@@ -55,6 +54,5 @@ public class Project implements XmlEntity<Project> {
                     setPath(value);
             }
         });
-        return this;
     }
 }

@@ -2,17 +2,23 @@ package evo.search.io.service;
 
 import evo.search.Main;
 import evo.search.io.entities.Configuration;
+import evo.search.io.entities.Experiment;
 import evo.search.io.entities.IndexEntry;
 import evo.search.io.entities.Project;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.dom4j.Document;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ProjectService {
@@ -62,9 +68,7 @@ public class ProjectService {
             log.error("Project setup didn't complete.");
             return false;
         }
-        Document document = project.serialize();
-        FileService.write(projectXmlFile, document);
-
+        FileService.write(projectXmlFile, DocumentHelper.createDocument(project.serialize()));
         return true;
     }
 
@@ -96,7 +100,7 @@ public class ProjectService {
                     case PROJECT_SETTING:
                         File projectSettingsFile = new File(hiddenFile.toPath() + File.separator + PROJECT_SETTING);
                         final Document projectSettings = FileService.read(projectSettingsFile);
-                        project.parse(projectSettings);
+                        project.parse(projectSettings.getRootElement());
                         break;
                     case CONFIG_FOLDER:
                         final File configDirectory = new File(hiddenFile.toPath() + File.separator + CONFIG_FOLDER);
@@ -107,7 +111,7 @@ public class ProjectService {
                         for (final String configFileName : configFilesList) {
                             final File configFile = new File(configDirectory.getPath() + File.separator + configFileName);
                             final Document configDocument = FileService.read(configFile);
-                            project.getConfigurations().add(new Configuration().parse(configDocument));
+                            project.getConfigurations().add(Configuration.parseConfiguration(configDocument.getRootElement()));
                         }
 
                 }
@@ -191,5 +195,39 @@ public class ProjectService {
 
     public static void saveRegistered() {
         writeProjectIndex(indexEntries);
+    }
+
+    public static void saveNewExperiment(Experiment experiment) {
+        File workingDirectory = currentProject.getWorkingDirectory();
+        String name = URLEncoder.encode(experiment.getConfiguration().getName(), StandardCharsets.UTF_8);
+        File file = getAvailableFile(workingDirectory.toPath() + File.separator + name + "%s.xml");
+        Element experimentElement = experiment.serialize();
+        FileService.write(file, DocumentHelper.createDocument(experimentElement));
+    }
+
+    public static List<Experiment> loadExperiments() {
+        return Arrays.stream(currentProject.getWorkingDirectory().list((dir, name) -> name.endsWith(".xml")))
+                .map(File::new)
+                .map(ProjectService::loadExperiment)
+                .collect(Collectors.toList());
+    }
+
+    public static Experiment loadExperiment(File file) {
+        Document experimentDocument = FileService.read(file);
+        Experiment experiment = new Experiment(null);
+        experiment.parse(experimentDocument.getRootElement());
+        return experiment;
+    }
+
+    private static File getAvailableFile(String name) {
+        String initial = String.format(name, "");
+        File file = new File(initial);
+        int i = 0;
+        while (file.exists()) {
+            file = new File(String.format(name, i));
+            i++;
+        }
+
+        return file;
     }
 }

@@ -1,10 +1,12 @@
 package evo.search;
 
+import evo.search.ga.AnalysisUtils;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.io.entities.Configuration;
+import evo.search.io.entities.Experiment;
 import evo.search.io.service.EventService;
 import evo.search.view.LangService;
 import io.jenetics.Chromosome;
@@ -22,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -40,22 +41,33 @@ import java.util.stream.Collectors;
 public class Environment {
 
     /**
+     * Singleton environment instance.
+     */
+    private static Environment instance = null;
+    /**
+     * The currently active environments experiment.
+     * Holds all information to reproduce runs and is serialized and saved.
+     */
+    private Experiment experiment = new Experiment();
+
+    /**
      * Evolving the individuals.
      *
      * @param newConfiguration The evolutions configuration holding all information about the environment.
      * @param progressConsumer Progress consumer.
      * @return The resulting fittest individual of the evolution.
      */
-    public Genotype<DiscreteGene> evolve(Configuration newConfiguration, Consumer<Integer> progressConsumer) {
+    public Genotype<DiscreteGene> evolve(Configuration newConfiguration, Consumer<EvolutionResult<DiscreteGene, Double>> progressConsumer) {
         if (newConfiguration == null) {
             EventService.LOG_LABEL.trigger(LangService.get("environment.config.missing"));
             return null;
         }
-        setConfiguration(newConfiguration);
+
+        Configuration activeConfiguration = getConfiguration();
 
 
         Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
-                configuration.getFitness().getMethod(),
+                activeConfiguration.getFitness().getMethod(),
                 Codec.of(
                         Genotype.of(DiscreteChromosome.shuffle()),
                         chromosomes -> DiscreteChromosome.of(ISeq.of(chromosomes.chromosome()))
@@ -64,7 +76,7 @@ public class Environment {
 
         final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine.builder(problem).optimize(Optimize.MINIMUM);
 
-        List<? extends DiscreteAlterer> alterers = configuration.getAlterers();
+        List<? extends DiscreteAlterer> alterers = activeConfiguration.getAlterers();
         if (alterers.size() > 0) {
             final DiscreteAlterer first = alterers.remove(0);
             final DiscreteAlterer[] rest = alterers.toArray(DiscreteAlterer[]::new);
@@ -73,34 +85,21 @@ public class Environment {
 
         try {
             evolutionBuilder
-                    .offspringSize(configuration.getOffspring())
-                    .survivorsSize(configuration.getSurvivors())
-                    .populationSize(configuration.getPopulation());
+                    .offspringSize(activeConfiguration.getOffspring())
+                    .survivorsSize(activeConfiguration.getSurvivors())
+                    .populationSize(activeConfiguration.getPopulation());
         } catch (IllegalArgumentException e) {
             EventService.LOG_LABEL.trigger("Configuration was incorrect: " + e.getMessage());
             return null;
         }
 
-
         EventService.LOG_LABEL.trigger(LangService.get("environment.evolving"));
-        final AtomicInteger progressCounter = new AtomicInteger();
         return evolutionBuilder.build()
                 .stream()
-                .limit(configuration.getLimit())
-                .peek(result -> progressConsumer.accept(progressCounter.incrementAndGet()))
+                .limit(activeConfiguration.getLimit())
+                .peek(progressConsumer)
                 .collect(EvolutionResult.toBestGenotype());
     }
-
-    /**
-     * Singleton environment instance.
-     */
-    private static Environment instance = null;
-
-    /**
-     * The environments configuration.
-     * Holds all information to reproduce experiments and is serialized and saved.
-     */
-    private Configuration configuration;
 
     /**
      * Hidden singleton constructor.
@@ -118,6 +117,18 @@ public class Environment {
             instance = new Environment();
         }
         return instance;
+    }
+
+    public Configuration getConfiguration() {
+        return experiment.getConfiguration();
+    }
+
+    public void setConfiguration(Configuration configuration) {
+        if (experiment == null) {
+            throw new RuntimeException("Environment has not experiment set up");
+        }
+        experiment.setConfiguration(configuration);
+        experiment.clearHistory();
     }
 
     /**
@@ -215,9 +226,10 @@ public class Environment {
     @AllArgsConstructor
     public enum Fitness {
         SINGULAR(Environment::fitnessSingular),
-        GLOBAL(Environment::fitness);
+        GLOBAL(Environment::fitness),
+        SPIRAL(AnalysisUtils::spiralLikeness);
 
-        private Function<DiscreteChromosome, Double> method;
+        private final Function<DiscreteChromosome, Double> method;
 
         public static Fitness getDefault() {
             return GLOBAL;

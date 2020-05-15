@@ -1,9 +1,9 @@
 package evo.search.io.entities;
 
-import org.dom4j.Document;
+import org.dom4j.Element;
 
-public interface XmlEntity<T> {
-    Document serialize();
+public interface XmlEntity {
+    Element serialize();
 
-    T parse(Document document);
+    void parse(Element element);
 }

@@ -11,12 +11,14 @@ import evo.search.ga.mutators.SwapGeneMutator;
 import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
+import evo.search.io.entities.Run;
 import evo.search.io.service.EventService;
 import evo.search.io.service.MenuService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.model.*;
 import evo.search.view.part.Canvas;
 import io.jenetics.Genotype;
+import io.jenetics.engine.EvolutionResult;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -88,6 +92,7 @@ public class MainForm extends JFrame {
         setupMutatorTable();
         setupConfigTable();
         bindEvents();
+
         toolbar.setBorder(new MatteBorder(0, 0, 1, 0, UIManager.getColor("ToolBar.borderColor")));
         bottomBar.setBorder(new MatteBorder(1, 0, 0, 0, UIManager.getColor("ToolBar.borderColor")));
 
@@ -152,7 +157,11 @@ public class MainForm extends JFrame {
      * @param menuBar the menu bar to set up
      */
     private static void setupMenuBar(JMenuBar menuBar) {
-
+        menuBar.add(
+                MenuService.menu("File",
+                        MenuService.item("Save", actionEvent -> ProjectService.saveNewExperiment(Environment.getInstance().getExperiment()))
+                )
+        );
     }
 
     public void updateConfigListView() {
@@ -356,6 +365,9 @@ public class MainForm extends JFrame {
      * Bind the run button to its behaviour.
      */
     private void bindRunButton() {
+
+        AtomicReference<Configuration> lastConfiguration = new AtomicReference<>(null);
+
         startButton.addActionListener(event -> {
             if (getMutatorTableModel() == null) {
                 EventService.LOG_LABEL.trigger(LangService.get("error.creating.config.table"));
@@ -367,6 +379,10 @@ public class MainForm extends JFrame {
                 if (selectedConfiguration == null) {
                     throw new NullPointerException();
                 }
+                if (lastConfiguration.get() == null || !lastConfiguration.get().equals(selectedConfiguration)) {
+                    lastConfiguration.set(selectedConfiguration);
+                    Environment.getInstance().setConfiguration(selectedConfiguration);
+                }
             } catch (ClassCastException | NullPointerException ignored) {
                 EventService.LOG_LABEL.trigger(LangService.get("evolution.init.error"));
                 EventService.LOG.trigger(LangService.get("evolution.init.error") + ": " + LangService.get("configuration.selected.not.valid"));
@@ -376,7 +392,15 @@ public class MainForm extends JFrame {
             getProgressBar().setMaximum(selectedConfiguration.getLimit());
             getProgressBar().setVisible(true);
 
-            Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
+
+            final AtomicInteger progressCounter = new AtomicInteger();
+            final Run run = new Run();
+            Environment.getInstance().getExperiment().getHistory().add(run);
+            Consumer<EvolutionResult<DiscreteGene, Double>> progressConsumer = result -> {
+                result.bestPhenotype()
+                run.addResult(result);
+                SwingUtilities.invokeLater(() -> progressBar.setValue(progressCounter.incrementAndGet()));
+            };
 
             CompletableFuture
                     .supplyAsync(() -> {
@@ -523,7 +547,7 @@ public class MainForm extends JFrame {
         if (textArea1Font != null) textArea1.setFont(textArea1Font);
         textArea1.setInheritsPopupMenu(true);
         textArea1.setOpaque(false);
-        textArea1.setText(":");
+        textArea1.setText("");
         textArea1.setVisible(true);
         scrollPane3.setViewportView(textArea1);
         logLabel.setLabelFor(scrollPane2);

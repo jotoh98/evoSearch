@@ -136,7 +136,6 @@
             </constraints>
             <properties>
               <horizontalTextPosition value="11"/>
-              <labelFor value="eabf8"/>
               <text value=""/>
             </properties>
           </component>
@@ -168,70 +167,32 @@
                   <splitpane position="left"/>
                 </constraints>
                 <properties>
-                  <dividerLocation value="123"/>
-                  <dividerSize value="9"/>
-                  <enabled value="false"/>
                   <focusable value="false"/>
                   <requestFocusEnabled value="false"/>
                 </properties>
                 <border type="none"/>
                 <children>
-                  <tabbedpane id="31374" binding="configTabs">
-                    <constraints>
-                      <splitpane position="left"/>
-                    </constraints>
-                    <properties>
-                      <visible value="true"/>
-                    </properties>
-                    <border type="none"/>
-                    <children>
-                      <grid id="7ec8d" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-                        <margin top="0" left="0" bottom="0" right="0"/>
-                        <constraints>
-                          <tabbedpane title-resource-bundle="lang" title-key="general"/>
-                        </constraints>
-                        <properties/>
-                        <border type="none"/>
-                        <children>
-                          <scrollpane id="54266">
-                            <constraints>
-                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
-                            </constraints>
-                            <properties/>
-                            <border type="none"/>
-                            <children>
-                              <component id="58d98" class="evo.search.view.model.FlexTable" binding="configTable">
-                                <constraints/>
-                                <properties/>
-                              </component>
-                            </children>
-                          </scrollpane>
-                        </children>
-                      </grid>
-                      <scrollpane id="eabf8">
-                        <constraints>
-                          <tabbedpane title-resource-bundle="lang" title-key="mutators"/>
-                        </constraints>
-                        <properties/>
-                        <border type="none"/>
-                        <children>
-                          <component id="7dc7c" class="javax.swing.JTable" binding="mutatorConfigTable">
-                            <constraints/>
-                            <properties>
-                              <name value="Mutators"/>
-                              <visible value="true"/>
-                            </properties>
-                          </component>
-                        </children>
-                      </scrollpane>
-                    </children>
-                  </tabbedpane>
                   <component id="da274" class="evo.search.view.part.Canvas" binding="canvas">
                     <constraints>
                       <splitpane position="right"/>
                     </constraints>
                     <properties/>
                   </component>
+                  <scrollpane id="5d980">
+                    <constraints>
+                      <splitpane position="left"/>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <component id="60c86" class="javax.swing.JList" binding="experimentList">
+                        <constraints/>
+                        <properties>
+                          <model/>
+                        </properties>
+                      </component>
+                    </children>
+                  </scrollpane>
                 </children>
               </splitpane>
               <scrollpane id="6f0cb">

@@ -15,7 +15,6 @@ import io.jenetics.Optimize;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
-import io.jenetics.engine.Problem;
 import io.jenetics.util.ISeq;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -65,16 +64,14 @@ public class Environment {
 
         Configuration activeConfiguration = getConfiguration();
 
-
-        Problem<DiscreteChromosome, DiscreteGene, Double> problem = Problem.of(
-                activeConfiguration.getFitness().getMethod(),
-                Codec.of(
-                        Genotype.of(DiscreteChromosome.shuffle()),
-                        chromosomes -> DiscreteChromosome.of(ISeq.of(chromosomes.chromosome()))
-                )
+        Codec<DiscreteChromosome, DiscreteGene> codec = Codec.of(
+                Genotype.of(DiscreteChromosome.shuffle()),
+                chromosomes -> DiscreteChromosome.of(ISeq.of(chromosomes.chromosome()))
         );
 
-        final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine.builder(problem).optimize(Optimize.MINIMUM);
+        final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine
+                .builder(activeConfiguration.getFitness().getMethod(), codec)
+                .optimize(Optimize.MINIMUM);
 
         List<? extends DiscreteAlterer> alterers = activeConfiguration.getAlterers();
         if (alterers.size() > 0) {

@@ -10,7 +10,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -201,20 +200,30 @@ public class ProjectService {
         File workingDirectory = currentProject.getWorkingDirectory();
         String name = URLEncoder.encode(experiment.getConfiguration().getName(), StandardCharsets.UTF_8);
         File file = getAvailableFile(workingDirectory.toPath() + File.separator + name + "%s.xml");
-        Element experimentElement = experiment.serialize();
-        FileService.write(file, DocumentHelper.createDocument(experimentElement));
+        saveExperiment(file, experiment);
+    }
+
+    public static void saveExperiment(File file, Experiment experiment) {
+        FileService.write(file, DocumentHelper.createDocument(experiment.serialize()));
     }
 
     public static List<Experiment> loadExperiments() {
         return Arrays.stream(currentProject.getWorkingDirectory().list((dir, name) -> name.endsWith(".xml")))
+                .map(filename -> currentProject.getWorkingDirectory() + File.separator + filename)
                 .map(File::new)
+                .sorted(Comparator.comparingLong(File::lastModified))
                 .map(ProjectService::loadExperiment)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     public static Experiment loadExperiment(File file) {
         Document experimentDocument = FileService.read(file);
         Experiment experiment = new Experiment(null);
+        if (experimentDocument.getRootElement() == null) {
+            log.error("No root node found in experiment file " + file.getName());
+            return null;
+        }
         experiment.parse(experimentDocument.getRootElement());
         return experiment;
     }

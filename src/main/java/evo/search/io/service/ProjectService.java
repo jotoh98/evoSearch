@@ -17,6 +17,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -208,13 +210,32 @@ public class ProjectService {
     }
 
     public static List<Experiment> loadExperiments() {
-        return Arrays.stream(currentProject.getWorkingDirectory().list((dir, name) -> name.endsWith(".xml")))
+        return Arrays.stream(getExperimentFilesList())
                 .map(filename -> currentProject.getWorkingDirectory() + File.separator + filename)
                 .map(File::new)
                 .sorted(Comparator.comparingLong(File::lastModified))
                 .map(ProjectService::loadExperiment)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    public static List<Experiment> loadExperiments(String[] list, Consumer<Integer> progress) {
+        AtomicInteger atomicInteger = new AtomicInteger(0);
+        return Arrays.stream(list)
+                .map(filename -> currentProject.getWorkingDirectory() + File.separator + filename)
+                .map(File::new)
+                .sorted(Comparator.comparingLong(File::lastModified))
+                .map(file -> {
+                    Experiment experiment = loadExperiment(file);
+                    progress.accept(atomicInteger.incrementAndGet());
+                    return experiment;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    public static String[] getExperimentFilesList() {
+        return currentProject.getWorkingDirectory().list((dir, name) -> name.endsWith(".xml"));
     }
 
     public static Experiment loadExperiment(File file) {

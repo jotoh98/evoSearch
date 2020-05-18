@@ -178,21 +178,11 @@
                     </constraints>
                     <properties/>
                   </component>
-                  <scrollpane id="5d980">
+                  <nested-form id="de7ef" form-file="evo/search/view/part/EditableList.form">
                     <constraints>
                       <splitpane position="left"/>
                     </constraints>
-                    <properties/>
-                    <border type="none"/>
-                    <children>
-                      <component id="60c86" class="javax.swing.JList" binding="experimentList">
-                        <constraints/>
-                        <properties>
-                          <model/>
-                        </properties>
-                      </component>
-                    </children>
-                  </scrollpane>
+                  </nested-form>
                 </children>
               </splitpane>
               <scrollpane id="6f0cb">

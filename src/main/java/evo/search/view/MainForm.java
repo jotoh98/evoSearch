@@ -16,6 +16,7 @@ import evo.search.io.service.MenuService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.model.*;
 import evo.search.view.part.Canvas;
+import evo.search.view.part.EditableList;
 import io.jenetics.Genotype;
 import io.jenetics.engine.EvolutionResult;
 import lombok.Getter;
@@ -75,7 +76,7 @@ public class MainForm extends JFrame {
     @Setter
     private MutatorTableModel mutatorTableModel = null;
     private JTextField nameField;
-    private JList experimentList;
+    private EditableList<Experiment> experimentList = new EditableList<>();
 
     /**
      * Construct the main form for the swing application.
@@ -105,9 +106,9 @@ public class MainForm extends JFrame {
 
         configComboModel.addAll(project.getConfigurations());
 
-        ((DefaultListModel) experimentList.getModel()).addAll(ProjectService.loadExperiments());
+        experimentList.getListModel().addAll(ProjectService.loadExperiments());
 
-        experimentList.setCellRenderer(new DarkListCellRenderer() {
+        experimentList.getList().setCellRenderer(new DarkListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index, final boolean isSelected, final boolean cellHasFocus) {
                 final JLabel defaultLabel = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
@@ -497,15 +498,11 @@ public class MainForm extends JFrame {
         splitPane1.setLeftComponent(mainSplit);
         canvas = new Canvas();
         mainSplit.setRightComponent(canvas);
+        final EditableList nestedForm1 = new EditableList();
+        mainSplit.setLeftComponent(nestedForm1.$$$getRootComponent$$$());
         final JScrollPane scrollPane1 = new JScrollPane();
-        mainSplit.setLeftComponent(scrollPane1);
-        experimentList = new JList();
-        final DefaultListModel defaultListModel1 = new DefaultListModel();
-        experimentList.setModel(defaultListModel1);
-        scrollPane1.setViewportView(experimentList);
-        final JScrollPane scrollPane2 = new JScrollPane();
-        splitPane1.setRightComponent(scrollPane2);
-        scrollPane2.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
+        splitPane1.setRightComponent(scrollPane1);
+        scrollPane1.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         textArea1 = new JTextArea();
         textArea1.setEditable(false);
         Font textArea1Font = this.$$$getFont$$$("JetBrains Mono", Font.PLAIN, 11, textArea1.getFont());
@@ -514,7 +511,7 @@ public class MainForm extends JFrame {
         textArea1.setOpaque(false);
         textArea1.setText("");
         textArea1.setVisible(true);
-        scrollPane2.setViewportView(textArea1);
+        scrollPane1.setViewportView(textArea1);
     }
 
     /**

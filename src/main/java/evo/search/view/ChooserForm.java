@@ -7,6 +7,7 @@ import evo.search.Main;
 import evo.search.io.entities.Project;
 import evo.search.io.service.FileService;
 import evo.search.io.service.ProjectService;
+import evo.search.view.part.LoadingDialog;
 import evo.search.view.part.ProjectListItem;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,6 +23,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 public class ChooserForm extends JFrame {
@@ -180,9 +182,29 @@ public class ChooserForm extends JFrame {
 
     private void openMainForm() {
         ProjectService.saveRegistered();
-        MainForm mainForm = new MainForm();
-        mainForm.showFrame();
-        dispose();
+
+        String[] filesList = ProjectService.getExperimentFilesList();
+        if (filesList.length < 1) {
+            final MainForm mainForm = new MainForm();
+            mainForm.showFrame();
+            dispose();
+            return;
+        }
+
+
+        final LoadingDialog loadingDialog = new LoadingDialog(LangService.get("loading.project"));
+        loadingDialog.getProgressBar().setMaximum(filesList.length);
+        loadingDialog.pack();
+        loadingDialog.setVisible(true);
+
+        CompletableFuture.supplyAsync(() -> ProjectService.loadExperiments(filesList, integer -> loadingDialog.getProgressBar().setValue(integer)))
+                .thenAccept(list -> {
+                    dispose();
+                    final MainForm mainForm = new MainForm();
+                    mainForm.getExperimentList().getListModel().addAll(list);
+                    mainForm.showFrame();
+                    loadingDialog.dispose();
+                });
     }
 
     /**

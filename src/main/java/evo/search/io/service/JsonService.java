@@ -1,6 +1,5 @@
 package evo.search.io.service;
 
-import evo.search.Environment;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
@@ -21,7 +20,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Json service to serialize and deserialize {@link Environment}s and members.
+ * Json service to serialize and deserialize {@link Configuration}s.
  */
 public class JsonService {
 
@@ -137,39 +136,41 @@ public class JsonService {
      * @return A new {@link DiscretePoint} instance.
      */
     public static DiscretePoint readDiscretePoint(JSONObject jsonObject) {
-        return new DiscretePoint(jsonObject.getInt(POSITION), jsonObject.getDouble(DISTANCE));
+        return new DiscretePoint(jsonObject.getInt(POSITIONS), jsonObject.getInt(POSITION), jsonObject.getDouble(DISTANCE));
     }
 
     /**
      * Deserialize a {@link DiscretePoint}s json.
      *
-     * @param jsonObject Json to deserialize into a {@link DiscretePoint}.
+     * @param configuration configuration to create the phenotype
+     * @param jsonObject    Json to deserialize into a {@link DiscretePoint}.
      * @return A new {@link DiscretePoint} instance.
      */
-    public static DiscreteGene readDiscreteGene(JSONObject jsonObject) {
+    public static DiscreteGene readDiscreteGene(Configuration configuration, JSONObject jsonObject) {
         DiscretePoint discretePoint = readDiscretePoint(jsonObject);
         if (discretePoint == null) {
             return null;
         }
-        return new DiscreteGene(discretePoint);
+        return new DiscreteGene(configuration, discretePoint.getPosition(), discretePoint.getDistance());
     }
 
     /**
      * Deserialize a {@link DiscreteChromosome}s json.
      *
-     * @param jsonArray Json to deserialize into a {@link DiscreteChromosome}.
+     * @param configuration configuration to create the phenotype
+     * @param jsonArray     Json to deserialize into a {@link DiscreteChromosome}.
      * @return A new {@link DiscreteChromosome} instance.
      */
-    public static DiscreteChromosome readDiscreteChromosome(JSONArray jsonArray) {
+    public static DiscreteChromosome readDiscreteChromosome(Configuration configuration, JSONArray jsonArray) {
         List<DiscreteGene> genes = new ArrayList<>();
         jsonArray.forEach(
-                o -> genes.add(readDiscreteGene((JSONObject) o))
+                o -> genes.add(readDiscreteGene(configuration, (JSONObject) o))
         );
         DiscreteGene[] discreteGenes = genes.stream()
                 .filter(Objects::nonNull)
                 .toArray(DiscreteGene[]::new);
 
-        return new DiscreteChromosome(ISeq.of(discreteGenes));
+        return new DiscreteChromosome(configuration, ISeq.of(discreteGenes));
     }
 
     public static Experiment readExperiment(JSONObject jsonObject) {
@@ -179,7 +180,7 @@ public class JsonService {
 
         jsonObject.getJSONArray(INDIVIDUALS).forEach(object -> {
             if (object instanceof JSONArray) {
-                individuals.add(readDiscreteChromosome((JSONArray) object));
+                individuals.add(readDiscreteChromosome(configuration, (JSONArray) object));
             }
         });
 

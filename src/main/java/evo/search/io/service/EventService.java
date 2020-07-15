@@ -2,10 +2,9 @@ package evo.search.io.service;
 
 import com.pploder.events.Event;
 import com.pploder.events.SimpleEvent;
-import evo.search.ga.DiscreteGene;
+import evo.search.ga.DiscreteChromosome;
 import evo.search.io.entities.Configuration;
 import evo.search.view.part.Canvas;
-import io.jenetics.Chromosome;
 
 import java.util.List;
 
@@ -27,7 +26,7 @@ public class EventService {
     /**
      * Event to repaint the {@link Canvas} upon.
      */
-    public static final Event<Chromosome<DiscreteGene>> REPAINT_CANVAS = new SimpleEvent<>();
+    public static final Event<DiscreteChromosome> REPAINT_CANVAS = new SimpleEvent<>();
 
     public static final Event<List<Configuration>> OPEN_CONFIG = new SimpleEvent<>();
 

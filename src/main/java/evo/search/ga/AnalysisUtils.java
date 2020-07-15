@@ -22,19 +22,14 @@ public class AnalysisUtils {
      */
     public static double spiralLikeness(DiscreteChromosome chromosome) {
 
-        List<Double> distances = Environment
-                .getInstance()
-                .getConfiguration()
-                .getDistances();
+
+        final Configuration configuration = chromosome.getConfiguration();
+        List<Double> distances = configuration.getDistances();
+        final int positions = configuration.getPositions();
 
         if (chromosome.toSeq().size() == 0) {
             return 0;
         }
-
-        int amountPositions = Environment
-                .getInstance()
-                .getConfiguration()
-                .getPositions();
 
         distances.sort(Double::compareTo);
         int spiralPositionCounter = chromosome.getGene(0).getAllele().getPosition();
@@ -46,15 +41,15 @@ public class AnalysisUtils {
         int index = 0;
         for (DiscreteGene gene : chromosome) {
             final DiscretePoint actualPoint = gene.getAllele();
-            final DiscretePoint spiralPointCounter = new DiscretePoint(spiralPositionCounter, distances.get(index));
-            final DiscretePoint spiralPointClock = new DiscretePoint(spiralPositionClock, distances.get(index++));
+            final DiscretePoint spiralPointCounter = new DiscretePoint(positions, spiralPositionCounter, distances.get(index));
+            final DiscretePoint spiralPointClock = new DiscretePoint(positions, spiralPositionClock, distances.get(index++));
 
             spiralPositionCounter++;
-            spiralPositionCounter %= amountPositions;
+            spiralPositionCounter %= positions;
 
             spiralPositionClock--;
             if (spiralPositionClock < 0) {
-                spiralPositionClock = amountPositions - 1;
+                spiralPositionClock = positions - 1;
             }
 
 

@@ -1,6 +1,6 @@
 package evo.search.view;
 
-import com.github.weisj.darklaf.ui.list.DarkListCellRenderer;
+import com.github.weisj.darklaf.ui.list.DarkDefaultListCellRenderer;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
@@ -91,7 +91,7 @@ public class MainForm extends JFrame {
         bottomBar.setBorder(new MatteBorder(1, 0, 0, 0, UIManager.getColor("ToolBar.borderColor")));
 
         configComboBox.setModel(configComboModel);
-        configComboBox.setRenderer(new DarkListCellRenderer() {
+        configComboBox.setRenderer(new DarkDefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index, final boolean isSelected, final boolean cellHasFocus) {
                 if (value instanceof Configuration) {

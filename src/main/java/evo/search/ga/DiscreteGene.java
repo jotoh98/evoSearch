@@ -1,6 +1,6 @@
 package evo.search.ga;
 
-import evo.search.Environment;
+import evo.search.io.entities.Configuration;
 import io.jenetics.Gene;
 import lombok.Value;
 
@@ -29,11 +29,7 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
      */
     @Override
     public DiscreteGene newInstance() {
-        int positions = Environment.getInstance().getConfiguration().getPositions();
-        List<Double> distances = Environment.getInstance().getConfiguration().getDistances();
-        int position = RandomRegistry.random().nextInt(positions);
-        int index = RandomRegistry.random().nextInt(distances.size());
-        return new DiscreteGene(new DiscretePoint(position, distances.get(index)));
+        return new DiscreteGene(configuration, position, distance);
     }
 
     /**

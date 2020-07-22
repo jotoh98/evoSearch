@@ -13,7 +13,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.dom4j.Attribute;
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
@@ -34,7 +33,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Data
-@Slf4j
 public class Configuration implements Cloneable, XmlEntity<Configuration> {
 
     /**

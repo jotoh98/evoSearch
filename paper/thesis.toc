@@ -1,4 +1,0 @@
-\select@language {ngerman}
-\contentsline {section}{\numberline {1}Abstract}{1}
-\contentsline {section}{\numberline {2}Vorwort}{1}
-\contentsline {section}{\numberline {3}Definitionen}{2}

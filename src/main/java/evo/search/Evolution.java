@@ -10,6 +10,7 @@ import evo.search.io.service.EventService;
 import evo.search.view.LangService;
 import io.jenetics.Chromosome;
 import io.jenetics.Genotype;
+import io.jenetics.StochasticUniversalSelector;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
@@ -69,9 +70,9 @@ public class Evolution implements Runnable {
                         Genotype.of((Factory<DiscreteChromosome>) this::shuffleInstance, configuration.getPopulation()),
                         chromosomes -> DiscreteChromosome.of(configuration, ISeq.of(chromosomes.chromosome()))
                 )
-        ).minimizing();
-
-        System.out.println("Engine init.");
+        )
+                .selector(new StochasticUniversalSelector<>())
+                .minimizing();
 
         List<? extends DiscreteAlterer> alterers = configuration.getAlterers();
 
@@ -130,8 +131,8 @@ public class Evolution implements Runnable {
      * This is the trace length of the individual visiting it's {@link DiscretePoint}s
      * until the treasure is found.
      *
-     * @param chromosome Chromosome to evaluate.
-     * @return Chromosome singular fitness.
+     * @param chromosome chromosome to evaluate.
+     * @return chromosome fitness based on single treasure
      * @see AnalysisUtils#trace(Chromosome, DiscretePoint)
      */
     public double fitnessSingular(Chromosome<DiscreteGene> chromosome) {
@@ -146,11 +147,11 @@ public class Evolution implements Runnable {
      * The fitness of the chromosome is the sum of all singular fitnesses divided
      * by the amount of treasures.
      *
-     * @param chromosome Chromosome to evaluate.
-     * @return Chromosome singular fitness.
+     * @param chromosome chromosome to evaluate.
+     * @return chromosome fitness based on multiple treasures
      * @see AnalysisUtils#trace(Chromosome, DiscretePoint)
      */
-    public double fitness(Chromosome<DiscreteGene> chromosome) {
+    public double fitnessMulti(Chromosome<DiscreteGene> chromosome) {
         List<DiscretePoint> treasures = configuration.getTreasures();
         return treasures.isEmpty() ? 0 : treasures.stream()
                 .mapToDouble(treasure -> AnalysisUtils.trace(chromosome, treasure))
@@ -158,11 +159,25 @@ public class Evolution implements Runnable {
                 .orElse(0d) / treasures.size();
     }
 
+    /**
+     * Computes the fitness of a {@link DiscreteChromosome} based on the area
+     * explored.
+     *
+     * @param chromosome chromosome to evaluate
+     * @return chromosome fitness based on area explored
+     */
+    public double fitnessGlobal(Chromosome<DiscreteGene> chromosome) {
+        final List<DiscretePoint> points = AnalysisUtils.fill(chromosome);
+        return AnalysisUtils.trace(points) / AnalysisUtils.areaExplored(points);
+    }
+
+
     @Getter
     @AllArgsConstructor
     public enum Fitness {
         SINGULAR(Evolution::fitnessSingular),
-        GLOBAL(Evolution::fitness);
+        MULTI(Evolution::fitnessMulti),
+        GLOBAL(Evolution::fitnessGlobal);
 
         private final BiFunction<Evolution, DiscreteChromosome, Double> method;
 

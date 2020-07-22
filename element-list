@@ -1,8 +1,10 @@
 evo.search
+evo.search.experiments
 evo.search.ga
 evo.search.ga.mutators
 evo.search.io.entities
 evo.search.io.service
+evo.search.util
 evo.search.view
 evo.search.view.listener
 evo.search.view.model

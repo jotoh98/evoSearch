@@ -1,11 +1,12 @@
 package evo.search.view;
 
-import evo.search.Environment;
+import evo.search.Evolution;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.ga.mutators.SwapGeneMutator;
 import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
+import evo.search.util.RandomUtils;
 import evo.search.view.listener.DocumentEditHandler;
 import evo.search.view.model.MutatorTableModel;
 import io.jenetics.AbstractAlterer;
@@ -34,13 +35,12 @@ public class ConfigPanel extends JDialog {
     private JSpinner positionsSpinner;
     private JTextArea distancesTextArea;
     private JTextArea treasuresTextArea;
-    private JComboBox<Environment.Fitness> fitnessComboBox;
     private JTable mutatorTable;
     private JScrollPane mutatorScrollPane;
     private JSpinner populationSpinner;
     private JSpinner offspringSpinner;
     private JSpinner survivorsSpinner;
-    private final DefaultComboBoxModel<Environment.Fitness> fitnessListModel = new DefaultComboBoxModel<>();
+    private final DefaultComboBoxModel<Evolution.Fitness> fitnessListModel = new DefaultComboBoxModel<>();
     private final MutatorTableModel mutatorTableModel = new MutatorTableModel();
     private JPanel rootPanel;
     private JScrollPane distancesScrollPane;
@@ -242,36 +242,13 @@ public class ConfigPanel extends JDialog {
         });
     }
 
-    private void getTreasureInput(final Configuration configuration) {
-        final String text = treasuresTextArea.getText();
-        final Pattern pattern = Pattern.compile("\\((\\d+)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\)");
-        final Matcher matcher = pattern.matcher(text);
-
-        final ArrayList<DiscretePoint> treasures = new ArrayList<>();
-        while (matcher.find()) {
-            try {
-                final int position = Integer.parseInt(matcher.group(1));
-                final double distance = Double.parseDouble(matcher.group(2));
-                treasures.add(new DiscretePoint(position, distance));
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        configuration.setTreasures(treasures);
-    }
+    private JComboBox<Evolution.Fitness> fitnessComboBox;
 
     private void printTreasures(List<DiscretePoint> treasures) {
         treasuresTextArea.setText(printConsecutive(
                 treasures,
                 discretePoint -> String.format("(%s, %s)", discretePoint.getPosition(), discretePoint.getDistance())
         ));
-    }
-
-    private void bindFitness() {
-        fitnessListModel.setSelectedItem(configuration.getFitness());
-        fitnessComboBox.addActionListener(e -> {
-            parent.triggerChange();
-            configuration.setFitness((Environment.Fitness) fitnessComboBox.getSelectedItem());
-        });
     }
 
     private void bindSurvivors() {
@@ -313,7 +290,7 @@ public class ConfigPanel extends JDialog {
 
         shuffleDistancesButton.addActionListener(e -> {
             final ShuffleDialog<Double> shuffleDialog = new ShuffleDialog<>();
-            shuffleDialog.setRandomSupplier(shuffleDialog::shuffleDistances);
+            shuffleDialog.setRandomSupplier(RandomUtils::inRange);
             shuffleDialog.setLocationRelativeTo(this);
 
             shuffleDialog.setPositions(configuration.getPositions());
@@ -338,7 +315,7 @@ public class ConfigPanel extends JDialog {
         });
 
         fitnessComboBox.setModel(fitnessListModel);
-        fitnessListModel.addAll(Arrays.asList(Environment.Fitness.values()));
+        fitnessListModel.addAll(Arrays.asList(Evolution.Fitness.values()));
 
         mutatorTable.setModel(mutatorTableModel);
         mutatorTableModel.addMutator(false, SwapGeneMutator.class, .5);
@@ -408,6 +385,24 @@ public class ConfigPanel extends JDialog {
         bindPopulation();
         bindOffspring();
         bindSurvivors();
+    }
+
+    private void getTreasureInput(final Configuration configuration) {
+        final String text = treasuresTextArea.getText();
+        final Pattern pattern = Pattern.compile("\\((\\d+)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\)");
+        final Matcher matcher = pattern.matcher(text);
+
+        final ArrayList<DiscretePoint> treasures = new ArrayList<>();
+        while (matcher.find()) {
+            try {
+                final int position = Integer.parseInt(matcher.group(1));
+                final double distance = Double.parseDouble(matcher.group(2));
+                //TODO: add positions
+                treasures.add(new DiscretePoint(0, position, distance));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        configuration.setTreasures(treasures);
     }
 
     private static Method $$$cachedGetBundleMethod$$$ = null;
@@ -746,6 +741,14 @@ public class ConfigPanel extends JDialog {
      */
     public JComponent $$$getRootComponent$$$() {
         return rootPanel;
+    }
+
+    private void bindFitness() {
+        fitnessListModel.setSelectedItem(configuration.getFitness());
+        fitnessComboBox.addActionListener(e -> {
+            parent.triggerChange();
+            configuration.setFitness((Evolution.Fitness) fitnessComboBox.getSelectedItem());
+        });
     }
 
 }

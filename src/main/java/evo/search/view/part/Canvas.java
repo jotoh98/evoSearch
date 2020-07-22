@@ -1,11 +1,10 @@
 package evo.search.view.part;
 
-import evo.search.Environment;
+import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.view.render.StringShape;
 import evo.search.view.render.Style;
 import evo.search.view.render.Transformation;
-import io.jenetics.Chromosome;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,19 +35,19 @@ public class Canvas extends JPanel {
      * Points to be rendered on the canvas.
      */
     @Getter
-    private HashMap<Point2D, Style> points = new HashMap<>();
+    private final HashMap<Point2D, Style> points = new HashMap<>();
 
     /**
      * Shapes to be rendered on the canvas.
      */
     @Getter
-    private HashMap<Shape, Style> shapes = new HashMap<>();
+    private final HashMap<Shape, Style> shapes = new HashMap<>();
 
     /**
      * Strings to be rendered on the canvas.
      */
     @Getter
-    private HashMap<StringShape, Style> strings = new HashMap<>();
+    private final HashMap<StringShape, Style> strings = new HashMap<>();
 
     @Getter
     final private JLabel popover = new JLabel();
@@ -195,8 +194,8 @@ public class Canvas extends JPanel {
      *
      * @param chromosome Chromosome to render.
      */
-    public void render(final Chromosome<DiscreteGene> chromosome) {
-        final int availablePosition = Environment.getInstance().getConfiguration().getPositions();
+    public void render(final DiscreteChromosome chromosome) {
+        final int availablePosition = chromosome.getConfiguration().getPositions();
 
         renderRays(availablePosition);
 
@@ -221,7 +220,7 @@ public class Canvas extends JPanel {
             }
         }
 
-        Environment.getInstance().getConfiguration().getTreasures().forEach(
+        chromosome.getConfiguration().getTreasures().forEach(
                 treasure -> enqueue(
                         treasure.toPoint2D(),
                         Style.builder().shape(Style.Shape.CROSS).color(Color.RED).build()

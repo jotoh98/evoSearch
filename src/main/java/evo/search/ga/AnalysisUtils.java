@@ -1,6 +1,7 @@
 package evo.search.ga;
 
-import evo.search.Environment;
+import evo.search.io.entities.Configuration;
+import io.jenetics.Chromosome;
 
 import java.util.List;
 
@@ -22,19 +23,14 @@ public class AnalysisUtils {
      */
     public static double spiralLikeness(DiscreteChromosome chromosome) {
 
-        List<Double> distances = Environment
-                .getInstance()
-                .getConfiguration()
-                .getDistances();
+
+        final Configuration configuration = chromosome.getConfiguration();
+        List<Double> distances = configuration.getDistances();
+        final int positions = configuration.getPositions();
 
         if (chromosome.toSeq().size() == 0) {
             return 0;
         }
-
-        int amountPositions = Environment
-                .getInstance()
-                .getConfiguration()
-                .getPositions();
 
         distances.sort(Double::compareTo);
         int spiralPositionCounter = chromosome.getGene(0).getAllele().getPosition();
@@ -46,15 +42,15 @@ public class AnalysisUtils {
         int index = 0;
         for (DiscreteGene gene : chromosome) {
             final DiscretePoint actualPoint = gene.getAllele();
-            final DiscretePoint spiralPointCounter = new DiscretePoint(spiralPositionCounter, distances.get(index));
-            final DiscretePoint spiralPointClock = new DiscretePoint(spiralPositionClock, distances.get(index++));
+            final DiscretePoint spiralPointCounter = new DiscretePoint(positions, spiralPositionCounter, distances.get(index));
+            final DiscretePoint spiralPointClock = new DiscretePoint(positions, spiralPositionClock, distances.get(index++));
 
             spiralPositionCounter++;
-            spiralPositionCounter %= amountPositions;
+            spiralPositionCounter %= positions;
 
             spiralPositionClock--;
             if (spiralPositionClock < 0) {
-                spiralPositionClock = amountPositions - 1;
+                spiralPositionClock = positions - 1;
             }
 
 
@@ -69,5 +65,45 @@ public class AnalysisUtils {
         return 1 / Math.min(spiralCounterLikeness, spiralClockLikeness);
     }
 
+    /**
+     * Computes the trace length necessary for the {@link DiscreteChromosome}
+     * necessary to find the given treasure {@link DiscretePoint}.
+     *
+     * @param chromosome Chromosome to evaluate the trace length on.
+     * @param treasure   Treasure point to be found.
+     * @return Trace length necessary for the individual to find the treasure.
+     */
+    public static double trace(Chromosome<DiscreteGene> chromosome, DiscretePoint treasure) {
+        double trace = 0d;
+
+        DiscretePoint previous = new DiscretePoint(1, 0, 0d);
+        for (DiscreteGene gene : chromosome) {
+            if (finds(previous, treasure)) {
+                break;
+            }
+            DiscretePoint current = gene.getAllele();
+            trace += previous.distance(current);
+            previous = current;
+        }
+
+        return trace;
+    }
+
+    /**
+     * Compute for two {@link DiscretePoint}s, whether the first
+     * point {@code point} finds the second point {@code treasure}.
+     * <p>
+     * That equals the following statement:
+     * {@code point.position == treasure.position && point.distance >= treasure.distance}
+     *
+     * @param point    Point to check, if it finds the second point.
+     * @param treasure Point to be found.
+     * @return Whether the first point finds the second point.
+     */
+    public static boolean finds(final DiscretePoint point, final DiscretePoint treasure) {
+        boolean distanceEqualOrGreater = point.getDistance() >= treasure.getDistance();
+        boolean positionEquals = point.getPosition() == point.getPosition();
+        return positionEquals && distanceEqualOrGreater;
+    }
 
 }

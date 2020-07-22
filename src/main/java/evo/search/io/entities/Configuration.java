@@ -1,6 +1,6 @@
 package evo.search.io.entities;
 
-import evo.search.Environment;
+import evo.search.Evolution;
 import evo.search.Main;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscretePoint;
@@ -24,12 +24,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Environment configuration for the evolution.
  *
- * @see Environment#evolve(Configuration, Consumer)
+ * @see Evolution#run()
  */
 @NoArgsConstructor
 @AllArgsConstructor
@@ -71,7 +70,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
     private List<DiscretePoint> treasures = new ArrayList<>();
 
     @Builder.Default
-    private Environment.Fitness fitness = Environment.Fitness.getDefault();
+    private Evolution.Fitness fitness = Evolution.Fitness.getDefault();
 
     @Builder.Default
     private List<? extends DiscreteAlterer> alterers = new ArrayList<>(
@@ -125,13 +124,15 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
     }
 
     private static DiscretePoint parseTreasure(Element element) {
+        Attribute amountPositions = element.attribute("amount");
         Attribute positionAttribute = element.attribute("position");
         Attribute distanceAttribute = element.attribute("distance");
-        if (positionAttribute == null || distanceAttribute == null) {
+        if (positionAttribute == null || distanceAttribute == null || amountPositions == null) {
             return null;
         }
         try {
             return new DiscretePoint(
+                    Integer.parseInt(amountPositions.getValue()),
                     Integer.parseInt(positionAttribute.getValue()),
                     Double.parseDouble(distanceAttribute.getValue())
             );
@@ -184,11 +185,11 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
                     setPopulation(Integer.parseInt(value));
                     break;
                 case "fitness":
-                    Environment.Fitness fitness;
+                    Evolution.Fitness fitness;
                     try {
-                        fitness = Environment.Fitness.valueOf(value);
+                        fitness = Evolution.Fitness.valueOf(value);
                     } catch (IllegalArgumentException ignored) {
-                        fitness = Environment.Fitness.getDefault();
+                        fitness = Evolution.Fitness.getDefault();
                     }
                     setFitness(fitness);
                     break;

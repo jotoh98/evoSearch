@@ -106,6 +106,7 @@ public class XmlService {
 
     public static Element writePoint(String name, DiscretePoint point) {
         return new DefaultElement(name)
+                .addAttribute("amount", String.valueOf(point.getPositions()))
                 .addAttribute("position", String.valueOf(point.getPosition()))
                 .addAttribute("distance", String.valueOf(point.getDistance()));
     }

@@ -1,52 +1,28 @@
 package evo.search.ga;
 
-import evo.search.Environment;
+import evo.search.io.entities.Configuration;
 import io.jenetics.Chromosome;
 import io.jenetics.util.ISeq;
-import lombok.AllArgsConstructor;
+import lombok.Value;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Chromosome consisting of a permutations of the distances
- * from the {@link Environment} in an evolved order
+ * from the {@link Configuration} in an evolved order
  * associated with valid positional indices.
  */
-@AllArgsConstructor
+@Value
 public class DiscreteChromosome implements Chromosome<DiscreteGene> {
+
+    Configuration configuration;
 
     /**
      * Sequence of {@link DiscreteGene}s forming the chromosome.
      */
-    private final ISeq<DiscreteGene> genes;
-
-    /**
-     * Shuffle a new {@link DiscreteChromosome} from the distances in the
-     * {@link Environment} and a random valid position.
-     *
-     * @return A valid shuffled chromosome.
-     */
-    public static DiscreteChromosome shuffle() {
-        List<Double> distances = new ArrayList<>(Environment.getInstance().getConfiguration().getDistances());
-        Collections.shuffle(distances);
-        return of(distances);
-    }
-
-    /**
-     * Shuffle a new {@link DiscreteChromosome} from the given distances.
-     *
-     * @param distances List of distances to construct the chromosome upon.
-     * @return A valid shuffled chromosome.
-     */
-    public static DiscreteChromosome of(List<Double> distances) {
-        DiscreteGene[] discreteGenes = distances.stream()
-                .map(DiscreteGene::of)
-                .toArray(DiscreteGene[]::new);
-        return of(ISeq.of(discreteGenes));
-    }
+    ISeq<DiscreteGene> genes;
 
     /**
      * Generate a new {@link DiscreteChromosome} from the given sequence of genes.
@@ -54,19 +30,8 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
      * @param genes Sequence of genes to copy into the new instance.
      * @return A chromosome with the given sequence of genes.
      */
-    public static DiscreteChromosome of(ISeq<DiscreteGene> genes) {
-        return new DiscreteChromosome(genes.copy().toISeq());
-    }
-
-    /**
-     * Generate a new {@link DiscreteChromosome} from the given sequence of points.
-     * Simply maps the points to according {@link DiscreteGene}s.
-     *
-     * @param points Sequence of points to copy into the new instance.
-     * @return A chromosome with the given sequence of genes.
-     */
-    public static DiscreteChromosome ofPoints(List<DiscretePoint> points) {
-        return new DiscreteChromosome(ISeq.of(points.stream().map(DiscreteGene::new).collect(Collectors.toList())));
+    public static DiscreteChromosome of(Configuration configuration, ISeq<DiscreteGene> genes) {
+        return new DiscreteChromosome(configuration, genes.copy().toISeq());
     }
 
     /**
@@ -81,21 +46,13 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
      * {@inheritDoc}
      */
     @Override
-    public Chromosome<DiscreteGene> newInstance(ISeq<DiscreteGene> genes) {
-        return new DiscreteChromosome(genes.copy().toISeq());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public ISeq<DiscreteGene> toSeq() {
         return genes;
     }
 
     /**
      * {@inheritDoc}
-     * Has to be equal to the size of the {@link Environment}'s distances list.
+     * Has to be equal to the size of the {@link Configuration}'s distances list.
      */
     @Override
     public int length() {
@@ -107,27 +64,32 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
      */
     @Override
     public Chromosome<DiscreteGene> newInstance() {
-        return shuffle();
+        return newInstance(genes);
     }
 
     /**
-     * Check if the chromosome is valid. That means, that all positions are valid
-     * and that all distances from the {@link Environment} are contained in the chromosome.
-     *
-     * @return Whether the chromosome is valid or not.
+     * {@inheritDoc}
+     */
+    @Override
+    public Chromosome<DiscreteGene> newInstance(ISeq<DiscreteGene> genes) {
+        return new DiscreteChromosome(configuration, genes.copy().toISeq());
+    }
+
+    /**
+     * {@inheritDoc}
+     * That means, that all distances are distinct and all positions are greater than or equal to zero.
      */
     @Override
     public boolean isValid() {
-        List<Double> distances = Environment.getInstance().getConfiguration().getDistances();
-        if (distances.size() != length()) {
-            return false;
-        }
-        List<DiscreteGene> genes = this.genes.asList();
-        final boolean positionsValid = genes.stream()
+        final List<Double> distinct = Stream.of(genes.toArray(DiscreteGene[]::new))
                 .map(DiscreteGene::getAllele)
-                .mapToDouble(DiscretePoint::getPosition)
-                .allMatch(value -> value >= 0 && value < Environment.getInstance().getConfiguration().getPositions());
+                .map(DiscretePoint::getDistance)
+                .distinct()
+                .collect(Collectors.toList());
 
-        return genes.containsAll(distances) && positionsValid;
+        final boolean positionsValid = Stream.of(genes.toArray(DiscreteGene[]::new))
+                .allMatch(discreteGene -> discreteGene.getAllele().getPosition() >= 0);
+
+        return distinct.size() == genes.size() && positionsValid;
     }
 }

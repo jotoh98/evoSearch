@@ -5,6 +5,7 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import evo.search.Main;
 import evo.search.ga.DiscretePoint;
+import evo.search.util.RandomUtils;
 import lombok.Setter;
 
 import javax.swing.*;
@@ -16,7 +17,6 @@ import java.lang.reflect.Method;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,7 +28,6 @@ public class ShuffleDialog<T> extends JDialog {
     private static final double MIN_DISTANCE = 1.0;
     private static final double MAX_DISTANCE = 9.0;
     private static final int AMOUNT = 10;
-    private static final Random RANDOM = new Random();
 
     static {
         Main.setupEnvironment();
@@ -119,14 +118,7 @@ public class ShuffleDialog<T> extends JDialog {
     }
 
     public DiscretePoint shuffleTreasures(double minDistance, double maxDistance) {
-        return new DiscretePoint(
-                RANDOM.nextInt(positions),
-                minDistance + RANDOM.nextDouble() * (maxDistance - minDistance)
-        );
-    }
-
-    public Double shuffleDistances(double minDistance, double maxDistance) {
-        return minDistance + RANDOM.nextDouble() * (maxDistance - minDistance);
+        return RandomUtils.generatePoint(positions, minDistance, maxDistance);
     }
 
     private void onCancel() {

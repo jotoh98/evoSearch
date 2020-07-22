@@ -1,12 +1,12 @@
 package evo.search.view;
 
-import com.github.weisj.darklaf.ui.list.DarkListCellRenderer;
+import com.github.weisj.darklaf.ui.list.DarkDefaultListCellRenderer;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
-import evo.search.Environment;
+import evo.search.Evolution;
 import evo.search.Main;
-import evo.search.ga.DiscreteGene;
+import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.mutators.SwapGeneMutator;
 import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
@@ -16,7 +16,6 @@ import evo.search.io.service.MenuService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.model.*;
 import evo.search.view.part.Canvas;
-import io.jenetics.Genotype;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -92,7 +91,7 @@ public class MainForm extends JFrame {
         bottomBar.setBorder(new MatteBorder(1, 0, 0, 0, UIManager.getColor("ToolBar.borderColor")));
 
         configComboBox.setModel(configComboModel);
-        configComboBox.setRenderer(new DarkListCellRenderer() {
+        configComboBox.setRenderer(new DarkDefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index, final boolean isSelected, final boolean cellHasFocus) {
                 if (value instanceof Configuration) {
@@ -148,10 +147,8 @@ public class MainForm extends JFrame {
 
     /**
      * Set up the menu bar.
-     *
-     * @param menuBar the menu bar to set up
      */
-    private static void setupMenuBar(JMenuBar menuBar) {
+    private static void setupMenuBar() {
 
     }
 
@@ -176,7 +173,7 @@ public class MainForm extends JFrame {
      */
     public void showFrame() {
         final JMenuBar jMenuBar = new JMenuBar();
-        setupMenuBar(jMenuBar);
+        setupMenuBar();
         setJMenuBar(jMenuBar);
 
         setTitle(Main.APP_TITLE);
@@ -237,16 +234,15 @@ public class MainForm extends JFrame {
      */
     private void setupConfigTable() {
         final List<Double> defaultDistances = List.of(45.0, 2.0, 7.0, 12.0, 5.0);
-        final List<Method> collect = Environment.getFitnessMethods();
 
-        final JComboBox<Method> functionJComboBox = new JComboBox<>(new Vector<>(collect)) {
+        final JComboBox<Evolution.Fitness> functionJComboBox = new JComboBox<>(new Vector<>(Evolution.Fitness.getMethods())) {
             @Override
-            public ListCellRenderer<? super Method> getRenderer() {
+            public ListCellRenderer<? super Evolution.Fitness> getRenderer() {
                 return new DefaultListCellRenderer() {
                     @Override
-                    public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index, final boolean isSelected, final boolean cellHasFocus) {
-                        final Method method = (Method) value;
-                        return super.getListCellRendererComponent(list, method.getName(), index, isSelected, cellHasFocus);
+                    public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                        final Evolution.Fitness method = (Evolution.Fitness) value;
+                        return super.getListCellRendererComponent(list, method.name(), index, isSelected, cellHasFocus);
                     }
                 };
             }
@@ -380,11 +376,14 @@ public class MainForm extends JFrame {
 
             CompletableFuture
                     .supplyAsync(() -> {
-                        Genotype<DiscreteGene> evolvedInstance = Environment.getInstance()
-                                .evolve(Objects.requireNonNull(selectedConfiguration), progressConsumer);
+                        final Evolution evolution = Evolution.builder()
+                                .configuration(selectedConfiguration)
+                                .progressConsumer(progressConsumer)
+                                .build();
 
+                        evolution.run();
 
-                        return evolvedInstance == null ? null : evolvedInstance.chromosome();
+                        return (DiscreteChromosome) evolution.getResult().chromosome();
                     })
                     .thenAccept(chromosome -> {
                         if (chromosome != null) {

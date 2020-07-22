@@ -31,7 +31,7 @@ public class SwapPositionsMutator extends SwapMutator<DiscreteGene, Double> impl
      * {@inheritDoc}
      * Swaps the positions of two random {@link DiscreteGene}s.
      *
-     * @see evo.search.ga.DiscretePoint#swapDistance(DiscretePoint)
+     * @see evo.search.ga.DiscretePoint#swapDistances(DiscretePoint)
      */
     @Override
     protected MutatorResult<Chromosome<DiscreteGene>> mutate(final Chromosome<DiscreteGene> chromosome, final double p, final Random random) {
@@ -60,6 +60,6 @@ public class SwapPositionsMutator extends SwapMutator<DiscreteGene, Double> impl
      * @param b    Integer position b for swap.
      */
     protected void swapPositions(MSeq<DiscreteGene> mSeq, int a, int b) {
-        mSeq.get(a).getAllele().swapDistance(mSeq.get(b).getAllele());
+        mSeq.get(a).getAllele().swapDistances(mSeq.get(b).getAllele());
     }
 }

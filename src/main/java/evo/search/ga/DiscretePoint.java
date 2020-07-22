@@ -1,9 +1,7 @@
 package evo.search.ga;
 
-import evo.search.Environment;
-import evo.search.io.entities.Configuration;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 
 import java.awt.geom.Point2D;
 
@@ -11,19 +9,24 @@ import java.awt.geom.Point2D;
  * Polar coordinate with discretized angle.
  */
 @AllArgsConstructor
-@Getter
+@Data
 public class DiscretePoint implements Cloneable {
 
     /**
-     * Index of the angle used for the corresponding polar coordinate.
-     * Is used with {@link Configuration#getPositions()}.
+     * Amount of all available rays where a discrete point can be placed.
+     * Determines the relative position for {@link #getAngle()}.
      */
-    private int position;
+    int positions;
+
+    /**
+     * Index of the angle used for the corresponding polar coordinate.
+     */
+    int position;
 
     /**
      * Distance of the polar coordinate.
      */
-    private double distance;
+    double distance;
 
     /**
      * Transfer the discretized polar coordinate to a cartesian coordinate.
@@ -41,8 +44,7 @@ public class DiscretePoint implements Cloneable {
      * @return Radian angle of the polar coordinate.
      */
     public double getAngle() {
-        double positions = Environment.getInstance().getConfiguration().getPositions();
-        return position / positions * 2 * Math.PI;
+        return position / ((double) positions) * 2 * Math.PI;
     }
 
     /**
@@ -55,7 +57,7 @@ public class DiscretePoint implements Cloneable {
         try {
             return (DiscretePoint) super.clone();
         } catch (CloneNotSupportedException ignore) {
-            return new DiscretePoint(position, distance);
+            return new DiscretePoint(positions, position, distance);
         }
     }
 
@@ -92,9 +94,20 @@ public class DiscretePoint implements Cloneable {
     /**
      * Swap the distance with another {@link DiscretePoint}.
      *
-     * @param other Other {@link DiscretePoint} to swap distances with.
+     * @param other Other {@link DiscretePoint} to swap the distance with.
      */
-    public void swapDistance(DiscretePoint other) {
+    public void swapDistances(DiscretePoint other) {
+        final double temp = this.distance;
+        distance = other.distance;
+        other.distance = temp;
+    }
+
+    /**
+     * Swap the position with another {@link DiscretePoint}.
+     *
+     * @param other Other {@link DiscretePoint} to swap the position with.
+     */
+    public void swapPositions(DiscretePoint other) {
         final int temp = position;
         position = other.position;
         other.position = temp;

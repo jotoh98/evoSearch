@@ -366,9 +366,9 @@ public class ConfigPanel extends JDialog {
                 }
             }
         });
-
-
     }
+
+    private static Method $$$cachedGetBundleMethod$$$ = null;
 
     public void setConfiguration(Configuration configuration) {
         this.configuration = configuration;
@@ -748,5 +748,6 @@ public class ConfigPanel extends JDialog {
     public JComponent $$$getRootComponent$$$() {
         return rootPanel;
     }
+
 
 }

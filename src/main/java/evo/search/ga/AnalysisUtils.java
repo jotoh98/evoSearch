@@ -6,8 +6,10 @@ import io.jenetics.Chromosome;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * This class provides several analysis metrics to evaluate individuals upon
@@ -253,6 +255,32 @@ public class AnalysisUtils {
                 .stream()
                 .reduce(Double::sum)
                 .orElse(0d);
+    }
+
+    /**
+     * Calculates the worst case trace length of a trace barely missing a treasure
+     * every time by a distance given in epsilon.
+     *
+     * @param points  list of points forming a path
+     * @param epsilon distance the treasure is missed by
+     * @return worst case scenario fitness
+     */
+    public static double worstCase(final List<DiscretePoint> points, final int epsilon) {
+        return IntStream
+                .range(0, points.size()).mapToObj(k -> {
+                    final List<DiscretePoint> list = points.subList(k, points.size() - 1);
+                    final DiscretePoint worstCase = points.get(k).clone();
+                    worstCase.setDistance(worstCase.getDistance() + epsilon);
+                    list.add(worstCase);
+                    double distance = points.get(k).getDistance();
+
+                    if (distance == 0)
+                        distance = 1;
+
+                    return ListUtils.consecMap(list, DiscretePoint::distance).stream().reduce(Double::sum).orElse(0d) / distance;
+                })
+                .min(Comparator.comparingDouble(Double::doubleValue))
+                .orElse(Double.POSITIVE_INFINITY);
     }
 
 }

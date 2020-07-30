@@ -2,7 +2,6 @@ package evo.search.ga;
 
 import evo.search.io.entities.Configuration;
 import evo.search.util.ListUtils;
-import evo.search.util.MathUtils;
 import io.jenetics.Chromosome;
 
 import java.util.ArrayList;
@@ -78,7 +77,7 @@ public class AnalysisUtils {
      * @param treasure   Treasure point to be found.
      * @return Trace length necessary for the individual to find the treasure.
      */
-    public static double trace(Chromosome<DiscreteGene> chromosome, DiscretePoint treasure) {
+    public static double traceLength(Chromosome<DiscreteGene> chromosome, DiscretePoint treasure) {
         double trace = 0d;
 
         DiscretePoint previous = new DiscretePoint(1, 0, 0d);
@@ -94,17 +93,29 @@ public class AnalysisUtils {
         return trace;
     }
 
-    public static double trace(Chromosome<DiscreteGene> chromosome) {
+    /**
+     * Calculates the trace length of a path supplied by the chromosome.
+     *
+     * @param chromosome chromosome with genes supplying the points
+     * @return trace length of the chromosome
+     */
+    public static double traceLength(Chromosome<DiscreteGene> chromosome) {
         final List<DiscretePoint> points = ListUtils.from(chromosome.iterator())
                 .stream()
                 .map(DiscreteGene::getAllele)
                 .collect(Collectors.toList());
-        return trace(points);
+        return traceLength(points);
     }
 
-    public static double trace(final List<DiscretePoint> points) {
+    /**
+     * Calculates the trace length of a path consisting of the list of points.
+     *
+     * @param points points forming a trace
+     * @return trace length of the path of points
+     */
+    public static double traceLength(final List<DiscretePoint> points) {
         return ListUtils
-                .consecutive(points, DiscretePoint::distance)
+                .consecMap(points, DiscretePoint::distance)
                 .stream()
                 .reduce(Double::sum)
                 .orElse(0d);
@@ -127,6 +138,15 @@ public class AnalysisUtils {
         return positionEquals && distanceEqualOrGreater;
     }
 
+    /**
+     * Returns a filled list of points visited on each sector by the chromosome.
+     * The chromosome may jump above multiple sectors. To resolve this behaviour
+     * for the fitness evaluation using area coverage, the list of points need
+     * consecutive position indices.
+     *
+     * @param chromosome chromosome with jumping genes
+     * @return list of visited points with consecutive position indices
+     */
     public static List<DiscretePoint> fill(final Chromosome<DiscreteGene> chromosome) {
         final ArrayList<DiscretePoint> discretePoints = new ArrayList<>();
 
@@ -145,7 +165,14 @@ public class AnalysisUtils {
         return discretePoints;
     }
 
-
+    /**
+     * Returns a list of intersections between the line through points
+     * a and b and the rays between these points.
+     *
+     * @param a point a for the line
+     * @param b point b for the line
+     * @return list of intersections between the line ab and the rays between a and b
+     */
     public static List<DiscretePoint> inBetween(DiscretePoint a, DiscretePoint b) {
         final int difference = Math.abs(a.position - b.position);
         if (((double) difference) == a.positions / 2d || difference == 0)
@@ -174,72 +201,58 @@ public class AnalysisUtils {
         return points;
     }
 
-    public static double areaInSector(double distanceA, double distanceB, int positions) {
-        return 0.5 * distanceA * distanceB * Math.sin((2 * Math.PI) / (double) positions);
+    /**
+     * Calculates the triangle area in a sector between two rays given
+     * the two distances of the outer edges and the amount of all rays.
+     * The points have to lay on consecutive rays hence the need for a fix
+     * through {@link #inBetween(DiscretePoint, DiscretePoint)} before invoking
+     * this method.
+     *
+     * @param distanceA first outer edge distance
+     * @param distanceB second outer edge distance
+     * @param rayCount  amount of rays, gives the inner degree of the triangle
+     * @return triangle area in a sector given two point distances
+     */
+    public static double areaInSector(double distanceA, double distanceB, int rayCount) {
+        return 0.5 * distanceA * distanceB * Math.sin((2 * Math.PI) / (double) rayCount);
     }
 
-    public static double areaExplored(final List<DiscretePoint> points) {
+    /**
+     * Calculates the maximised area covered by the points.
+     * A covered area in a sector is the area of the triangle formed between
+     * two points on the rays limiting the sector and the origin.
+     * This fitness maximises a area already covered and every time a
+     * sector is explored again, the area already covered is subtracted to
+     * induce larger areas being visited the next time in a same sector.
+     *
+     * @param points list of points distributed on consecutive rays
+     * @return maximised area covered by the points
+     */
+    public static double areaCovered(final List<DiscretePoint> points) {
         if (points.size() < 2)
             return 0;
 
-        final int positions = points.get(0).positions;
-
-        final double[] maxDistances = new double[positions * 2];
+        final double[] areasCovered = new double[points.get(0).getPositions()];
 
         return ListUtils
-                .consecutive(points, (pointA, pointB) -> {
+                .consecMap(points, (pointA, pointB) -> {
+                    int index = Math.min(pointA.getPosition(), pointB.getPosition());
+                    int delta = Math.abs(pointA.getPosition() - pointB.getPosition());
 
+                    if (index == 0 && delta > 1)
+                        index = delta;
 
-                    if (pointA.getPosition() > pointB.getPosition()) {
-                        final DiscretePoint temp = pointA;
-                        pointA = pointB;
-                        pointB = temp;
-                    }
+                    if (delta == 0 || delta == pointA.getPositions() / 2d)
+                        return 0d;
 
-                    final int positionA = pointA.getPosition();
-                    final int positionB = pointB.getPosition();
-
-                    if (positionA == positionB)
-                        return 0;
-
-
-                    final int index = 2 * (positionA == 0 && positionB == positions - 1 ? positions - 1 : positionA);
-
-                    if (index >= maxDistances.length || 2 * positionB >= maxDistances.length)
-                        return Double.POSITIVE_INFINITY;
-
-
-                    final double distanceA = pointA.getDistance();
-                    final double distanceB = pointA.getDistance();
-
-                    final double maxA = maxDistances[index];
-                    final double maxB = maxDistances[index + 1];
-
-                    if (distanceA > maxA)
-                        maxDistances[index] = distanceA;
-
-                    if (distanceB > maxB)
-                        maxDistances[index + 1] = distanceB;
-
-                    if (distanceA >= maxA && distanceB >= maxB)
-                        return areaInSector(distanceA, distanceB, positions) - areaInSector(maxA, maxB, positions);
-
-                    else if (distanceA < maxA && distanceB < maxB)
-                        return 0;
-
-                    final double newDistance = pointA.distance(pointB);
-                    final double oldDistance = MathUtils.distance(0, maxA, (2 * Math.PI) / positions, maxB);
-
-                    final double newFactor = Math.min(maxA / distanceA, maxB / distanceB);
-                    final double oldFactor = Math.min(distanceB / maxB, distanceA / maxA);
-                    final double offsetDistance = Math.max(distanceA - maxA, distanceB - maxB);
-
-                    return MathUtils.areaInTriangle(offsetDistance, newDistance * newFactor, oldDistance * oldFactor);
+                    final double areaInSector = areaInSector(pointA.getDistance(), pointB.getDistance(), pointA.getPositions());
+                    final double areaExplored = areaInSector - areasCovered[index];
+                    areasCovered[index] = Math.max(areaInSector, areasCovered[index]);
+                    return areaExplored;
                 })
                 .stream()
-                .map(Number::doubleValue)
                 .reduce(Double::sum)
-                .orElse(Double.NEGATIVE_INFINITY);
+                .orElse(0d);
     }
 
 }

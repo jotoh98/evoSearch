@@ -133,11 +133,11 @@ public class Evolution implements Runnable {
      *
      * @param chromosome chromosome to evaluate.
      * @return chromosome fitness based on single treasure
-     * @see AnalysisUtils#trace(Chromosome, DiscretePoint)
+     * @see AnalysisUtils#traceLength(Chromosome, DiscretePoint)
      */
     public double fitnessSingular(Chromosome<DiscreteGene> chromosome) {
         DiscretePoint treasure = configuration.getTreasures().get(0);
-        return AnalysisUtils.trace(chromosome, treasure);
+        return AnalysisUtils.traceLength(chromosome, treasure);
     }
 
     /**
@@ -149,40 +149,43 @@ public class Evolution implements Runnable {
      *
      * @param chromosome chromosome to evaluate.
      * @return chromosome fitness based on multiple treasures
-     * @see AnalysisUtils#trace(Chromosome, DiscretePoint)
+     * @see AnalysisUtils#traceLength(Chromosome, DiscretePoint)
      */
     public double fitnessMulti(Chromosome<DiscreteGene> chromosome) {
         List<DiscretePoint> treasures = configuration.getTreasures();
         return treasures.isEmpty() ? 0 : treasures.stream()
-                .mapToDouble(treasure -> AnalysisUtils.trace(chromosome, treasure))
+                .mapToDouble(treasure -> AnalysisUtils.traceLength(chromosome, treasure))
                 .reduce(Double::sum)
                 .orElse(0d) / treasures.size();
     }
 
     /**
-     * Computes the fitness of a {@link DiscreteChromosome} based on the area
-     * explored.
+     * Computes the fitness of a {@link DiscreteChromosome} based on the maximised
+     * area explored in each section between two rays.
      *
      * @param chromosome chromosome to evaluate
-     * @return chromosome fitness based on area explored
+     * @return chromosome fitness based on maximised area explored
+     * @see AnalysisUtils#areaCovered(List)
      */
-    public double fitnessGlobal(Chromosome<DiscreteGene> chromosome) {
+    public double fitnessMaximisingArea(Chromosome<DiscreteGene> chromosome) {
         final List<DiscretePoint> points = AnalysisUtils.fill(chromosome);
-        return AnalysisUtils.trace(points) / AnalysisUtils.areaExplored(points);
+        final double area = AnalysisUtils.areaCovered(points);
+        if (area <= 0)
+            return Double.POSITIVE_INFINITY;
+        return AnalysisUtils.traceLength(points) / area;
     }
-
 
     @Getter
     @AllArgsConstructor
     public enum Fitness {
         SINGULAR(Evolution::fitnessSingular),
         MULTI(Evolution::fitnessMulti),
-        GLOBAL(Evolution::fitnessGlobal);
+        MAX_AREA(Evolution::fitnessMaximisingArea);
 
         private final BiFunction<Evolution, DiscreteChromosome, Double> method;
 
         public static Fitness getDefault() {
-            return GLOBAL;
+            return MAX_AREA;
         }
 
         public static List<Fitness> getMethods() {

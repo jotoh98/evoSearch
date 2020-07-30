@@ -44,59 +44,6 @@ class AnalysisUtilsTest {
     }
 
     @Test
-    void areaExplored() {
-        final double area = AnalysisUtils.areaExplored(List.of(
-                new DiscretePoint(4, 0, 1),
-                new DiscretePoint(4, 1, 1),
-                new DiscretePoint(4, 2, 1),
-                new DiscretePoint(4, 3, 1),
-                new DiscretePoint(4, 0, 1)
-        ));
-        Assertions.assertEquals(area, 2);
-    }
-
-    @Test
-    void emptyAreaExplored() {
-        final double area = AnalysisUtils.areaExplored(List.of(new DiscretePoint(2, 0, 100), new DiscretePoint(2, 1, 100)));
-        Assertions.assertEquals(area, 0);
-    }
-
-    @Test
-    void emptyExploredInputBroken() {
-        final double area = AnalysisUtils.areaExplored(List.of(new DiscretePoint(2, 0, 100)));
-        Assertions.assertEquals(area, 0);
-    }
-
-    @Test
-    void areaExploredComparison() {
-        final double best = AnalysisUtils.areaExplored(List.of(
-                new DiscretePoint(4, 0, 1),
-                new DiscretePoint(4, 1, 1),
-                new DiscretePoint(4, 2, 1),
-                new DiscretePoint(4, 3, 1),
-                new DiscretePoint(4, 0, 1)
-        ));
-
-        final double smaller = AnalysisUtils.areaExplored(List.of(
-                new DiscretePoint(4, 0, .1),
-                new DiscretePoint(4, 1, .1),
-                new DiscretePoint(4, 2, .1),
-                new DiscretePoint(4, 3, .1),
-                new DiscretePoint(4, 0, .1)
-        ));
-
-        final double goesBack = AnalysisUtils.areaExplored(List.of(
-                new DiscretePoint(4, 0, 1),
-                new DiscretePoint(4, 1, 1),
-                new DiscretePoint(4, 2, 1),
-                new DiscretePoint(4, 3, 1),
-                new DiscretePoint(4, 2, 1)
-        ));
-        Assertions.assertTrue(smaller < best);
-        Assertions.assertTrue(goesBack < best);
-    }
-
-    @Test
     void emptyBetweenOpposing() {
         final int size = AnalysisUtils
                 .inBetween(new DiscretePoint(4, 0, 1), new DiscretePoint(4, 2, 1))
@@ -119,5 +66,19 @@ class AnalysisUtilsTest {
                 .get(0)
                 .distance;
         Assertions.assertEquals(distance, Math.sqrt(2) / 2);
+    }
+
+    @Test
+    void areaMaximised() {
+        final double quarter = AnalysisUtils.areaCovered(List.of(new DiscretePoint(4, 0, 1), new DiscretePoint(4, 1, 1)));
+
+        final double maximisedQuarter = AnalysisUtils.areaCovered(List.of(new DiscretePoint(4, 0, 1), new DiscretePoint(4, 1, 1), new DiscretePoint(4, 1, 2), new DiscretePoint(4, 0, 2)));
+
+        final double better = AnalysisUtils.areaCovered(List.of(new DiscretePoint(4, 0, 1), new DiscretePoint(4, 1, 1), new DiscretePoint(4, 1, 2), new DiscretePoint(4, 2, 2)));
+
+
+        Assertions.assertEquals(quarter, .5);
+        Assertions.assertEquals(maximisedQuarter, 2);
+        Assertions.assertTrue(maximisedQuarter < better);
     }
 }

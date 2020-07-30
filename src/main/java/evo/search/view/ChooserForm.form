@@ -79,6 +79,54 @@
               </grid>
             </constraints>
           </vspacer>
+          <component id="56719" class="javax.swing.JLabel" binding="evoSearchLogo" custom-create="true">
+            <constraints>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <horizontalTextPosition value="0"/>
+              <iconTextGap value="8"/>
+              <requestFocusEnabled value="false"/>
+              <text resource-bundle="lang" key="evosearch"/>
+              <verticalTextPosition value="3"/>
+            </properties>
+          </component>
+          <vspacer id="12bfa">
+            <constraints>
+              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false">
+                <minimum-size width="-1" height="10"/>
+                <maximum-size width="-1" height="10"/>
+              </grid>
+            </constraints>
+          </vspacer>
+          <vspacer id="12bfa">
+            <constraints>
+              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false">
+                <minimum-size width="-1" height="10"/>
+                <maximum-size width="-1" height="10"/>
+              </grid>
+            </constraints>
+          </vspacer>
+          <component id="56719" class="javax.swing.JLabel" binding="evoSearchLogo" custom-create="true">
+            <constraints>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <horizontalTextPosition value="0"/>
+              <iconTextGap value="8"/>
+              <requestFocusEnabled value="false"/>
+              <text resource-bundle="lang" key="evosearch"/>
+              <verticalTextPosition value="3"/>
+            </properties>
+          </component>
+          <vspacer id="12bfa">
+            <constraints>
+              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false">
+                <minimum-size width="-1" height="10"/>
+                <maximum-size width="-1" height="10"/>
+              </grid>
+            </constraints>
+          </vspacer>
         </children>
       </grid>
     </children>

@@ -1,5 +1,6 @@
 package evo.search.ga;
 
+import evo.search.util.MathUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -78,8 +79,7 @@ public class DiscretePoint implements Cloneable {
      * @return The euclidean distance to another {@link DiscretePoint}.
      */
     public double distance(DiscretePoint other) {
-        double subtract = 2 * distance * other.getDistance() * Math.cos(getAngle() - other.getAngle());
-        return Math.sqrt(getDistanceSquared() + other.getDistanceSquared() - subtract);
+        return MathUtils.distance(getAngle(), distance, other.getAngle(), other.distance);
     }
 
     /**

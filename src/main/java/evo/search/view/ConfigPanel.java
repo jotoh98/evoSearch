@@ -368,8 +368,6 @@ public class ConfigPanel extends JDialog {
         });
     }
 
-    private static Method $$$cachedGetBundleMethod$$$ = null;
-
     public void setConfiguration(Configuration configuration) {
         this.configuration = configuration;
         shuffleDistancesButton.setEnabled(true);
@@ -665,13 +663,7 @@ public class ConfigPanel extends JDialog {
         label9.setLabelFor(survivorsSpinner);
     }
 
-    private void bindFitness() {
-        fitnessListModel.setSelectedItem(configuration.getFitness());
-        fitnessComboBox.addActionListener(e -> {
-            parent.triggerChange();
-            configuration.setFitness((Evolution.Fitness) fitnessComboBox.getSelectedItem());
-        });
-    }
+    private static Method $$$cachedGetBundleMethod$$$ = null;
 
     private String $$$getMessageFromBundle$$$(String path, String key) {
         ResourceBundle bundle;
@@ -747,6 +739,14 @@ public class ConfigPanel extends JDialog {
      */
     public JComponent $$$getRootComponent$$$() {
         return rootPanel;
+    }
+
+    private void bindFitness() {
+        fitnessListModel.setSelectedItem(configuration.getFitness());
+        fitnessComboBox.addActionListener(e -> {
+            parent.triggerChange();
+            configuration.setFitness((Evolution.Fitness) fitnessComboBox.getSelectedItem());
+        });
     }
 
 

@@ -53,19 +53,36 @@ public class ChooserForm extends JFrame {
     private void fillProjectList() {
         ProjectService.getIndexEntries().forEach(project -> {
             final ProjectListItem listItem = new ProjectListItem(project);
+
             listItem.bindSelectionEvent(selectedProject -> {
                 Project projectFromDir = ProjectService
                         .loadProjectFromDirectory(new File(selectedProject.getPath()));
+
+                if (projectFromDir == null) {
+                    final int deleteOption = JOptionPane.showConfirmDialog(this, LangService.get("project.want.delete"), LangService.get("project.does.not.exist"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+                    if (deleteOption == 0) {
+                        listPanel.remove(listItem);
+                        listPanel.revalidate();
+                        listPanel.repaint();
+                        ProjectService.getIndexEntries().remove(project);
+                    }
+
+                    return;
+                }
+
                 projectFromDir.setPath(selectedProject.getPath());
                 ProjectService.setCurrentProject(projectFromDir);
                 openMainForm();
             });
+
             listItem.bindDeleteEvent(e -> {
                 listPanel.remove(listItem);
                 listPanel.revalidate();
                 listPanel.repaint();
                 ProjectService.getIndexEntries().remove(project);
             });
+
             listPanel.add(listItem);
         });
         final Spacer verticalSpacer = new Spacer();
@@ -225,14 +242,18 @@ public class ChooserForm extends JFrame {
         optionPane.add(spacer1, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(139, 14), null, 0, false));
         final Spacer spacer2 = new Spacer();
         optionPane.add(spacer2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(139, 14), null, 0, false));
+        final Spacer spacer3 = new Spacer();
+        optionPane.add(spacer3, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 10), null, new Dimension(-1, 10), 0, false));
+        final Spacer spacer4 = new Spacer();
+        optionPane.add(spacer4, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 10), null, new Dimension(-1, 10), 0, false));
         evoSearchLogo.setHorizontalTextPosition(0);
         evoSearchLogo.setIconTextGap(8);
         evoSearchLogo.setRequestFocusEnabled(false);
         this.$$$loadLabelText$$$(evoSearchLogo, this.$$$getMessageFromBundle$$$("lang", "evosearch"));
         evoSearchLogo.setVerticalTextPosition(3);
         optionPane.add(evoSearchLogo, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer3 = new Spacer();
-        optionPane.add(spacer3, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 10), null, new Dimension(-1, 10), 0, false));
+        final Spacer spacer5 = new Spacer();
+        optionPane.add(spacer5, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 10), null, new Dimension(-1, 10), 0, false));
     }
 
     private static Method $$$cachedGetBundleMethod$$$ = null;
@@ -309,8 +330,6 @@ public class ChooserForm extends JFrame {
     /**
      * @noinspection ALL
      */
-    public JComponent $$$getRootComponent$$$() {
-        return rootPanel;
-    }
+    public JComponent $$$getRootComponent$$$() { return rootPanel; }
 
 }

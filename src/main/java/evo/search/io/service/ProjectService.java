@@ -79,7 +79,7 @@ public class ProjectService {
 
     public static Project loadProjectFromDirectory(File projectDirectory) {
         if (!projectDirectory.isDirectory()) {
-            log.error("Project file is no directory.");
+            log.debug("Project file is no directory.");
             return null;
         }
         final File hiddenFile = getHiddenFile(projectDirectory);

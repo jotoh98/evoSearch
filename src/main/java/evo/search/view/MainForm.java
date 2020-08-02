@@ -534,13 +534,9 @@ public class MainForm extends JFrame {
     private Font $$$getFont$$$(String fontName, int style, int size, Font currentFont) {
         if (currentFont == null) return null;
         String resultName;
-        if (fontName == null) {
-            resultName = currentFont.getName();
-        } else {
+        if (fontName == null) {resultName = currentFont.getName();} else {
             Font testFont = new Font(fontName, Font.PLAIN, 10);
-            if (testFont.canDisplay('a') && testFont.canDisplay('1')) {
-                resultName = fontName;
-            } else {
+            if (testFont.canDisplay('a') && testFont.canDisplay('1')) {resultName = fontName;} else {
                 resultName = currentFont.getName();
             }
         }
@@ -594,8 +590,6 @@ public class MainForm extends JFrame {
     /**
      * @noinspection ALL
      */
-    public JComponent $$$getRootComponent$$$() {
-        return rootPanel;
-    }
+    public JComponent $$$getRootComponent$$$() { return rootPanel; }
 
 }

@@ -4,34 +4,43 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import evo.search.Main;
 import evo.search.io.entities.IndexEntry;
+import lombok.Getter;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
 public class ProjectListItem extends JPanel {
     private JButton deleteButton;
-    private JLabel nameLabel;
+    private final boolean exists;
     private JLabel versionLabel;
     private JLabel pathLabel;
+    private final IndexEntry entry;
+    @Getter
+    private JLabel nameLabel;
 
-    private IndexEntry entry;
-
-    public ProjectListItem(IndexEntry entry) {
+    public ProjectListItem(IndexEntry indexEntry) {
         setupUI();
-        this.entry = entry;
-        nameLabel.setText(this.entry.getName());
-        versionLabel.setText(this.entry.getVersion());
-        pathLabel.setText(this.entry.getPath());
+        entry = indexEntry;
+        nameLabel.setText(entry.getName());
+        versionLabel.setText(entry.getVersion());
+        pathLabel.setText(entry.getPath());
+
+        exists = Files.exists(Path.of(indexEntry.getPath()));
 
         deleteButton.setIcon(UIManager.getIcon("TextField.search.clear.icon"));
         deleteButton.setVisible(false);
         pathLabel.setForeground(UIManager.getColor("Button.disabledText"));
+
+        if (!exists)
+            nameLabel.setForeground(Color.RED);
 
         final ProjectListItem listItem = this;
         addMouseListener(new MouseAdapter() {
@@ -46,10 +55,11 @@ public class ProjectListItem extends JPanel {
             @Override
             public void mouseExited(final MouseEvent e) {
                 final Component exitTarget = findComponentAt(e.getPoint());
-                if(exitTarget != null && SwingUtilities.isDescendingFrom(exitTarget, listItem)) {
+                if (exitTarget != null && SwingUtilities.isDescendingFrom(exitTarget, listItem)) {
                     return;
                 }
-                listItem.setBackground(null);
+
+                setBackground(null);
                 deleteButton.setVisible(false);
                 versionLabel.setVisible(true);
                 super.mouseExited(e);

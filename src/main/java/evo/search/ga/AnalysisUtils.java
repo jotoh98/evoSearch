@@ -279,7 +279,7 @@ public class AnalysisUtils {
 
                     return ListUtils.consecMap(list, DiscretePoint::distance).stream().reduce(Double::sum).orElse(0d) / distance;
                 })
-                .min(Comparator.comparingDouble(Double::doubleValue))
+                .max(Comparator.comparingDouble(Double::doubleValue))
                 .orElse(Double.POSITIVE_INFINITY);
     }
 

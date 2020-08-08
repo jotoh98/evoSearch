@@ -3,13 +3,10 @@ package evo.search.view;
 import evo.search.Evolution;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
-import evo.search.ga.mutators.SwapGeneMutator;
-import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.util.RandomUtils;
 import evo.search.view.listener.DocumentEditHandler;
 import evo.search.view.model.MutatorTableModel;
-import io.jenetics.AbstractAlterer;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -318,41 +315,16 @@ public class ConfigPanel extends JDialog {
         fitnessListModel.addAll(Arrays.asList(Evolution.Fitness.values()));
 
         mutatorTable.setModel(mutatorTableModel);
-        mutatorTableModel.addMutator(false, SwapGeneMutator.class, .5);
-        mutatorTableModel.addMutator(false, SwapPositionsMutator.class, .5);
-
-        mutatorScrollPane.addMouseWheelListener(e -> {
-
-        });
     }
 
     private void bindMutators() {
-        for (DiscreteAlterer configAlterer : configuration.getAlterers()) {
-            for (MutatorTableModel.MutatorConfig mutatorConfig : mutatorTableModel.getMutatorConfigs()) {
-                if (configAlterer.getClass().equals(mutatorConfig.getMutator())) {
-                    mutatorConfig.setSelected(true);
-                    final double probability = ((AbstractAlterer<?, ?>) configAlterer).probability();
-                    mutatorConfig.setProbability(probability);
-                    break;
-                }
-            }
-        }
+
+        for (DiscreteAlterer configAlterer : configuration.getAlterers())
+            mutatorTableModel.addMutator(configAlterer.getClass().getSimpleName(), configAlterer.getProbability());
 
         mutatorTableModel.addTableModelListener(l -> {
             parent.triggerChange();
-            final List<DiscreteAlterer> mutatorInstances = mutatorTableModel.getMutatorConfigs().stream()
-                    .filter(MutatorTableModel.MutatorConfig::isSelected)
-                    .map(mutatorConfig -> {
-                        try {
-                            return mutatorConfig.instantiate();
-                        } catch (Exception e) {
-                            log.error("Instantiation of mutator failed", e);
-                        }
-                        return null;
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            configuration.setAlterers(mutatorInstances);
+            configuration.setAlterers(mutatorTableModel.getSelected());
         });
 
         mutatorTable.addMouseListener(new MouseAdapter() {

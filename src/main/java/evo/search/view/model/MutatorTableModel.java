@@ -3,32 +3,26 @@ package evo.search.view.model;
 import evo.search.Evolution;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.view.LangService;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
-import javax.swing.table.AbstractTableModel;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
+import javax.swing.table.DefaultTableModel;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * This table model displays all registered {@link DiscreteAlterer} classes to select and configure
  * for the {@link Evolution#run()} method.
  */
 @Slf4j
-public class MutatorTableModel extends AbstractTableModel {
+public class MutatorTableModel extends DefaultTableModel {
 
-    /**
-     * Data stored in the table.
-     */
-    @Getter
-    final private List<MutatorConfig> mutatorConfigs = new ArrayList<>();
+    public static List<Class<? extends DiscreteAlterer>> alterers = DiscreteAlterer.getSubclasses();
+
+    public MutatorTableModel() {
+        alterers.forEach(altererClass -> addRow(new Object[]{false, altererClass.getSimpleName(), 0.5d}));
+    }
 
     /**
      * Returns false just for the middle name column.
@@ -43,22 +37,19 @@ public class MutatorTableModel extends AbstractTableModel {
     }
 
     /**
-     * Adds a mutator class to be displayed.
+     * Adds a mutator class to be displayed as selected.
      *
-     * @param selected    Standard selected value.
-     * @param mutator     Class of the {@link DiscreteAlterer}.
-     * @param probability Standard probability for the mutator.
+     * @param name        SimpleName of the {@link DiscreteAlterer}s class
+     * @param probability Standard probability for the mutator
      */
-    public void addMutator(boolean selected, Class<? extends DiscreteAlterer> mutator, double probability) {
-        mutatorConfigs.add(new MutatorConfig(selected, mutator, probability));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getRowCount() {
-        return mutatorConfigs.size();
+    public void addMutator(String name, double probability) {
+        for (int row = 0; row < getRowCount(); row++) {
+            final String simpleName = (String) getValueAt(row, 1);
+            if (simpleName.equals(name)) {
+                setValueAt(true, row, 0);
+                setValueAt(probability, row, 2);
+            }
+        }
     }
 
     /**
@@ -67,47 +58,6 @@ public class MutatorTableModel extends AbstractTableModel {
     @Override
     public int getColumnCount() {
         return 3;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Object getValueAt(final int rowIndex, final int columnIndex) {
-        if (rowIndex >= mutatorConfigs.size() || columnIndex >= getColumnCount()) {
-            return null;
-        }
-        final MutatorConfig row = mutatorConfigs.get(rowIndex);
-        switch (columnIndex) {
-            case 0:
-                return row.isSelected();
-            case 1:
-                return row.getMutator().getSimpleName();
-        }
-        return row.getProbability();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setValueAt(final Object aValue, final int row, final int column) {
-        final MutatorConfig config = mutatorConfigs.get(row);
-        switch (column) {
-            case 0:
-                config.setSelected((boolean) aValue);
-                break;
-            case 1:
-                throw new IllegalStateException("You cannot edit existing mutator class names.");
-            case 2:
-                config.setProbability(Double.parseDouble(aValue.toString()));
-        }
-        Object[] listeners = listenerList.getListenerList();
-        for (int i = listeners.length - 2; i >= 0; i -= 2) {
-            if (listeners[i] == TableModelListener.class) {
-                ((TableModelListener) listeners[i + 1]).tableChanged(new TableModelEvent(this, row, row, column, TableModelEvent.UPDATE));
-            }
-        }
     }
 
     /**
@@ -138,46 +88,29 @@ public class MutatorTableModel extends AbstractTableModel {
         return Double.class;
     }
 
-    /**
-     * Get instances of the selected {@link DiscreteAlterer}s.
-     * They are filtered by the corresponding {@link MutatorConfig#selected} property.
-     * The {@link MutatorConfig#mutator} class is instantiated using the {@code double} probability
-     * constructor with the {@link MutatorConfig#probability} property.
-     *
-     * @return A list of instantiated mutators.
-     */
     public List<DiscreteAlterer> getSelected() {
-        return mutatorConfigs.stream()
-                .filter(MutatorConfig::isSelected)
-                .map(config -> {
+        return IntStream.range(0, getRowCount())
+                .filter(row -> (boolean) getValueAt(row, 0))
+                .mapToObj(row -> {
+                    final String simpleName = (String) getValueAt(row, 1);
+                    final Class<? extends DiscreteAlterer> altererClass = alterers.stream()
+                            .filter(aClass -> aClass.getSimpleName().equals(simpleName))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (altererClass == null) return null;
+
+                    final double probability = (double) getValueAt(row, 2);
+
                     try {
-                        return config.getMutator()
-                                .getDeclaredConstructor(double.class)
-                                .newInstance(config.getProbability());
+                        return altererClass.getDeclaredConstructor(double.class)
+                                .newInstance(probability);
                     } catch (Exception e) {
-                        log.error("Couldn't instantiate mutator", e);
+                        log.error("Could not instantiate mutator.", e);
                         return null;
                     }
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * The configuration of the {@link DiscreteAlterer}s.
-     * Consists of a field that filters them to be selected for the
-     * {@link Evolution} and a {@link MutatorConfig#probability}
-     * to construct an instance of their {@link MutatorConfig#mutator} class.
-     */
-    @Data
-    @AllArgsConstructor
-    public static class MutatorConfig {
-        boolean selected;
-        Class<? extends DiscreteAlterer> mutator;
-        double probability;
-
-        public DiscreteAlterer instantiate() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-            return mutator.getConstructor(double.class).newInstance(probability);
-        }
     }
 }

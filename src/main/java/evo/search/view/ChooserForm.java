@@ -225,14 +225,18 @@ public class ChooserForm extends JFrame {
         optionPane.add(spacer1, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(139, 14), null, 0, false));
         final Spacer spacer2 = new Spacer();
         optionPane.add(spacer2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(139, 14), null, 0, false));
+        final Spacer spacer3 = new Spacer();
+        optionPane.add(spacer3, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 10), null, new Dimension(-1, 10), 0, false));
+        final Spacer spacer4 = new Spacer();
+        optionPane.add(spacer4, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 10), null, new Dimension(-1, 10), 0, false));
         evoSearchLogo.setHorizontalTextPosition(0);
         evoSearchLogo.setIconTextGap(8);
         evoSearchLogo.setRequestFocusEnabled(false);
         this.$$$loadLabelText$$$(evoSearchLogo, this.$$$getMessageFromBundle$$$("lang", "evosearch"));
         evoSearchLogo.setVerticalTextPosition(3);
         optionPane.add(evoSearchLogo, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer3 = new Spacer();
-        optionPane.add(spacer3, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 10), null, new Dimension(-1, 10), 0, false));
+        final Spacer spacer5 = new Spacer();
+        optionPane.add(spacer5, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 10), null, new Dimension(-1, 10), 0, false));
     }
 
     private static Method $$$cachedGetBundleMethod$$$ = null;
@@ -309,8 +313,6 @@ public class ChooserForm extends JFrame {
     /**
      * @noinspection ALL
      */
-    public JComponent $$$getRootComponent$$$() {
-        return rootPanel;
-    }
+    public JComponent $$$getRootComponent$$$() { return rootPanel; }
 
 }

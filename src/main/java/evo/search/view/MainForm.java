@@ -7,8 +7,6 @@ import com.intellij.uiDesigner.core.Spacer;
 import evo.search.Evolution;
 import evo.search.Main;
 import evo.search.ga.DiscreteChromosome;
-import evo.search.ga.mutators.SwapGeneMutator;
-import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
 import evo.search.io.service.EventService;
@@ -212,8 +210,6 @@ public class MainForm extends JFrame {
     private void setupMutatorTable() {
 
         mutatorTableModel = new MutatorTableModel();
-        mutatorTableModel.addMutator(true, SwapPositionsMutator.class, .5);
-        mutatorTableModel.addMutator(true, SwapGeneMutator.class, .5);
 
         final JTable table = getMutatorConfigTable();
         final TableColumnModel columnModel = table.getColumnModel();
@@ -534,13 +530,9 @@ public class MainForm extends JFrame {
     private Font $$$getFont$$$(String fontName, int style, int size, Font currentFont) {
         if (currentFont == null) return null;
         String resultName;
-        if (fontName == null) {
-            resultName = currentFont.getName();
-        } else {
+        if (fontName == null) {resultName = currentFont.getName();} else {
             Font testFont = new Font(fontName, Font.PLAIN, 10);
-            if (testFont.canDisplay('a') && testFont.canDisplay('1')) {
-                resultName = fontName;
-            } else {
+            if (testFont.canDisplay('a') && testFont.canDisplay('1')) {resultName = fontName;} else {
                 resultName = currentFont.getName();
             }
         }
@@ -594,8 +586,6 @@ public class MainForm extends JFrame {
     /**
      * @noinspection ALL
      */
-    public JComponent $$$getRootComponent$$$() {
-        return rootPanel;
-    }
+    public JComponent $$$getRootComponent$$$() { return rootPanel; }
 
 }

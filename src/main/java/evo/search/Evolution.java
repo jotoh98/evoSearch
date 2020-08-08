@@ -175,11 +175,17 @@ public class Evolution implements Runnable {
         return AnalysisUtils.traceLength(points) / area;
     }
 
+    public double fitnessWorstCase(Chromosome<DiscreteGene> chromosome) {
+        final List<DiscretePoint> points = AnalysisUtils.fill(chromosome);
+        return AnalysisUtils.worstCase(points, 1);
+    }
+
     @Getter
     @AllArgsConstructor
     public enum Fitness {
         SINGULAR(Evolution::fitnessSingular),
         MULTI(Evolution::fitnessMulti),
+        WORST_CASE(Evolution::fitnessWorstCase),
         MAX_AREA(Evolution::fitnessMaximisingArea);
 
         private final BiFunction<Evolution, DiscreteChromosome, Double> method;

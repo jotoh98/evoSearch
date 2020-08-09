@@ -17,9 +17,7 @@ import io.jenetics.engine.EvolutionResult;
 import io.jenetics.util.Factory;
 import io.jenetics.util.ISeq;
 import io.jenetics.util.RandomRegistry;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -46,9 +44,14 @@ public class Evolution implements Runnable {
     private final Consumer<EvolutionResult<DiscreteGene, Double>> historyConsumer = result -> {
     };
     @Getter
+    @Setter(AccessLevel.NONE)
     private Genotype<DiscreteGene> result;
     @Getter
-    private List<Genotype<DiscreteGene>> history;
+    @Setter(AccessLevel.NONE)
+    private List<DiscreteChromosome> history;
+
+    @Setter
+    private boolean aborted = false;
 
     /**
      * Execute an evolution
@@ -74,7 +77,7 @@ public class Evolution implements Runnable {
                 .selector(new StochasticUniversalSelector<>())
                 .minimizing();
 
-        List<? extends DiscreteAlterer> alterers = configuration.getAlterers();
+        final List<? extends DiscreteAlterer> alterers = configuration.getAlterers();
 
         if (alterers.size() > 0) {
             final DiscreteAlterer first = alterers.remove(0);
@@ -87,7 +90,7 @@ public class Evolution implements Runnable {
                     .offspringSize(configuration.getOffspring())
                     .survivorsSize(configuration.getSurvivors())
                     .populationSize(configuration.getPopulation());
-        } catch (IllegalArgumentException e) {
+        } catch (final IllegalArgumentException e) {
             EventService.LOG_LABEL.trigger("Configuration was incorrect: " + e.getMessage());
             return;
         }
@@ -96,10 +99,17 @@ public class Evolution implements Runnable {
         final AtomicInteger progressCounter = new AtomicInteger();
         result = evolutionBuilder.build()
                 .stream()
+                .limit(discreteGeneDoubleEvolutionResult -> !aborted)
                 .limit(configuration.getLimit())
                 .peek(historyConsumer)
-                .peek(result -> history.add(result.bestPhenotype().genotype()))
-                .peek(result -> progressConsumer.accept(progressCounter.incrementAndGet()))
+                .peek(result -> {
+                    final DiscreteChromosome bestChromosome = (DiscreteChromosome) result
+                            .bestPhenotype()
+                            .genotype()
+                            .chromosome();
+                    history.add(bestChromosome);
+                    progressConsumer.accept(progressCounter.incrementAndGet());
+                })
                 .collect(EvolutionResult.toBestGenotype());
     }
 
@@ -110,13 +120,13 @@ public class Evolution implements Runnable {
      * @return Shuffled {@link DiscreteChromosome}.
      */
     private DiscreteChromosome shuffleInstance() {
-        ArrayList<Double> distancesClone = new ArrayList<>(configuration.getDistances());
+        final ArrayList<Double> distancesClone = new ArrayList<>(configuration.getDistances());
         Collections.shuffle(distancesClone);
 
-        List<DiscreteGene> geneList = distancesClone.stream()
+        final List<DiscreteGene> geneList = distancesClone.stream()
                 .map(distance -> {
                     final int positions = configuration.getPositions();
-                    int position = RandomRegistry.random().nextInt(positions);
+                    final int position = RandomRegistry.random().nextInt(positions);
                     return new DiscretePoint(positions, position, distance);
                 })
                 .map(discretePoint -> new DiscreteGene(configuration, discretePoint.getPosition(), discretePoint.getDistance()))
@@ -135,8 +145,8 @@ public class Evolution implements Runnable {
      * @return chromosome fitness based on single treasure
      * @see AnalysisUtils#traceLength(Chromosome, DiscretePoint)
      */
-    public double fitnessSingular(Chromosome<DiscreteGene> chromosome) {
-        DiscretePoint treasure = configuration.getTreasures().get(0);
+    public double fitnessSingular(final Chromosome<DiscreteGene> chromosome) {
+        final DiscretePoint treasure = configuration.getTreasures().get(0);
         return AnalysisUtils.traceLength(chromosome, treasure);
     }
 
@@ -151,8 +161,8 @@ public class Evolution implements Runnable {
      * @return chromosome fitness based on multiple treasures
      * @see AnalysisUtils#traceLength(Chromosome, DiscretePoint)
      */
-    public double fitnessMulti(Chromosome<DiscreteGene> chromosome) {
-        List<DiscretePoint> treasures = configuration.getTreasures();
+    public double fitnessMulti(final Chromosome<DiscreteGene> chromosome) {
+        final List<DiscretePoint> treasures = configuration.getTreasures();
         return treasures.isEmpty() ? 0 : treasures.stream()
                 .mapToDouble(treasure -> AnalysisUtils.traceLength(chromosome, treasure))
                 .reduce(Double::sum)
@@ -167,7 +177,7 @@ public class Evolution implements Runnable {
      * @return chromosome fitness based on maximised area explored
      * @see AnalysisUtils#areaCovered(List)
      */
-    public double fitnessMaximisingArea(Chromosome<DiscreteGene> chromosome) {
+    public double fitnessMaximisingArea(final Chromosome<DiscreteGene> chromosome) {
         final List<DiscretePoint> points = AnalysisUtils.fill(chromosome);
         final double area = AnalysisUtils.areaCovered(points);
         if (area <= 0)
@@ -175,7 +185,7 @@ public class Evolution implements Runnable {
         return AnalysisUtils.traceLength(points) / area;
     }
 
-    public double fitnessWorstCase(Chromosome<DiscreteGene> chromosome) {
+    public double fitnessWorstCase(final Chromosome<DiscreteGene> chromosome) {
         final List<DiscretePoint> points = AnalysisUtils.fill(chromosome);
         return AnalysisUtils.worstCase(points, 1);
     }

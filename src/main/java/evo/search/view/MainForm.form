@@ -7,7 +7,7 @@
     <properties/>
     <border type="none"/>
     <children>
-      <grid id="59bf6" binding="toolbar" layout-manager="GridLayoutManager" row-count="1" column-count="6" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+      <grid id="59bf6" binding="toolbar" layout-manager="GridLayoutManager" row-count="1" column-count="7" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
         <margin top="3" left="10" bottom="3" right="10"/>
         <constraints>
           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="1" hsize-policy="4" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -89,6 +89,15 @@
               <text value="0.0.1"/>
             </properties>
           </component>
+          <component id="7e8b6" class="javax.swing.JButton" binding="stopButton">
+            <constraints>
+              <grid row="0" column="6" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <enabled value="false"/>
+              <text resource-bundle="lang" key="stop"/>
+            </properties>
+          </component>
         </children>
       </grid>
       <grid id="859a4" binding="bottomBar" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
@@ -136,7 +145,6 @@
             </constraints>
             <properties>
               <horizontalTextPosition value="11"/>
-              <labelFor value="eabf8"/>
               <text value=""/>
             </properties>
           </component>
@@ -168,9 +176,8 @@
                   <splitpane position="left"/>
                 </constraints>
                 <properties>
-                  <dividerLocation value="123"/>
+                  <dividerLocation value="281"/>
                   <dividerSize value="9"/>
-                  <enabled value="false"/>
                   <focusable value="false"/>
                   <requestFocusEnabled value="false"/>
                 </properties>
@@ -181,26 +188,27 @@
                       <splitpane position="left"/>
                     </constraints>
                     <properties>
+                      <tabPlacement value="2"/>
                       <visible value="true"/>
                     </properties>
                     <border type="none"/>
                     <children>
-                      <grid id="7ec8d" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-                        <margin top="0" left="0" bottom="0" right="0"/>
+                      <grid id="147d4" layout-manager="GridBagLayout">
                         <constraints>
-                          <tabbedpane title-resource-bundle="lang" title-key="general"/>
+                          <tabbedpane title-resource-bundle="lang" title-key="history"/>
                         </constraints>
                         <properties/>
                         <border type="none"/>
                         <children>
-                          <scrollpane id="54266">
+                          <scrollpane id="ee8c6">
                             <constraints>
                               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                              <gridbag weightx="1.0" weighty="1.0"/>
                             </constraints>
                             <properties/>
                             <border type="none"/>
                             <children>
-                              <component id="58d98" class="evo.search.view.model.FlexTable" binding="configTable">
+                              <component id="a324d" class="javax.swing.JTable" binding="historyTable" custom-create="true">
                                 <constraints/>
                                 <properties/>
                               </component>
@@ -208,22 +216,6 @@
                           </scrollpane>
                         </children>
                       </grid>
-                      <scrollpane id="eabf8">
-                        <constraints>
-                          <tabbedpane title-resource-bundle="lang" title-key="mutators"/>
-                        </constraints>
-                        <properties/>
-                        <border type="none"/>
-                        <children>
-                          <component id="7dc7c" class="javax.swing.JTable" binding="mutatorConfigTable">
-                            <constraints/>
-                            <properties>
-                              <name value="Mutators"/>
-                              <visible value="true"/>
-                            </properties>
-                          </component>
-                        </children>
-                      </scrollpane>
                     </children>
                   </tabbedpane>
                   <component id="da274" class="evo.search.view.part.Canvas" binding="canvas">

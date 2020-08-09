@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class OneTreasureFitnessExperiments extends Experiment {
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         System.out.println("Beginning with experiment: One Treasure Fitness");
         System.out.println("Shuffle treasures...");
 
@@ -45,7 +45,7 @@ public class OneTreasureFitnessExperiments extends Experiment {
 
         try {
             writer = new FileWriter(new File(filename));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
         }
 
@@ -55,17 +55,17 @@ public class OneTreasureFitnessExperiments extends Experiment {
         final DiscretePoint treasure = RandomUtils.generatePoint(positions, 5, 10);
 
 
-        List<Double> distances = ListUtils.generate(14,
+        final List<Double> distances = ListUtils.generate(14,
                 () -> RandomUtils.inRange(treasure.getDistance() - 5, treasure.getDistance() + 5)
         );
 
         for (int i = 0; i < distances.size(); i++) {
-            boolean canFindTreasure = distances.stream()
+            final boolean canFindTreasure = distances.stream()
                     .anyMatch(distance -> distance > treasure.getDistance());
             if (canFindTreasure)
                 continue;
 
-            int index = RandomRegistry.random().nextInt(distances.size());
+            final int index = RandomRegistry.random().nextInt(distances.size());
 
             distances.set(index, treasure.getDistance() + 0.1);
         }
@@ -118,7 +118,7 @@ public class OneTreasureFitnessExperiments extends Experiment {
             csvWriter.writeAll(lines);
             try {
                 csvWriter.close();
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 e.printStackTrace();
             }
         }).join();

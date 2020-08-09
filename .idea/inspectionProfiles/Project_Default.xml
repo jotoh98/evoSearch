@@ -14,5 +14,9 @@
       <option name="ignoreToString" value="false" />
       <option name="nonNlsCommentPattern" value="NON-NLS" />
     </inspection_tool>
+    <inspection_tool class="LocalCanBeFinal" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="REPORT_VARIABLES" value="true" />
+      <option name="REPORT_PARAMETERS" value="true" />
+    </inspection_tool>
   </profile>
 </component>

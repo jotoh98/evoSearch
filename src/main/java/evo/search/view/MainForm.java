@@ -7,13 +7,16 @@ import com.intellij.uiDesigner.core.Spacer;
 import evo.search.Evolution;
 import evo.search.Main;
 import evo.search.ga.DiscreteChromosome;
+import evo.search.ga.DiscreteGene;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
 import evo.search.io.service.EventService;
-import evo.search.io.service.MenuService;
 import evo.search.io.service.ProjectService;
-import evo.search.view.model.*;
+import evo.search.view.model.ConfigComboModel;
+import evo.search.view.model.ConfigTableModel;
+import evo.search.view.model.MutatorTableModel;
 import evo.search.view.part.Canvas;
+import io.jenetics.engine.EvolutionResult;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -21,19 +24,18 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
 import javax.swing.border.TitledBorder;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableColumnModel;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.*;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * The main swing application forms class.
@@ -47,7 +49,6 @@ public class MainForm extends JFrame {
     private JPanel toolbar;
     private JProgressBar progressBar;
     private JLabel logLabel;
-    private JTable mutatorConfigTable;
     private JTabbedPane configTabs;
     private final List<Configuration> configurations = new ArrayList<>();
     private JSplitPane mainSplit;
@@ -56,10 +57,15 @@ public class MainForm extends JFrame {
     private JTextArea textArea1;
     private final ConfigComboModel configComboModel = new ConfigComboModel();
     private JButton startButton;
-    private FlexTable configTable;
     private JComboBox<Object> configComboBox;
     private JButton addFirstConfigButton;
     private JLabel versionLabel;
+
+    private final DefaultTableModel historyTableModel = new DefaultTableModel(new Object[]{"Generation", "Fitness"}, 0);
+
+    private List<DiscreteChromosome> history;
+
+    private Evolution evolution;
 
     /**
      * Custom table model for the simple configuration table.
@@ -73,6 +79,8 @@ public class MainForm extends JFrame {
     @Setter
     private MutatorTableModel mutatorTableModel = null;
     private JTextField nameField;
+    private JTable historyTable;
+    private JButton stopButton;
 
     /**
      * Construct the main form for the swing application.
@@ -81,9 +89,7 @@ public class MainForm extends JFrame {
         final Project project = ProjectService.getCurrentProject();
         $$$setupUI$$$();
         bindRunButton();
-        bindConfigButton();
-        setupMutatorTable();
-        setupConfigTable();
+        bindStopButton();
         bindEvents();
         toolbar.setBorder(new MatteBorder(0, 0, 1, 0, UIManager.getColor("ToolBar.borderColor")));
         bottomBar.setBorder(new MatteBorder(1, 0, 0, 0, UIManager.getColor("ToolBar.borderColor")));
@@ -102,18 +108,18 @@ public class MainForm extends JFrame {
         configComboModel.addAll(project.getConfigurations());
 
         if (configComboModel.getSize() > 1) {
-            int selectedIndex = project.getSelectedConfiguration();
+            final int selectedIndex = project.getSelectedConfiguration();
             project.setSelectedConfiguration(Math.max(1, selectedIndex));
             configComboBox.setSelectedIndex(Math.max(1, selectedIndex));
         }
 
         EventService.CONFIGS_CHANGED.addListener(changedConfigurations -> {
-            Object selectedItem = configComboModel.getSelectedItem();
-            int selectedIndex = configComboBox.getSelectedIndex();
-            int oldSize = configComboModel.getSize();
+            final Object selectedItem = configComboModel.getSelectedItem();
+            final int selectedIndex = configComboBox.getSelectedIndex();
+            final int oldSize = configComboModel.getSize();
             configComboModel.removeAllElements();
             configComboModel.addAll(changedConfigurations);
-            if (selectedItem instanceof Configuration && changedConfigurations.contains(selectedIndex)) {
+            if (selectedItem instanceof Configuration && changedConfigurations.contains(selectedItem)) {
                 configComboModel.setSelectedItem(selectedItem);
             } else if (selectedIndex > 0 && selectedIndex < configComboModel.getSize()) {
                 configComboBox.setSelectedIndex(selectedIndex);
@@ -135,7 +141,7 @@ public class MainForm extends JFrame {
         });
 
         addFirstConfigButton.addActionListener(e -> {
-            ConfigurationDialog configurationDialog = new ConfigurationDialog(project.getConfigurations());
+            final ConfigurationDialog configurationDialog = new ConfigurationDialog(project.getConfigurations());
             configurationDialog.showFrame();
         });
 
@@ -143,27 +149,11 @@ public class MainForm extends JFrame {
         nameField.setBorder(BorderFactory.createEmptyBorder());
     }
 
-    /**
-     * Set up the menu bar.
-     */
-    private static void setupMenuBar() {
-
-    }
-
     public void updateConfigListView() {
-        boolean listEmpty = configComboModel.getSize() == 1;
+        final boolean listEmpty = configComboModel.getSize() == 1;
         configComboBox.setVisible(!listEmpty);
         addFirstConfigButton.setVisible(listEmpty);
         startButton.setEnabled(!listEmpty);
-    }
-
-    /**
-     * Bind the configuration button to its behaviour.
-     */
-    private void bindConfigButton() {
-        getMainSplit().setDividerSize(0);
-        getMainSplit().setEnabled(false);
-        getConfigTabs().setVisible(false);
     }
 
     /**
@@ -171,7 +161,6 @@ public class MainForm extends JFrame {
      */
     public void showFrame() {
         final JMenuBar jMenuBar = new JMenuBar();
-        setupMenuBar();
         setJMenuBar(jMenuBar);
 
         setTitle(Main.APP_TITLE);
@@ -204,144 +193,18 @@ public class MainForm extends JFrame {
         });
     }
 
-    /**
-     * Set up the mutator's configuration table.
-     */
-    private void setupMutatorTable() {
-
-        mutatorTableModel = new MutatorTableModel();
-
-        final JTable table = getMutatorConfigTable();
-        final TableColumnModel columnModel = table.getColumnModel();
-
-        table.setModel(mutatorTableModel);
-
-        columnModel.getColumn(0).setPreferredWidth(55);
-        columnModel.getColumn(1).setPreferredWidth(200);
-        columnModel.getColumn(2).setPreferredWidth(80);
-    }
-
     public void createUIComponents() {
+        historyTable = new JTable();
 
-    }
-
-    /**
-     * Set up the configuration table.
-     */
-    private void setupConfigTable() {
-        final List<Double> defaultDistances = List.of(45.0, 2.0, 7.0, 12.0, 5.0);
-
-        final JComboBox<Evolution.Fitness> functionJComboBox = new JComboBox<>(new Vector<>(Evolution.Fitness.getMethods())) {
-            @Override
-            public ListCellRenderer<? super Evolution.Fitness> getRenderer() {
-                return new DefaultListCellRenderer() {
-                    @Override
-                    public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                        final Evolution.Fitness method = (Evolution.Fitness) value;
-                        return super.getListCellRendererComponent(list, method.name(), index, isSelected, cellHasFocus);
-                    }
-                };
-            }
-        };
-
-        final SpecificCellRenderer specificCellRenderer = new SpecificCellRenderer();
-        final SpecificCellEditor specificCellEditor = new SpecificCellEditor();
-
-        specificCellRenderer.setRenderer(3, 1, new DefaultTableCellRenderer() {
-
-            @Override
-            public Component getTableCellRendererComponent(final JTable table, final Object value, final boolean isSelected, final boolean hasFocus, final int row, final int column) {
-                return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            }
-
-
-            @Override
-            protected void setValue(Object value) {
-                if (value instanceof List) {
-                    value = ((List<?>) value).stream()
-                            .map(Object::toString)
-                            .reduce((s, s2) -> s + ", " + s2)
-                            .orElse("");
-                }
-                super.setValue(value);
-            }
-        });
-
-        specificCellEditor.setEditor(3, 1, new DefaultCellEditor(new JTextField()) {
-            List<?> defaultValue;
-
-            @Override
-            public Component getTableCellEditorComponent(JTable table, Object value,
-                                                         boolean isSelected,
-                                                         int row, int column) {
-                ((JComponent) getComponent()).setBorder(
-                        BorderFactory.createEmptyBorder(0, 0, 0, 0)
-                );
-                if (value instanceof List) {
-                    defaultValue = new ArrayList<>((List<?>) value);
-                    value = ((List<?>) value).stream()
-                            .map(Object::toString)
-                            .reduce((s, s2) -> s + ", " + s2)
-                            .orElse("");
-                }
-                return super.getTableCellEditorComponent(table, value, isSelected, row, column);
-            }
-
-            @Override
-            public Object getCellEditorValue() {
-                final String input = (String) super.getCellEditorValue();
-                try {
-                    return Arrays.stream(input.split("\\s*,\\s*"))
-                            .mapToDouble(Double::parseDouble)
-                            .boxed()
-                            .collect(Collectors.toList());
-                } catch (NumberFormatException e) {
-                    return defaultValue;
-                }
-            }
-        });
-
-        specificCellRenderer.setRenderer(4, 1, new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(final JTable table, final Object value, final boolean isSelected, final boolean hasFocus, final int row, final int column) {
-                final Method method = (Method) value;
-                return super.getTableCellRendererComponent(table, method.getName(), isSelected, hasFocus, row, column);
-            }
-        });
-
-        specificCellEditor.setEditor(4, 1, new DefaultCellEditor(functionJComboBox));
-
-        configTable.setSpecificCellRenderer(specificCellRenderer);
-        configTable.setSpecificCellEditor(specificCellEditor);
-
-        configTableModel = new ConfigTableModel();
-
-        configTableModel.addConfig("positions", 2);
-        configTableModel.addConfig("treasures", 7);
-        configTableModel.addConfig("limit", 1000);
-        configTableModel.addConfig("distances", defaultDistances);
-        configTableModel.addConfig("fitness", functionJComboBox.getModel().getSelectedItem());
-
-        configTable.setModel(configTableModel);
-        configTableModel.addColumn("hello");
-
-        JPopupMenu menu = MenuService.popupMenu("",
-                MenuService.item("Generate random", actionEvent -> log.info("{}", actionEvent))
-        );
-        add(menu);
-
-        configTable.addMouseListener(new MouseAdapter() {
+        historyTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(final MouseEvent e) {
-                if (SwingUtilities.isRightMouseButton(e) || e.isControlDown()) {
-                    final int rowIndex = configTable.rowAtPoint(e.getPoint());
-                    if (configTable.getModel().getValueAt(rowIndex, 0).equals(LangService.get("treasures"))) {
-                        menu.show(configTable, e.getX(), e.getY());
-                    }
-                }
+                final int selectedRow = historyTable.getSelectedRow();
+                EventService.REPAINT_CANVAS.trigger(history.get(selectedRow));
+                super.mouseClicked(e);
             }
         });
-
+        historyTable.setModel(historyTableModel);
     }
 
     /**
@@ -349,35 +212,39 @@ public class MainForm extends JFrame {
      */
     private void bindRunButton() {
         startButton.addActionListener(event -> {
-            if (getMutatorTableModel() == null) {
-                EventService.LOG_LABEL.trigger(LangService.get("error.creating.config.table"));
-                return;
-            }
             final Configuration selectedConfiguration;
             try {
                 selectedConfiguration = (Configuration) configComboModel.getSelectedItem();
                 if (selectedConfiguration == null) {
                     throw new NullPointerException();
                 }
-            } catch (ClassCastException | NullPointerException ignored) {
+            } catch (final ClassCastException | NullPointerException ignored) {
                 EventService.LOG_LABEL.trigger(LangService.get("evolution.init.error"));
                 EventService.LOG.trigger(LangService.get("evolution.init.error") + ": " + LangService.get("configuration.selected.not.valid"));
                 return;
             }
 
+            clearHistory();
+
             getProgressBar().setMaximum(selectedConfiguration.getLimit());
             getProgressBar().setVisible(true);
+            stopButton.setEnabled(true);
+            startButton.setEnabled(false);
 
-            Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
+            final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
+            final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> historyTableModel.addRow(new Object[]{(int) result.generation(), result.bestFitness()});
 
             CompletableFuture
                     .supplyAsync(() -> {
-                        final Evolution evolution = Evolution.builder()
+                        evolution = Evolution.builder()
                                 .configuration(selectedConfiguration)
                                 .progressConsumer(progressConsumer)
+                                .historyConsumer(resultConsumer)
                                 .build();
 
                         evolution.run();
+
+                        history = evolution.getHistory();
 
                         return (DiscreteChromosome) evolution.getResult().chromosome();
                     })
@@ -387,8 +254,22 @@ public class MainForm extends JFrame {
                             EventService.REPAINT_CANVAS.trigger(chromosome);
                         }
                     })
-                    .thenRun(() -> getProgressBar().setVisible(false));
+                    .thenRun(() -> {
+                        getProgressBar().setVisible(false);
+                        historyTable.setRowSelectionInterval(historyTable.getRowCount() - 1, historyTable.getRowCount() - 1);
+                        stopButton.setEnabled(false);
+                        startButton.setEnabled(true);
+                    });
         });
+    }
+
+    private void bindStopButton() {
+        stopButton.addActionListener(action -> evolution.setAborted(true));
+    }
+
+    private void clearHistory() {
+        while (historyTableModel.getRowCount() > 0)
+            historyTableModel.removeRow(historyTableModel.getRowCount() - 1);
     }
 
     /**
@@ -399,10 +280,11 @@ public class MainForm extends JFrame {
      * @noinspection ALL
      */
     private void $$$setupUI$$$() {
+        createUIComponents();
         rootPanel = new JPanel();
         rootPanel.setLayout(new GridBagLayout());
         toolbar = new JPanel();
-        toolbar.setLayout(new GridLayoutManager(1, 6, new Insets(3, 10, 3, 10), -1, -1));
+        toolbar.setLayout(new GridLayoutManager(1, 7, new Insets(3, 10, 3, 10), -1, -1));
         toolbar.setBackground(new Color(-12105140));
         toolbar.setEnabled(false);
         GridBagConstraints gbc;
@@ -450,6 +332,10 @@ public class MainForm extends JFrame {
         versionLabel.setForeground(new Color(-8026747));
         versionLabel.setText("0.0.1");
         toolbar.add(versionLabel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        stopButton = new JButton();
+        stopButton.setEnabled(false);
+        this.$$$loadButtonText$$$(stopButton, this.$$$getMessageFromBundle$$$("lang", "stop"));
+        toolbar.add(stopButton, new GridConstraints(0, 6, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         bottomBar = new JPanel();
         bottomBar.setLayout(new GridLayoutManager(1, 3, new Insets(0, 10, 0, 10), -1, -1));
         bottomBar.setBackground(new Color(-12105140));
@@ -485,33 +371,32 @@ public class MainForm extends JFrame {
         splitPane1.setOrientation(0);
         panel1.add(splitPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
         mainSplit = new JSplitPane();
-        mainSplit.setDividerLocation(123);
+        mainSplit.setDividerLocation(281);
         mainSplit.setDividerSize(9);
-        mainSplit.setEnabled(false);
         mainSplit.setFocusable(false);
         mainSplit.setRequestFocusEnabled(false);
         splitPane1.setLeftComponent(mainSplit);
         configTabs = new JTabbedPane();
+        configTabs.setTabPlacement(2);
         configTabs.setVisible(true);
         mainSplit.setLeftComponent(configTabs);
         final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        configTabs.addTab(this.$$$getMessageFromBundle$$$("lang", "general"), panel2);
+        panel2.setLayout(new GridBagLayout());
+        configTabs.addTab(this.$$$getMessageFromBundle$$$("lang", "history"), panel2);
         final JScrollPane scrollPane1 = new JScrollPane();
-        panel2.add(scrollPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        configTable = new FlexTable();
-        scrollPane1.setViewportView(configTable);
-        final JScrollPane scrollPane2 = new JScrollPane();
-        configTabs.addTab(this.$$$getMessageFromBundle$$$("lang", "mutators"), scrollPane2);
-        mutatorConfigTable = new JTable();
-        mutatorConfigTable.setName("Mutators");
-        mutatorConfigTable.setVisible(true);
-        scrollPane2.setViewportView(mutatorConfigTable);
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        panel2.add(scrollPane1, gbc);
+        scrollPane1.setViewportView(historyTable);
         canvas = new Canvas();
         mainSplit.setRightComponent(canvas);
-        final JScrollPane scrollPane3 = new JScrollPane();
-        splitPane1.setRightComponent(scrollPane3);
-        scrollPane3.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
+        final JScrollPane scrollPane2 = new JScrollPane();
+        splitPane1.setRightComponent(scrollPane2);
+        scrollPane2.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         textArea1 = new JTextArea();
         textArea1.setEditable(false);
         Font textArea1Font = this.$$$getFont$$$("JetBrains Mono", Font.PLAIN, 11, textArea1.getFont());
@@ -520,8 +405,7 @@ public class MainForm extends JFrame {
         textArea1.setOpaque(false);
         textArea1.setText(":");
         textArea1.setVisible(true);
-        scrollPane3.setViewportView(textArea1);
-        logLabel.setLabelFor(scrollPane2);
+        scrollPane2.setViewportView(textArea1);
     }
 
     /**
@@ -541,16 +425,16 @@ public class MainForm extends JFrame {
 
     private static Method $$$cachedGetBundleMethod$$$ = null;
 
-    private String $$$getMessageFromBundle$$$(String path, String key) {
+    private String $$$getMessageFromBundle$$$(final String path, final String key) {
         ResourceBundle bundle;
         try {
-            Class<?> thisClass = this.getClass();
+            final Class<?> thisClass = this.getClass();
             if ($$$cachedGetBundleMethod$$$ == null) {
-                Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
+                final Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
                 $$$cachedGetBundleMethod$$$ = dynamicBundleClass.getMethod("getBundle", String.class, Class.class);
             }
             bundle = (ResourceBundle) $$$cachedGetBundleMethod$$$.invoke(null, path, thisClass);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             bundle = ResourceBundle.getBundle(path);
         }
         return bundle.getString(key);

@@ -53,19 +53,36 @@ public class ChooserForm extends JFrame {
     private void fillProjectList() {
         ProjectService.getIndexEntries().forEach(project -> {
             final ProjectListItem listItem = new ProjectListItem(project);
+
             listItem.bindSelectionEvent(selectedProject -> {
                 Project projectFromDir = ProjectService
                         .loadProjectFromDirectory(new File(selectedProject.getPath()));
+
+                if (projectFromDir == null) {
+                    final int deleteOption = JOptionPane.showConfirmDialog(this, LangService.get("project.want.delete"), LangService.get("project.does.not.exist"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+                    if (deleteOption == 0) {
+                        listPanel.remove(listItem);
+                        listPanel.revalidate();
+                        listPanel.repaint();
+                        ProjectService.getIndexEntries().remove(project);
+                    }
+
+                    return;
+                }
+
                 projectFromDir.setPath(selectedProject.getPath());
                 ProjectService.setCurrentProject(projectFromDir);
                 openMainForm();
             });
+
             listItem.bindDeleteEvent(e -> {
                 listPanel.remove(listItem);
                 listPanel.revalidate();
                 listPanel.repaint();
                 ProjectService.getIndexEntries().remove(project);
             });
+
             listPanel.add(listItem);
         });
         final Spacer verticalSpacer = new Spacer();

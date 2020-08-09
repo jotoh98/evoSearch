@@ -102,7 +102,6 @@ public class Evolution implements Runnable {
                 .limit(discreteGeneDoubleEvolutionResult -> !aborted)
                 .limit(configuration.getLimit())
                 .peek(historyConsumer)
-                .peek(System.out::println)
                 .peek(result -> {
                     final DiscreteChromosome bestChromosome = (DiscreteChromosome) result
                             .bestPhenotype()

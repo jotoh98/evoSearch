@@ -56,6 +56,9 @@ public class MainForm extends JFrame {
     private JComboBox<Object> configComboBox;
     private JButton addFirstConfigButton;
     private JLabel versionLabel;
+    private JTextField nameField;
+    private JTable historyTable;
+    private JButton stopButton;
 
     private DefaultTableModel historyTableModel;
 
@@ -63,20 +66,6 @@ public class MainForm extends JFrame {
 
     private Evolution evolution;
 
-    /**
-     * Custom table model for the simple configuration table.
-     */
-    @Setter
-    private ConfigTableModel configTableModel = null;
-
-    /**
-     * Custom table model for the mutator selection table.
-     */
-    @Setter
-    private MutatorTableModel mutatorTableModel = null;
-    private JTextField nameField;
-    private JTable historyTable;
-    private JButton stopButton;
 
     /**
      * Construct the main form for the swing application.
@@ -267,23 +256,6 @@ public class MainForm extends JFrame {
     private void clearHistory() {
         while (historyTableModel.getRowCount() > 0)
             historyTableModel.removeRow(historyTableModel.getRowCount() - 1);
-    }
-
-    private static Method $$$cachedGetBundleMethod$$$ = null;
-
-    private String $$$getMessageFromBundle$$$(final String path, final String key) {
-        ResourceBundle bundle;
-        try {
-            final Class<?> thisClass = this.getClass();
-            if ($$$cachedGetBundleMethod$$$ == null) {
-                final Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
-                $$$cachedGetBundleMethod$$$ = dynamicBundleClass.getMethod("getBundle", String.class, Class.class);
-            }
-            bundle = (ResourceBundle) $$$cachedGetBundleMethod$$$.invoke(null, path, thisClass);
-        } catch (final Exception e) {
-            bundle = ResourceBundle.getBundle(path);
-        }
-        return bundle.getString(key);
     }
 
 }

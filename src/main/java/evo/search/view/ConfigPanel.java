@@ -12,10 +12,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -327,6 +324,8 @@ public class ConfigPanel extends JDialog {
             parent.triggerChange();
             configuration.setAlterers(mutatorTableModel.getSelected());
         });
+
+        //TODO: checkbox click does not always trigger an update
 
         mutatorTable.addMouseListener(new MouseAdapter() {
             @Override

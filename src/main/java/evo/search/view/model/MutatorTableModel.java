@@ -18,10 +18,13 @@ import java.util.stream.IntStream;
 @Slf4j
 public class MutatorTableModel extends DefaultTableModel {
 
-    public static List<Class<? extends DiscreteAlterer>> alterers = DiscreteAlterer.getSubclasses();
-
+    /**
+     * Default constructor.
+     * Fills the table with all available alterers.
+     */
     public MutatorTableModel() {
-        alterers.forEach(altererClass -> addRow(new Object[]{false, altererClass.getSimpleName(), 0.5d}));
+        DiscreteAlterer.getSubclasses()
+                .forEach(altererClass -> addRow(new Object[]{false, altererClass.getSimpleName(), 0.5d}));
     }
 
     /**
@@ -42,7 +45,7 @@ public class MutatorTableModel extends DefaultTableModel {
      * @param name        SimpleName of the {@link DiscreteAlterer}s class
      * @param probability Standard probability for the mutator
      */
-    public void addMutator(String name, double probability) {
+    public void addMutator(final String name, final double probability) {
         for (int row = 0; row < getRowCount(); row++) {
             final String simpleName = (String) getValueAt(row, 1);
             if (simpleName.equals(name)) {
@@ -75,7 +78,10 @@ public class MutatorTableModel extends DefaultTableModel {
     }
 
     /**
-     * {@inheritDoc}
+     * Returns a Boolean and a String class for the first two columns
+     * and a Double class for the rest.
+     *
+     * @return Boolean/String/Double class depending on column
      */
     @Override
     public Class<?> getColumnClass(final int columnIndex) {
@@ -88,12 +94,17 @@ public class MutatorTableModel extends DefaultTableModel {
         return Double.class;
     }
 
+    /**
+     * Get a list of the selected alterers instances with associated probability
+     *
+     * @return list of selected alterers
+     */
     public List<DiscreteAlterer> getSelected() {
         return IntStream.range(0, getRowCount())
                 .filter(row -> (boolean) getValueAt(row, 0))
                 .mapToObj(row -> {
                     final String simpleName = (String) getValueAt(row, 1);
-                    final Class<? extends DiscreteAlterer> altererClass = alterers.stream()
+                    final Class<? extends DiscreteAlterer> altererClass = DiscreteAlterer.getSubclasses().stream()
                             .filter(aClass -> aClass.getSimpleName().equals(simpleName))
                             .findFirst()
                             .orElse(null);
@@ -105,7 +116,7 @@ public class MutatorTableModel extends DefaultTableModel {
                     try {
                         return altererClass.getDeclaredConstructor(double.class)
                                 .newInstance(probability);
-                    } catch (Exception e) {
+                    } catch (final Exception e) {
                         log.error("Could not instantiate mutator.", e);
                         return null;
                     }

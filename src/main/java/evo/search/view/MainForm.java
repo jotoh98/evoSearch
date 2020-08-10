@@ -57,7 +57,7 @@ public class MainForm extends JFrame {
     private JButton addFirstConfigButton;
     private JLabel versionLabel;
 
-    private final DefaultTableModel historyTableModel = new DefaultTableModel(new Object[]{"Generation", "Fitness"}, 0);
+    private DefaultTableModel historyTableModel;
 
     private List<DiscreteChromosome> history;
 
@@ -199,7 +199,9 @@ public class MainForm extends JFrame {
                 super.mouseClicked(e);
             }
         });
-        historyTable.setModel(historyTableModel);
+        historyTable.setModel(new DefaultTableModel(new Object[]{"Generation", "Fitness"}, 0));
+
+        historyTableModel = (DefaultTableModel) historyTable.getModel();
     }
 
     /**

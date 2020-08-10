@@ -1,7 +1,6 @@
 package evo.search.view;
 
 import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import evo.search.Main;
 import evo.search.io.entities.Project;
@@ -11,7 +10,6 @@ import evo.search.view.part.ProjectListItem;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -33,8 +31,6 @@ public class ChooserForm extends JFrame {
     private JLabel evoSearchLogo;
 
     public ChooserForm() {
-
-        $$$setupUI$$$();
         fillProjectList();
         addCreationListener();
         setupFrame();
@@ -50,44 +46,10 @@ public class ChooserForm extends JFrame {
         });
     }
 
-    private void fillProjectList() {
-        ProjectService.getIndexEntries().forEach(project -> {
-            final ProjectListItem listItem = new ProjectListItem(project);
-
-            listItem.bindSelectionEvent(selectedProject -> {
-                Project projectFromDir = ProjectService
-                        .loadProjectFromDirectory(new File(selectedProject.getPath()));
-
-                if (projectFromDir == null) {
-                    final int deleteOption = JOptionPane.showConfirmDialog(this, LangService.get("project.want.delete"), LangService.get("project.does.not.exist"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-
-                    if (deleteOption == 0) {
-                        listPanel.remove(listItem);
-                        listPanel.revalidate();
-                        listPanel.repaint();
-                        ProjectService.getIndexEntries().remove(project);
-                    }
-
-                    return;
-                }
-
-                projectFromDir.setPath(selectedProject.getPath());
-                ProjectService.setCurrentProject(projectFromDir);
-                openMainForm();
-            });
-
-            listItem.bindDeleteEvent(e -> {
-                listPanel.remove(listItem);
-                listPanel.revalidate();
-                listPanel.repaint();
-                ProjectService.getIndexEntries().remove(project);
-            });
-
-            listPanel.add(listItem);
-        });
-        final Spacer verticalSpacer = new Spacer();
-        listPanel.add(verticalSpacer, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-
+    public static void main(final String[] args) {
+        ProjectService.setupService();
+        Main.setupEnvironment();
+        new ChooserForm();
     }
 
     private void addCreationListener() {
@@ -156,10 +118,44 @@ public class ChooserForm extends JFrame {
         });
     }
 
-    public static void main(String[] args) {
-        ProjectService.setupService();
-        Main.setupEnvironment();
-        new ChooserForm();
+    private void fillProjectList() {
+        ProjectService.getIndexEntries().forEach(project -> {
+            final ProjectListItem listItem = new ProjectListItem(project);
+
+            listItem.bindSelectionEvent(selectedProject -> {
+                final Project projectFromDir = ProjectService
+                        .loadProjectFromDirectory(new File(selectedProject.getPath()));
+
+                if (projectFromDir == null) {
+                    final int deleteOption = JOptionPane.showConfirmDialog(this, LangService.get("project.want.delete"), LangService.get("project.does.not.exist"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+                    if (deleteOption == 0) {
+                        listPanel.remove(listItem);
+                        listPanel.revalidate();
+                        listPanel.repaint();
+                        ProjectService.getIndexEntries().remove(project);
+                    }
+
+                    return;
+                }
+
+                projectFromDir.setPath(selectedProject.getPath());
+                ProjectService.setCurrentProject(projectFromDir);
+                openMainForm();
+            });
+
+            listItem.bindDeleteEvent(e -> {
+                listPanel.remove(listItem);
+                listPanel.revalidate();
+                listPanel.repaint();
+                ProjectService.getIndexEntries().remove(project);
+            });
+
+            listPanel.add(listItem);
+        });
+        final Spacer verticalSpacer = new Spacer();
+        listPanel.add(verticalSpacer, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+
     }
 
     private void setupFrame() {
@@ -197,7 +193,7 @@ public class ChooserForm extends JFrame {
 
     private void openMainForm() {
         ProjectService.saveRegistered();
-        MainForm mainForm = new MainForm();
+        final MainForm mainForm = new MainForm();
         mainForm.showFrame();
         dispose();
     }
@@ -209,127 +205,21 @@ public class ChooserForm extends JFrame {
         evoSearchLogo.setIcon(new ImageIcon(new ImageIcon("icon.png").getImage().getScaledInstance(100, 100, Image.SCALE_DEFAULT)));
     }
 
-    /**
-     * Method generated by IntelliJ IDEA GUI Designer
-     * >>> IMPORTANT!! <<<
-     * DO NOT edit this method OR call it in your code!
-     *
-     * @noinspection ALL
-     */
-    private void $$$setupUI$$$() {
-        createUIComponents();
-        rootPanel = new JPanel();
-        rootPanel.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), 0, 0));
-        final JScrollPane scrollPane1 = new JScrollPane();
-        rootPanel.add(scrollPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(300, -1), null, 0, false));
-        scrollPane1.setViewportView(listPanel);
-        optionPane = new JPanel();
-        optionPane.setLayout(new GridLayoutManager(6, 1, new Insets(0, 0, 0, 0), -1, -1));
-        optionPane.setBackground(new Color(-14868446));
-        rootPanel.add(optionPane, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(100, -1), new Dimension(300, -1), 0, false));
-        optionPane.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
-        addButton = new JButton();
-        addButton.setBorderPainted(false);
-        addButton.setContentAreaFilled(false);
-        this.$$$loadButtonText$$$(addButton, this.$$$getMessageFromBundle$$$("lang", "create.new"));
-        optionPane.add(addButton, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(139, 30), null, 0, false));
-        openButton = new JButton();
-        openButton.setBorderPainted(false);
-        openButton.setContentAreaFilled(false);
-        this.$$$loadButtonText$$$(openButton, this.$$$getMessageFromBundle$$$("lang", "open"));
-        optionPane.add(openButton, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(139, 30), null, 0, false));
-        final Spacer spacer1 = new Spacer();
-        optionPane.add(spacer1, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(139, 14), null, 0, false));
-        final Spacer spacer2 = new Spacer();
-        optionPane.add(spacer2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(139, 14), null, 0, false));
-        final Spacer spacer3 = new Spacer();
-        optionPane.add(spacer3, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 10), null, new Dimension(-1, 10), 0, false));
-        final Spacer spacer4 = new Spacer();
-        optionPane.add(spacer4, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 10), null, new Dimension(-1, 10), 0, false));
-        evoSearchLogo.setHorizontalTextPosition(0);
-        evoSearchLogo.setIconTextGap(8);
-        evoSearchLogo.setRequestFocusEnabled(false);
-        this.$$$loadLabelText$$$(evoSearchLogo, this.$$$getMessageFromBundle$$$("lang", "evosearch"));
-        evoSearchLogo.setVerticalTextPosition(3);
-        optionPane.add(evoSearchLogo, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer5 = new Spacer();
-        optionPane.add(spacer5, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, new Dimension(-1, 10), null, new Dimension(-1, 10), 0, false));
-    }
-
     private static Method $$$cachedGetBundleMethod$$$ = null;
 
-    private String $$$getMessageFromBundle$$$(String path, String key) {
+    private String $$$getMessageFromBundle$$$(final String path, final String key) {
         ResourceBundle bundle;
         try {
-            Class<?> thisClass = this.getClass();
+            final Class<?> thisClass = this.getClass();
             if ($$$cachedGetBundleMethod$$$ == null) {
-                Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
+                final Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
                 $$$cachedGetBundleMethod$$$ = dynamicBundleClass.getMethod("getBundle", String.class, Class.class);
             }
             bundle = (ResourceBundle) $$$cachedGetBundleMethod$$$.invoke(null, path, thisClass);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             bundle = ResourceBundle.getBundle(path);
         }
         return bundle.getString(key);
     }
-
-    /**
-     * @noinspection ALL
-     */
-    private void $$$loadLabelText$$$(JLabel component, String text) {
-        StringBuffer result = new StringBuffer();
-        boolean haveMnemonic = false;
-        char mnemonic = '\0';
-        int mnemonicIndex = -1;
-        for (int i = 0; i < text.length(); i++) {
-            if (text.charAt(i) == '&') {
-                i++;
-                if (i == text.length()) break;
-                if (!haveMnemonic && text.charAt(i) != '&') {
-                    haveMnemonic = true;
-                    mnemonic = text.charAt(i);
-                    mnemonicIndex = result.length();
-                }
-            }
-            result.append(text.charAt(i));
-        }
-        component.setText(result.toString());
-        if (haveMnemonic) {
-            component.setDisplayedMnemonic(mnemonic);
-            component.setDisplayedMnemonicIndex(mnemonicIndex);
-        }
-    }
-
-    /**
-     * @noinspection ALL
-     */
-    private void $$$loadButtonText$$$(AbstractButton component, String text) {
-        StringBuffer result = new StringBuffer();
-        boolean haveMnemonic = false;
-        char mnemonic = '\0';
-        int mnemonicIndex = -1;
-        for (int i = 0; i < text.length(); i++) {
-            if (text.charAt(i) == '&') {
-                i++;
-                if (i == text.length()) break;
-                if (!haveMnemonic && text.charAt(i) != '&') {
-                    haveMnemonic = true;
-                    mnemonic = text.charAt(i);
-                    mnemonicIndex = result.length();
-                }
-            }
-            result.append(text.charAt(i));
-        }
-        component.setText(result.toString());
-        if (haveMnemonic) {
-            component.setMnemonic(mnemonic);
-            component.setDisplayedMnemonicIndex(mnemonicIndex);
-        }
-    }
-
-    /**
-     * @noinspection ALL
-     */
-    public JComponent $$$getRootComponent$$$() { return rootPanel; }
 
 }

@@ -32,19 +32,19 @@ public class ProjectService {
     private static Project currentProject;
 
     public static Configuration getCurrentConfiguration() {
-        int index = currentProject.getSelectedConfiguration();
-        List<Configuration> configurations = currentProject.getConfigurations();
+        final int index = currentProject.getSelectedConfiguration();
+        final List<Configuration> configurations = currentProject.getConfigurations();
         if (index < 0 || index >= configurations.size()) {
             return null;
         }
         return configurations.get(index);
     }
 
-    public static void addProjectEntry(Project project) {
+    public static void addProjectEntry(final Project project) {
         indexEntries.add(new IndexEntry(project.getPath(), project.getName(), project.getVersion(), LocalDateTime.now()));
     }
 
-    public static boolean setupNewProject(File file, Project project) {
+    public static boolean setupNewProject(final File file, final Project project) {
         if (file == null || !file.isDirectory()) {
             log.error("Project destination is no directory.");
             return false;
@@ -57,12 +57,12 @@ public class ProjectService {
         if (FileService.getDir(hiddenPath) == null) {
             log.error("Project setup didn't complete.");
         }
-        File projectXmlFile = FileService.getFile(hiddenPath + File.separator + PROJECT_SETTING);
+        final File projectXmlFile = FileService.getFile(hiddenPath + File.separator + PROJECT_SETTING);
         if (projectXmlFile == null) {
             log.error("Project setup didn't complete.");
             return false;
         }
-        Document document = project.serialize();
+        final Document document = project.serialize();
         FileService.write(projectXmlFile, document);
 
         return true;
@@ -73,11 +73,11 @@ public class ProjectService {
     }
 
     public static boolean isSetUp() {
-        File configXml = new File(Main.HOME_PATH + File.separator + PROJECT_XML);
+        final File configXml = new File(Main.HOME_PATH + File.separator + PROJECT_XML);
         return configXml.exists();
     }
 
-    public static Project loadProjectFromDirectory(File projectDirectory) {
+    public static Project loadProjectFromDirectory(final File projectDirectory) {
         if (!projectDirectory.isDirectory()) {
             log.debug("Project file is no directory.");
             return null;
@@ -88,13 +88,13 @@ public class ProjectService {
             return null;
         }
 
-        Project project = new Project();
+        final Project project = new Project();
 
         if (hiddenFile.list() != null) {
             for (final String evoFileName : Objects.requireNonNull(hiddenFile.list())) {
                 switch (evoFileName) {
                     case PROJECT_SETTING:
-                        File projectSettingsFile = new File(hiddenFile.toPath() + File.separator + PROJECT_SETTING);
+                        final File projectSettingsFile = new File(hiddenFile.toPath() + File.separator + PROJECT_SETTING);
                         final Document projectSettings = FileService.read(projectSettingsFile);
                         project.parse(projectSettings);
                         break;
@@ -121,7 +121,7 @@ public class ProjectService {
         return new File(projectFolder.toPath() + File.separator + PROJECT_LEVEL_HIDDEN);
     }
 
-    public static void saveConfigurations(File projectFolder, List<Configuration> configurations) {
+    public static void saveConfigurations(final File projectFolder, final List<Configuration> configurations) {
         if (!projectFolder.exists()) {
             log.error("Cannot save configurations: Project folder does not exists: {}", projectFolder);
             EventService.LOG.trigger("Cannot save configurations: Project folder does not exists.");
@@ -131,9 +131,9 @@ public class ProjectService {
         if (!containsHidden(projectFolder)) {
             EventService.LOG.trigger("Cannot save configurations.");
         }
-        File hiddenFile = getHiddenFile(projectFolder);
+        final File hiddenFile = getHiddenFile(projectFolder);
 
-        File configFolder = FileService.getDir(hiddenFile.getPath() + File.separator + CONFIG_FOLDER);
+        final File configFolder = FileService.getDir(hiddenFile.getPath() + File.separator + CONFIG_FOLDER);
 
         if (configFolder == null) {
             return;
@@ -142,14 +142,14 @@ public class ProjectService {
         FileService.save(configFolder, configurations);
     }
 
-    public static boolean isProjectRegistered(Project project) {
+    public static boolean isProjectRegistered(final Project project) {
         return indexEntries.stream()
                 .map(IndexEntry::getPath)
                 .filter(Objects::nonNull)
                 .anyMatch(path -> path.equals(project.getPath()));
     }
 
-    public static boolean containsHidden(File file) {
+    public static boolean containsHidden(final File file) {
         final String[] list = file.list();
         if (list != null && Arrays.asList(list).contains(".evo")) {
             return true;
@@ -169,22 +169,22 @@ public class ProjectService {
     }
 
     public static void readProjectIndex() {
-        File projectsRegisterFile = getProjectsIndexFile();
+        final File projectsRegisterFile = getProjectsIndexFile();
         if (projectsRegisterFile == null) {
             log.error("Not able to get globally registered projects.");
             return;
         }
-        Document parsedDocument = FileService.read(projectsRegisterFile);
+        final Document parsedDocument = FileService.read(projectsRegisterFile);
         indexEntries.addAll(XmlService.readRegister(parsedDocument));
     }
 
-    public static void writeProjectIndex(List<IndexEntry> projects) {
-        File projectsRegisterFile = getProjectsIndexFile();
+    public static void writeProjectIndex(final List<IndexEntry> projects) {
+        final File projectsRegisterFile = getProjectsIndexFile();
         if (projectsRegisterFile == null) {
             log.error("Not able to get globally registered projects.");
             return;
         }
-        Document document = XmlService.writeRegister(projects);
+        final Document document = XmlService.writeRegister(projects);
         FileService.write(projectsRegisterFile, document);
     }
 

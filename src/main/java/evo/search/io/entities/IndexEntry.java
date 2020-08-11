@@ -20,18 +20,18 @@ public class IndexEntry {
     LocalDateTime lastUsed;
 
     public static IndexEntry parse(final Element element) {
-        Attribute pathAttribute = element.attribute("path");
-        Attribute nameAttribute = element.attribute("name");
-        Attribute versionAttribute = element.attribute("version");
-        Attribute lastUsedAttribute = element.attribute("lastUsed");
+        final Attribute pathAttribute = element.attribute("path");
+        final Attribute nameAttribute = element.attribute("name");
+        final Attribute versionAttribute = element.attribute("version");
+        final Attribute lastUsedAttribute = element.attribute("lastUsed");
 
         if (pathAttribute == null) {
             return null;
         }
-        String path = pathAttribute.getValue();
-        String name = nameAttribute == null ? "Unknown" : nameAttribute.getValue();
-        String version = versionAttribute == null ? Main.UNKNOWN_VERSION : versionAttribute.getValue();
-        LocalDateTime lastUsed = lastUsedAttribute == null ? LocalDateTime.now() : LocalDateTime.parse(lastUsedAttribute.getValue(), DATE_FORMAT);
+        final String path = pathAttribute.getValue();
+        final String name = nameAttribute == null ? "Unknown" : nameAttribute.getValue();
+        final String version = versionAttribute == null ? Main.UNKNOWN_VERSION : versionAttribute.getValue();
+        final LocalDateTime lastUsed = lastUsedAttribute == null ? LocalDateTime.now() : LocalDateTime.parse(lastUsedAttribute.getValue(), DATE_FORMAT);
 
         return new IndexEntry(path, name, version, lastUsed);
     }

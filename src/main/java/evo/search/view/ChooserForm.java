@@ -5,6 +5,7 @@ import com.intellij.uiDesigner.core.Spacer;
 import evo.search.Main;
 import evo.search.io.entities.Project;
 import evo.search.io.service.FileService;
+import evo.search.io.service.MenuService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.part.ProjectListItem;
 import lombok.extern.slf4j.Slf4j;
@@ -32,9 +33,11 @@ public class ChooserForm extends JFrame {
 
     public ChooserForm() {
         fillProjectList();
-        addCreationListener();
         setupFrame();
-        addOpenListener();
+
+        addButton.addActionListener(e -> onCreateProject());
+        openButton.addActionListener(e -> onOpenProject());
+
         setOptionPaneUI();
 
         addWindowListener(new WindowAdapter() {
@@ -44,6 +47,22 @@ public class ChooserForm extends JFrame {
                 super.windowClosing(e);
             }
         });
+
+        setMenuBar(MenuService.menuBar(
+                MenuService.menu(
+                        LangService.get("project"),
+                        MenuService.item(
+                                LangService.get("new"),
+                                actionEvent -> onCreateProject(),
+                                MenuService.shortcut('n')
+                        ),
+                        MenuService.item(
+                                LangService.get("open.dots"),
+                                actionEvent -> onOpenProject(),
+                                MenuService.shortcut('o')
+                        )
+                )
+        ));
     }
 
     public static void main(final String[] args) {
@@ -52,70 +71,66 @@ public class ChooserForm extends JFrame {
         new ChooserForm();
     }
 
-    private void addCreationListener() {
-        addButton.addActionListener(e -> {
-            final File directory = FileService.promptForDirectory();
-            if (directory == null) {
-                return;
-            }
-            if (ProjectService.containsHidden(directory)) {
-                JOptionPane.showConfirmDialog(
-                        this,
-                        LangService.get("project.not.created") + " " + LangService.get("directory.already.set.up") + ".",
-                        LangService.get("directory.not.empty"),
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.INFORMATION_MESSAGE
-                );
-            }
+    private void onCreateProject() {
+        final File directory = FileService.promptForDirectory();
+        if (directory == null) {
+            return;
+        }
+        if (ProjectService.containsHidden(directory)) {
+            JOptionPane.showConfirmDialog(
+                    this,
+                    LangService.get("project.not.created") + " " + LangService.get("directory.already.set.up") + ".",
+                    LangService.get("directory.not.empty"),
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+        }
 
-            final Project untitledProject = new Project();
-            untitledProject.setPath(directory.getPath());
-            untitledProject.setName("Untitled");
-            untitledProject.setVersion(Main.VERSION);
-            if (ProjectService.setupNewProject(Objects.requireNonNull(directory), untitledProject)) {
-                ProjectService.addProjectEntry(untitledProject);
-                ProjectService.setCurrentProject(untitledProject);
-                openMainForm();
-            }
-        });
+        final Project untitledProject = new Project();
+        untitledProject.setPath(directory.getPath());
+        untitledProject.setName("Untitled");
+        untitledProject.setVersion(Main.VERSION);
+        if (ProjectService.setupNewProject(Objects.requireNonNull(directory), untitledProject)) {
+            ProjectService.addProjectEntry(untitledProject);
+            ProjectService.setCurrentProject(untitledProject);
+            openMainForm();
+        }
     }
 
-    private void addOpenListener() {
-        openButton.addActionListener(e -> {
-            final File directory = FileService.promptForDirectory();
-            if (directory == null) {
-                JOptionPane.showConfirmDialog(
-                        this,
-                        LangService.get("project.not.opened") + " " + LangService.get("directory.not.chosen") + ".",
-                        LangService.get("directory.not.chosen"),
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.INFORMATION_MESSAGE
-                );
-                return;
-            }
-            if (!ProjectService.containsHidden(directory)) {
-                JOptionPane.showConfirmDialog(
-                        this,
-                        LangService.get("project.not.opened") + " " + LangService.get("directory.no.project") + ".",
-                        LangService.get("directory.no.project"),
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.INFORMATION_MESSAGE
-                );
-                return;
-            }
+    private void onOpenProject() {
+        final File directory = FileService.promptForDirectory();
+        if (directory == null) {
+            JOptionPane.showConfirmDialog(
+                    this,
+                    LangService.get("project.not.opened") + " " + LangService.get("directory.not.chosen") + ".",
+                    LangService.get("directory.not.chosen"),
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            return;
+        }
+        if (!ProjectService.containsHidden(directory)) {
+            JOptionPane.showConfirmDialog(
+                    this,
+                    LangService.get("project.not.opened") + " " + LangService.get("directory.no.project") + ".",
+                    LangService.get("directory.no.project"),
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            return;
+        }
 
-            final Project openedProject = ProjectService.loadProjectFromDirectory(directory);
+        final Project openedProject = ProjectService.loadProjectFromDirectory(directory);
 
-            if (openedProject == null) {
-                return;
-            }
+        if (openedProject == null) {
+            return;
+        }
 
-            if (!ProjectService.isProjectRegistered(openedProject)) {
-                ProjectService.addProjectEntry(openedProject);
-            }
-            ProjectService.setCurrentProject(openedProject);
-            openMainForm();
-        });
+        if (!ProjectService.isProjectRegistered(openedProject)) {
+            ProjectService.addProjectEntry(openedProject);
+        }
+        ProjectService.setCurrentProject(openedProject);
+        openMainForm();
     }
 
     private void fillProjectList() {

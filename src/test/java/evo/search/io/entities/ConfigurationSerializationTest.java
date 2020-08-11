@@ -9,10 +9,10 @@ class ConfigurationSerializationTest {
 
     @Test
     void serializationTest() {
-        Configuration build = Configuration.builder().build();
-        Document serializedDocument = build.serialize();
+        final Configuration build = Configuration.builder().build();
+        final Document serializedDocument = build.serialize();
 
-        Configuration parsed = new Configuration().parse(serializedDocument);
+        final Configuration parsed = new Configuration().parse(serializedDocument);
         //TODO: fix equals over config alterers (this$alterers missing) to cut .toString() method
         assertEquals(build.toString(), parsed.toString());
     }

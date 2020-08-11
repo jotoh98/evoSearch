@@ -36,7 +36,7 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
      * {@inheritDoc}
      */
     @Override
-    public DiscreteGene newInstance(DiscretePoint value) {
+    public DiscreteGene newInstance(final DiscretePoint value) {
         return new DiscreteGene(configuration, value.position, value.distance);
     }
 
@@ -44,12 +44,12 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
      * Checks, if a gene is valid. That means, that the allele's distance is
      * one of these in the {@link Configuration} and smaller than the positions property.
      *
-     * @return Whether the discrete gene is valid.
+     * @return whether the discrete gene is valid
      */
     @Override
     public boolean isValid() {
-        boolean distanceValid = configuration.getDistances().contains(distance);
-        boolean positionValid = configuration.getPositions() > position && position >= 0;
+        final boolean distanceValid = configuration.getDistances().contains(distance);
+        final boolean positionValid = configuration.getPositions() > position && position >= 0;
         return distanceValid && positionValid;
     }
 

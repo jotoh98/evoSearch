@@ -30,26 +30,52 @@ import java.util.stream.Collectors;
 
 /**
  * This class holds a configuration and executes a corresponding evolution.
+ *
+ * @author jotoh
  */
 @Builder
 @Slf4j
 public class Evolution implements Runnable {
 
+    /**
+     * Configuration to use during the evolution.
+     */
     @Getter
     private final Configuration configuration;
+
+    /**
+     * Consumer of the progress generation.
+     * Mainly used to monitor the progress in a progress bar.
+     */
     @Builder.Default
     private final Consumer<Integer> progressConsumer = integer -> {
     };
+
+    /**
+     * Consumer of the evolution progress.
+     * Consumes an evolution result.
+     */
     @Builder.Default
     private final Consumer<EvolutionResult<DiscreteGene, Double>> historyConsumer = result -> {
     };
+
+    /**
+     * Final evolution result.
+     */
     @Getter
     @Setter(AccessLevel.NONE)
     private Genotype<DiscreteGene> result;
+
+    /**
+     * History of individuals with the best phenotype in each generation.
+     */
     @Getter
     @Setter(AccessLevel.NONE)
     private List<DiscreteChromosome> history;
 
+    /**
+     * Evolution abort flag.
+     */
     @Setter
     private boolean aborted = false;
 
@@ -141,7 +167,7 @@ public class Evolution implements Runnable {
      * This is the trace length of the individual visiting it's {@link DiscretePoint}s
      * until the treasure is found.
      *
-     * @param chromosome chromosome to evaluate.
+     * @param chromosome chromosome to evaluate
      * @return chromosome fitness based on single treasure
      * @see AnalysisUtils#traceLength(Chromosome, DiscretePoint)
      */
@@ -157,7 +183,7 @@ public class Evolution implements Runnable {
      * The fitness of the chromosome is the sum of all singular fitnesses divided
      * by the amount of treasures.
      *
-     * @param chromosome chromosome to evaluate.
+     * @param chromosome chromosome to evaluate
      * @return chromosome fitness based on multiple treasures
      * @see AnalysisUtils#traceLength(Chromosome, DiscretePoint)
      */
@@ -185,11 +211,21 @@ public class Evolution implements Runnable {
         return AnalysisUtils.traceLength(points) / area;
     }
 
+    /**
+     * Worst case fitness scenario.
+     *
+     * @param chromosome chromosome to evaluate
+     * @return worst case fitness
+     * @see AnalysisUtils#worstCase(List, int)
+     */
     public double fitnessWorstCase(final Chromosome<DiscreteGene> chromosome) {
         final List<DiscretePoint> points = AnalysisUtils.fill(chromosome);
         return AnalysisUtils.worstCase(points, 1);
     }
 
+    /**
+     * Fitness method enum.
+     */
     @Getter
     @AllArgsConstructor
     public enum Fitness {
@@ -198,14 +234,28 @@ public class Evolution implements Runnable {
         WORST_CASE(Evolution::fitnessWorstCase),
         MAX_AREA(Evolution::fitnessMaximisingArea);
 
+        /**
+         * Fitness method used in the evolution stream.
+         */
         private final BiFunction<Evolution, DiscreteChromosome, Double> method;
 
+        /**
+         * Retrieve the default value, also for unknown identifiers.
+         *
+         * @return default fitness method
+         */
         public static Fitness getDefault() {
             return MAX_AREA;
         }
 
+        /**
+         * Standard getter for the list of available fitness methods.
+         *
+         * @return list of fitness methods
+         */
         public static List<Fitness> getMethods() {
             return List.of(values());
         }
     }
+
 }

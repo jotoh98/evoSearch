@@ -2,7 +2,6 @@ package evo.search.ga.mutators;
 
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
-import evo.search.view.model.MutatorTableModel;
 import io.jenetics.Chromosome;
 import io.jenetics.MutatorResult;
 import io.jenetics.SwapMutator;
@@ -16,12 +15,12 @@ import static io.jenetics.internal.math.Randoms.indexes;
  * Mutator which swaps whole the positions between {@link DiscreteGene}s.
  */
 public class SwapPositionsMutator extends SwapMutator<DiscreteGene, Double> implements DiscreteAlterer {
+
     /**
      * Standard probability constructor.
      * Utilized by the {@link evo.search.view.model.MutatorTableModel}.
      *
-     * @param probability The crossover probability.
-     * @see MutatorTableModel#getSelected()
+     * @param probability the crossover probability
      */
     public SwapPositionsMutator(final double probability) {
         super(probability);
@@ -55,11 +54,11 @@ public class SwapPositionsMutator extends SwapMutator<DiscreteGene, Double> impl
      * Swap the positions of two {@link DiscretePoint}s in a
      * chromosomes sequence of {@link DiscreteGene}s.
      *
-     * @param mSeq Chromosome sequence.
-     * @param a    Integer position a for swap.
-     * @param b    Integer position b for swap.
+     * @param mSeq chromosome sequence
+     * @param a    integer position a for swap
+     * @param b    integer position b for swap
      */
-    protected void swapPositions(MSeq<DiscreteGene> mSeq, int a, int b) {
+    protected void swapPositions(final MSeq<DiscreteGene> mSeq, final int a, final int b) {
         mSeq.get(a).getAllele().swapDistances(mSeq.get(b).getAllele());
     }
 }

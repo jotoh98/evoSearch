@@ -27,10 +27,10 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
     /**
      * Generate a new {@link DiscreteChromosome} from the given sequence of genes.
      *
-     * @param genes Sequence of genes to copy into the new instance.
-     * @return A chromosome with the given sequence of genes.
+     * @param genes sequence of genes to copy into the new instance
+     * @return a chromosome with the given sequence of genes
      */
-    public static DiscreteChromosome of(Configuration configuration, ISeq<DiscreteGene> genes) {
+    public static DiscreteChromosome of(final Configuration configuration, final ISeq<DiscreteGene> genes) {
         return new DiscreteChromosome(configuration, genes.copy().toISeq());
     }
 
@@ -38,7 +38,7 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
      * {@inheritDoc}
      */
     @Override
-    public DiscreteGene getGene(int index) {
+    public DiscreteGene getGene(final int index) {
         return genes.get(index);
     }
 
@@ -71,7 +71,7 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
      * {@inheritDoc}
      */
     @Override
-    public Chromosome<DiscreteGene> newInstance(ISeq<DiscreteGene> genes) {
+    public Chromosome<DiscreteGene> newInstance(final ISeq<DiscreteGene> genes) {
         return new DiscreteChromosome(configuration, genes.copy().toISeq());
     }
 

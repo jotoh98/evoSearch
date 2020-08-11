@@ -31,7 +31,7 @@ public class Project implements XmlEntity<Project> {
 
     @Override
     public Document serialize() {
-        DefaultElement projectElement = new DefaultElement("project");
+        final DefaultElement projectElement = new DefaultElement("project");
         Arrays.asList(
                 XmlService.writeProperty("name", name),
                 XmlService.writeProperty("version", version),

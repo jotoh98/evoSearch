@@ -9,7 +9,7 @@ import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
 import evo.search.io.service.EventService;
 import evo.search.io.service.ProjectService;
-import evo.search.view.listener.DocumentEditHandler;
+import evo.search.view.listener.DocumentAdapter;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -157,7 +157,7 @@ public class ConfigurationDialog extends JDialog {
         bindConfigListModel();
         bindConfigListButtons();
 
-        nameTextField.getDocument().addDocumentListener((DocumentEditHandler) e -> {
+        nameTextField.getDocument().addDocumentListener((DocumentAdapter) e -> {
             triggerChange();
             configChooserList.getSelectedValue().getConfiguration().setName(nameTextField.getText());
             configChooserList.repaint();

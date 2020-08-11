@@ -59,7 +59,6 @@ public class MutatorTableModel extends DefaultTableModel {
      */
     @Override
     public Class<?> getColumnClass(final int columnIndex) {
-
         return columnIndex == 0 ? String.class : Double.class;
     }
 

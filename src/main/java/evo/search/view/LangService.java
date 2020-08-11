@@ -15,10 +15,10 @@ public class LangService {
     /**
      * Shortcut function to retrieve a translated string.
      *
-     * @param key Property key for translation.
-     * @return Translated string.
+     * @param key property key for translation
+     * @return translated string
      */
-    public static String get(String key) {
+    public static String get(final String key) {
         return langBundle.getString(key);
     }
 

@@ -91,12 +91,12 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
     public Configuration clone() {
         try {
             return (Configuration) super.clone();
-        } catch (CloneNotSupportedException e) {
+        } catch (final CloneNotSupportedException e) {
             throw new RuntimeException("Configuration could not be cloned", e);
         }
     }
 
-    private static DiscreteAlterer parseAlterer(Element element) {
+    private static DiscreteAlterer parseAlterer(final Element element) {
         final Attribute methodAttribute = element.attribute("method");
         final Attribute probabilityAttribute = element.attribute("probability");
         if (methodAttribute == null) {
@@ -107,7 +107,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
         if (probabilityAttribute != null) {
             try {
                 probability = Double.parseDouble(probabilityAttribute.getValue());
-            } catch (NumberFormatException ignored) {
+            } catch (final NumberFormatException ignored) {
             }
         }
 
@@ -116,15 +116,15 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
                     .forName(methodAttribute.getValue())
                     .getConstructor(double.class)
                     .newInstance(probability);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException ignored) {
+        } catch (final InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException ignored) {
         }
         return null;
     }
 
-    private static DiscretePoint parseTreasure(Element element) {
-        Attribute amountPositions = element.attribute("amount");
-        Attribute positionAttribute = element.attribute("position");
-        Attribute distanceAttribute = element.attribute("distance");
+    private static DiscretePoint parseTreasure(final Element element) {
+        final Attribute amountPositions = element.attribute("amount");
+        final Attribute positionAttribute = element.attribute("position");
+        final Attribute distanceAttribute = element.attribute("distance");
         if (positionAttribute == null || distanceAttribute == null || amountPositions == null) {
             return null;
         }
@@ -134,12 +134,12 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
                     Integer.parseInt(positionAttribute.getValue()),
                     Double.parseDouble(distanceAttribute.getValue())
             );
-        } catch (NumberFormatException | NullPointerException ignored) {
+        } catch (final NumberFormatException | NullPointerException ignored) {
             return null;
         }
     }
 
-    private static Element writeAlterer(DiscreteAlterer alterer) {
+    private static Element writeAlterer(final DiscreteAlterer alterer) {
         double probability = .5;
         if (alterer instanceof AbstractAlterer) {
             probability = ((AbstractAlterer<?, ?>) alterer).probability();
@@ -149,7 +149,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
                 .addAttribute("probability", Double.toString(probability));
     }
 
-    private static Element writeTreasure(DiscretePoint point) {
+    private static Element writeTreasure(final DiscretePoint point) {
         return XmlService.writePoint("treasure", point);
     }
 
@@ -157,7 +157,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
     public Configuration parse(final Document document) {
         final Element rootElement = document.getRootElement();
 
-        Element properties = rootElement.element("properties");
+        final Element properties = rootElement.element("properties");
 
         XmlService.readProperties(properties, (name, value) -> {
             switch (name) {
@@ -186,7 +186,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
                     Evolution.Fitness fitness;
                     try {
                         fitness = Evolution.Fitness.valueOf(value);
-                    } catch (IllegalArgumentException ignored) {
+                    } catch (final IllegalArgumentException ignored) {
                         fitness = Evolution.Fitness.getDefault();
                     }
                     setFitness(fitness);
@@ -199,7 +199,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
         if (treasuresElement != null) {
             final ArrayList<DiscretePoint> treasures = new ArrayList<>();
             XmlService.forEach("treasure", treasuresElement, element -> {
-                DiscretePoint discretePoint = parseTreasure(element);
+                final DiscretePoint discretePoint = parseTreasure(element);
                 if (discretePoint != null) {
                     treasures.add(discretePoint);
                 }
@@ -215,7 +215,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
                 try {
                     final double distance = Double.parseDouble(element.getText());
                     distances.add(distance);
-                } catch (NumberFormatException ignored) {
+                } catch (final NumberFormatException ignored) {
                 }
             });
             setDistances(distances);
@@ -226,11 +226,11 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
             final ArrayList<DiscreteAlterer> alterers = new ArrayList<>();
             XmlService.forEach("alterer", alterersElement, element -> {
                 try {
-                    DiscreteAlterer alterer = parseAlterer(element);
+                    final DiscreteAlterer alterer = parseAlterer(element);
                     if (alterer != null) {
                         alterers.add(alterer);
                     }
-                } catch (NumberFormatException ignored) {
+                } catch (final NumberFormatException ignored) {
                 }
             });
             setAlterers(alterers);

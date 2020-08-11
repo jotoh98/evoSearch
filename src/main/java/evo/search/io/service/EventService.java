@@ -4,6 +4,7 @@ import com.pploder.events.Event;
 import com.pploder.events.SimpleEvent;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.io.entities.Configuration;
+import evo.search.view.ConfigurationDialog;
 import evo.search.view.part.Canvas;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
  * Event bus holding all the used {@link Event}s.
  */
 public class EventService {
+
     /**
      * Event for when something should be written to the log label.
      */
@@ -28,10 +30,21 @@ public class EventService {
      */
     public static final Event<DiscreteChromosome> REPAINT_CANVAS = new SimpleEvent<>();
 
+    /**
+     * Event to open the {@link evo.search.view.ConfigurationDialog}.
+     */
     public static final Event<List<Configuration>> OPEN_CONFIG = new SimpleEvent<>();
 
-
+    /**
+     * Event to reload configurations to use in the {@link evo.search.view.MainForm}.
+     */
     public static final Event<List<Configuration>> CONFIGS_CHANGED = new SimpleEvent<>();
 
 
+    static {
+        OPEN_CONFIG.addListener(configurations -> {
+            final ConfigurationDialog configurationDialog = new ConfigurationDialog(configurations);
+            configurationDialog.showFrame();
+        });
+    }
 }

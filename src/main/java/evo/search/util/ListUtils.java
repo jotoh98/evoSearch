@@ -62,7 +62,7 @@ public class ListUtils {
      * @param <R>     mapping return and list item return type
      * @return list of mapped together elements
      */
-    public static <T, R> List<R> consecMap(final List<T> list, BiFunction<T, T, R> mapping) {
+    public static <T, R> List<R> consecMap(final List<T> list, final BiFunction<T, T, R> mapping) {
         return IntStream.range(0, list.size() - 1)
                 .mapToObj(index -> mapping.apply(list.get(index), list.get(index + 1)))
                 .collect(Collectors.toList());
@@ -75,7 +75,7 @@ public class ListUtils {
      * @param consumer consumer working with two consecutive items
      * @param <T>      list item type
      */
-    public static <T> void consec(final List<T> list, BiConsumer<T, T> consumer) {
+    public static <T> void consec(final List<T> list, final BiConsumer<T, T> consumer) {
         for (int index = 0; index < list.size() - 1; index++) {
             consumer.accept(list.get(index), list.get(index + 1));
         }
@@ -102,11 +102,11 @@ public class ListUtils {
      * @return transposed, two dimensional list matrix
      */
     public static <T> List<List<T>> transpose(final List<List<T>> matrix) {
-        List<List<T>> ret = new ArrayList<>();
+        final List<List<T>> ret = new ArrayList<>();
         final int N = matrix.get(0).size();
         for (int i = 0; i < N; i++) {
-            List<T> col = new ArrayList<T>();
-            for (List<T> row : matrix) {
+            final List<T> col = new ArrayList<T>();
+            for (final List<T> row : matrix) {
                 col.add(row.get(i));
             }
             ret.add(col);

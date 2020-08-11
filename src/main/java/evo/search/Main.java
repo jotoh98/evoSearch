@@ -6,6 +6,7 @@ import evo.search.io.service.EventService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.ChooserForm;
 import evo.search.view.ConfigurationDialog;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NonNls;
 
 import javax.swing.*;
@@ -14,17 +15,32 @@ import java.io.File;
 
 /**
  * Main class.
+ *
+ * @author jotoh
  */
+@Slf4j
 public class Main {
 
+    /**
+     * Title of this application.
+     */
     @NonNls
     public static final String APP_TITLE = "evoSearch";
 
+    /**
+     * The package version.
+     */
     public static final String VERSION = Main.class.getPackage().getImplementationVersion();
 
+    /**
+     * Version to use for unversioned entities.
+     */
     @NonNls
     public static final String UNKNOWN_VERSION = "unknown";
 
+    /**
+     * Home path of the system wide configuration files.
+     */
     public static final String HOME_PATH = System.getProperty("user.home") + File.separator + ".evoSearch";
 
     /**
@@ -32,16 +48,12 @@ public class Main {
      *
      * @param args cli and application arguments
      */
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
+        log.info("Starting " + APP_TITLE + "...");
         ProjectService.setupService();
         setupEnvironment();
-        EventService.OPEN_CONFIG.addListener(configurations -> {
-            ConfigurationDialog configurationDialog = new ConfigurationDialog(configurations);
-            configurationDialog.showFrame();
-        });
         ChooserForm.main(args);
     }
-
 
     /**
      * Set up the static properties.

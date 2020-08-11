@@ -7,6 +7,9 @@ import java.util.List;
 
 /**
  * Wrapper for all {@link Alterer}s working with {@link DiscreteGene}s.
+ *
+ * @author jotoh
+ * @since 0.0.1
  */
 public interface DiscreteAlterer extends Alterer<DiscreteGene, Double> {
 

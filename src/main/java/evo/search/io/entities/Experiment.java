@@ -13,7 +13,7 @@ public class Experiment {
     private final Configuration configuration;
     private final List<DiscreteChromosome> individuals;
 
-    public Experiment(Configuration configuration) {
+    public Experiment(final Configuration configuration) {
         this(configuration, new ArrayList<>());
     }
 

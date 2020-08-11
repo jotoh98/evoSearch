@@ -126,12 +126,12 @@ public class Canvas extends JPanel {
     /**
      * Rendering all the items on the canvas.
      *
-     * @param g Graphics to render the items with.
+     * @param g graphics to render the items with
      */
     @Override
-    protected void paintComponent(Graphics g) {
+    protected void paintComponent(final Graphics g) {
         super.paintComponent(g);
-        Graphics2D graphics2D = (Graphics2D) g.create();
+        final Graphics2D graphics2D = (Graphics2D) g.create();
         graphics2D.setTransform(transformation.getAffineTransformation());
         shapes.forEach((shape, style) -> render(graphics2D, shape, style));
         points.forEach((point2D, style) -> render(graphics2D, point2D, style));
@@ -142,11 +142,11 @@ public class Canvas extends JPanel {
     /**
      * Render a {@link Shape} associated with a {@link Style}.
      *
-     * @param graphics2D Graphics to render the items with.
-     * @param shape      Shape to render.
-     * @param style      Style to customize the shapes appearance.
+     * @param graphics2D graphics to render the items with
+     * @param shape      shape to render
+     * @param style      style to customize the shapes appearance
      */
-    private void render(Graphics2D graphics2D, Shape shape, Style style) {
+    private void render(final Graphics2D graphics2D, final Shape shape, final Style style) {
         if (style.isFilled()) {
             graphics2D.setColor(style.getFill());
             graphics2D.fill(shape);
@@ -166,20 +166,20 @@ public class Canvas extends JPanel {
      * Render a {@link Point2D} associated with a {@link Style}.
      * The {@link Point2D} is transformed into a {@link Shape} according to the corresponding {@link Style.Shape}.
      *
-     * @param graphics2D Graphics to render the items with.
-     * @param point2D    Point to render.
-     * @param style      Style to customize the shapes appearance.
+     * @param graphics2D graphics to render the items with
+     * @param point2D    point to render
+     * @param style      style to customize the shapes appearance
      * @see Style.Shape
      */
-    private void render(Graphics2D graphics2D, Point2D point2D, Style style) {
-        double x = point2D.getX();
-        double y = point2D.getY();
+    private void render(final Graphics2D graphics2D, final Point2D point2D, final Style style) {
+        final double x = point2D.getX();
+        final double y = point2D.getY();
         switch (style.getShape()) {
             case DOT:
                 render(graphics2D, new Ellipse2D.Double(x - .3, y - .3, .6, .6), style);
                 return;
             case CROSS:
-                GeneralPath path = new GeneralPath();
+                final GeneralPath path = new GeneralPath();
                 path.append(new Line2D.Double(x - .3, y + .3, x + .3, y - .3), false);
                 path.append(new Line2D.Double(x - .3, y - .3, x + .3, y + .3), false);
                 render(graphics2D, path, style);
@@ -192,7 +192,7 @@ public class Canvas extends JPanel {
     /**
      * Render a single chromosome as a series of points connected with lines.
      *
-     * @param chromosome Chromosome to render.
+     * @param chromosome chromosome to render
      */
     public void render(final DiscreteChromosome chromosome) {
         final int availablePosition = chromosome.getConfiguration().getPositions();
@@ -211,7 +211,7 @@ public class Canvas extends JPanel {
         if (availablePosition > 2) {
             Point2D previous = new Point2D.Double();
             for (final DiscreteGene discreteGene : chromosome) {
-                Point2D current = discreteGene.getAllele().toPoint2D();
+                final Point2D current = discreteGene.getAllele().toPoint2D();
                 enqueue(
                         new Line2D.Double(previous, current),
                         Style.builder().color(Color.WHITE).build()
@@ -231,12 +231,12 @@ public class Canvas extends JPanel {
     /**
      * Render the rays from the origin.
      *
-     * @param amount Amount of rays to render.
+     * @param amount amount of rays to render
      */
     public void renderRays(final int amount) {
         for (int position = 0; position < amount; position++) {
-            int x = (int) Math.round(Math.cos(position / (double) amount * 2 * Math.PI) * 100);
-            int y = (int) Math.round(Math.sin(position / (double) amount * 2 * Math.PI) * 100);
+            final int x = (int) Math.round(Math.cos(position / (double) amount * 2 * Math.PI) * 100);
+            final int y = (int) Math.round(Math.sin(position / (double) amount * 2 * Math.PI) * 100);
             enqueue(
                     new Line2D.Double(0, 0, x, y),
                     Style.builder()
@@ -250,11 +250,11 @@ public class Canvas extends JPanel {
     /**
      * Enqueue text to be rendered soon.
      *
-     * @param text     Text to enqueue.
-     * @param position Position of the text.
-     * @param style    Style of the rendered text.
+     * @param text     text to enqueue
+     * @param position position of the text
+     * @param style    style of the rendered text
      */
-    public void enqueue(String text, Point2D position, Style style) {
+    public void enqueue(final String text, final Point2D position, final Style style) {
         EventQueue.invokeLater(() -> {
             strings.put(new StringShape(text, (float) position.getX(), (float) position.getY()), style);
             repaint();
@@ -264,10 +264,10 @@ public class Canvas extends JPanel {
     /**
      * Enqueue a point to be rendered soon.
      *
-     * @param point Point to enqueue.
-     * @param style Style of the rendered point.
+     * @param point point to enqueue
+     * @param style style of the rendered point
      */
-    public void enqueue(Point2D point, Style style) {
+    public void enqueue(final Point2D point, final Style style) {
         EventQueue.invokeLater(() -> {
             points.put(point, style);
             repaint();
@@ -277,10 +277,10 @@ public class Canvas extends JPanel {
     /**
      * Enqueue a shape to be rendered soon.
      *
-     * @param shape Shape to enqueue.
-     * @param style Style of the rendered shape.
+     * @param shape shape to enqueue
+     * @param style style of the rendered shape
      */
-    public void enqueue(Shape shape, Style style) {
+    public void enqueue(final Shape shape, final Style style) {
         EventQueue.invokeLater(() -> {
             shapes.put(shape, style);
             repaint();

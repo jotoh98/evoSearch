@@ -6,24 +6,20 @@ import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.io.entities.Configuration;
 import evo.search.util.ListUtils;
 import evo.search.util.RandomUtils;
-import evo.search.view.listener.DocumentEditHandler;
+import evo.search.view.listener.DocumentAdapter;
 import evo.search.view.model.MutatorTableModel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.event.*;
-import javax.swing.table.TableCellEditor;
 import java.awt.event.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 @Slf4j
 public class ConfigPanel extends JDialog {
@@ -292,7 +288,7 @@ public class ConfigPanel extends JDialog {
     private void bindDistances() {
         printDistances(configuration.getDistances());
 
-        distancesTextArea.getDocument().addDocumentListener((DocumentEditHandler) e -> {
+        distancesTextArea.getDocument().addDocumentListener((DocumentAdapter) e -> {
             parent.triggerChange();
             final String input = distancesTextArea.getText();
 
@@ -429,7 +425,7 @@ public class ConfigPanel extends JDialog {
         final AtomicBoolean smartInsert = new AtomicBoolean(false);
 
         treasuresTextArea.getDocument()
-                .addDocumentListener((DocumentEditHandler) e -> getTreasureInput());
+                .addDocumentListener((DocumentAdapter) e -> getTreasureInput());
 
         treasuresTextArea.addMouseListener(new MouseAdapter() {
             @Override

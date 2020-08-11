@@ -8,6 +8,7 @@ import evo.search.ga.DiscreteGene;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
 import evo.search.io.service.EventService;
+import evo.search.io.service.MenuService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.model.ConfigComboModel;
 import evo.search.view.part.Canvas;
@@ -17,12 +18,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -54,21 +54,22 @@ public class MainForm extends JFrame {
     private JTextField nameField;
     private JTable historyTable;
     private JButton stopButton;
-
+    private JScrollPane historyTableScrollPane;
     private DefaultTableModel historyTableModel;
 
     private List<DiscreteChromosome> history;
 
     private Evolution evolution;
 
+    private final Project project = ProjectService.getCurrentProject();
+
 
     /**
      * Construct the main form for the swing application.
      */
     public MainForm() {
-        final Project project = ProjectService.getCurrentProject();
-        bindRunButton();
-        bindStopButton();
+        startButton.addActionListener(event -> onRun());
+        stopButton.addActionListener(action -> onAbort());
         bindEvents();
         toolbar.setBorder(new MatteBorder(0, 0, 1, 0, UIManager.getColor("ToolBar.borderColor")));
         bottomBar.setBorder(new MatteBorder(1, 0, 0, 0, UIManager.getColor("ToolBar.borderColor")));
@@ -119,10 +120,9 @@ public class MainForm extends JFrame {
             }
         });
 
-        addFirstConfigButton.addActionListener(e -> {
-            final ConfigurationDialog configurationDialog = new ConfigurationDialog(project.getConfigurations());
-            configurationDialog.showFrame();
-        });
+        addFirstConfigButton.addActionListener(
+                e -> EventService.OPEN_CONFIG.trigger(project.getConfigurations())
+        );
 
         nameField.setText(project.getName());
         nameField.setBorder(BorderFactory.createEmptyBorder());
@@ -139,8 +139,29 @@ public class MainForm extends JFrame {
      * Set up the jFrame for the swing application.
      */
     public void showFrame() {
-        final JMenuBar jMenuBar = new JMenuBar();
-        setJMenuBar(jMenuBar);
+        setMenuBar(MenuService.menuBar(
+                MenuService.menu(
+                        LangService.get("run.menu"),
+                        MenuService.item(
+                                LangService.get("start"),
+                                actionEvent -> onRun(),
+                                MenuService.shortcut('r')
+                        ),
+                        MenuService.item(
+                                LangService.get("stop"),
+                                actionEvent -> onAbort(),
+                                MenuService.shortcut('w')
+                        )
+                ),
+                MenuService.menu(
+                        LangService.get("configuration"),
+                        MenuService.item(
+                                "Edit",
+                                actionEvent -> EventService.OPEN_CONFIG.trigger(project.getConfigurations()),
+                                MenuService.shortcut('e')
+                        )
+                )
+        ));
 
         setTitle(Main.APP_TITLE);
         setMinimumSize(new Dimension(700, 500));
@@ -173,7 +194,14 @@ public class MainForm extends JFrame {
     }
 
     public void createUIComponents() {
-        historyTable = new JTable();
+
+        historyTableScrollPane = new JScrollPane();
+        historyTable = new JTable() {
+            @Override
+            public boolean isCellEditable(final int row, final int column) {
+                return false;
+            }
+        };
 
         historyTable.addMouseListener(new MouseAdapter() {
             @Override
@@ -183,71 +211,81 @@ public class MainForm extends JFrame {
                 super.mouseClicked(e);
             }
         });
+
         historyTable.setModel(new DefaultTableModel(new Object[]{"Generation", "Fitness"}, 0));
 
         historyTableModel = (DefaultTableModel) historyTable.getModel();
-    }
 
-    /**
-     * Bind the run button to its behaviour.
-     */
-    private void bindRunButton() {
-        startButton.addActionListener(event -> {
-            final Configuration selectedConfiguration;
-            try {
-                selectedConfiguration = (Configuration) configComboModel.getSelectedItem();
-                if (selectedConfiguration == null) {
-                    throw new NullPointerException();
-                }
-            } catch (final ClassCastException | NullPointerException ignored) {
-                EventService.LOG_LABEL.trigger(LangService.get("evolution.init.error"));
-                EventService.LOG.trigger(LangService.get("evolution.init.error") + ": " + LangService.get("configuration.selected.not.valid"));
-                return;
-            }
-
-            clearHistory();
-
-            getProgressBar().setMaximum(selectedConfiguration.getLimit());
-            getProgressBar().setVisible(true);
-            stopButton.setEnabled(true);
-            startButton.setEnabled(false);
-
-            final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
-            final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> historyTableModel.addRow(new Object[]{(int) result.generation(), result.bestFitness()});
-
-            CompletableFuture
-                    .supplyAsync(() -> {
-                        evolution = Evolution.builder()
-                                .configuration(selectedConfiguration)
-                                .progressConsumer(progressConsumer)
-                                .historyConsumer(resultConsumer)
-                                .build();
-
-                        evolution.run();
-
-                        history = evolution.getHistory();
-
-                        return (DiscreteChromosome) evolution.getResult().chromosome();
-                    })
-                    .thenAccept(chromosome -> {
-                        if (chromosome != null) {
-                            EventService.LOG_LABEL.trigger(LangService.get("environment.finished"));
-                            EventService.REPAINT_CANVAS.trigger(chromosome);
-                        }
-                    })
-                    .thenRun(() -> {
-                        getProgressBar().setVisible(false);
-                        historyTable.setRowSelectionInterval(historyTable.getRowCount() - 1, historyTable.getRowCount() - 1);
-                        stopButton.setEnabled(false);
-                        startButton.setEnabled(true);
-                    });
+        historyTableModel.addTableModelListener(e -> {
+            historyTable.scrollRectToVisible(historyTable.getCellRect(historyTable.getRowCount() - 1, 0, true));
         });
     }
 
-    private void bindStopButton() {
-        stopButton.addActionListener(action -> evolution.setAborted(true));
+    /**
+     * Start an evolution run.
+     */
+    private void onRun() {
+        final Configuration selectedConfiguration;
+        try {
+            selectedConfiguration = (Configuration) configComboModel.getSelectedItem();
+            if (selectedConfiguration == null) {
+                throw new NullPointerException();
+            }
+        } catch (final ClassCastException | NullPointerException ignored) {
+            EventService.LOG_LABEL.trigger(LangService.get("evolution.init.error"));
+            EventService.LOG.trigger(LangService.get("evolution.init.error") + ": " + LangService.get("configuration.selected.not.valid"));
+            return;
+        }
+
+        clearHistory();
+
+        getProgressBar().setMaximum(selectedConfiguration.getLimit());
+        getProgressBar().setVisible(true);
+        stopButton.setEnabled(true);
+        startButton.setEnabled(false);
+
+        final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
+        final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> historyTableModel.addRow(new Object[]{(int) result.generation(), result.bestFitness()});
+
+        CompletableFuture
+                .supplyAsync(() -> {
+                    evolution = Evolution.builder()
+                            .configuration(selectedConfiguration)
+                            .progressConsumer(progressConsumer)
+                            .historyConsumer(resultConsumer)
+                            .build();
+
+                    evolution.run();
+
+                    history = evolution.getHistory();
+
+                    return (DiscreteChromosome) evolution.getResult().chromosome();
+                })
+                .thenAccept(chromosome -> {
+                    if (chromosome != null) {
+                        EventService.LOG_LABEL.trigger(LangService.get("environment.finished"));
+                        EventService.REPAINT_CANVAS.trigger(chromosome);
+                    }
+                })
+                .thenRun(() -> {
+                    getProgressBar().setVisible(false);
+                    historyTable.setRowSelectionInterval(historyTable.getRowCount() - 1, historyTable.getRowCount() - 1);
+                    stopButton.setEnabled(false);
+                    startButton.setEnabled(true);
+                });
     }
 
+    /**
+     * Abort evolution run.
+     */
+    private void onAbort() {
+        if (evolution != null)
+            evolution.setAborted(true);
+    }
+
+    /**
+     * Removes all the entries from the history table.
+     */
     private void clearHistory() {
         while (historyTableModel.getRowCount() > 0)
             historyTableModel.removeRow(historyTableModel.getRowCount() - 1);

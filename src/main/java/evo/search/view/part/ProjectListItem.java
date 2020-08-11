@@ -26,7 +26,7 @@ public class ProjectListItem extends JPanel {
     @Getter
     private JLabel nameLabel;
 
-    public ProjectListItem(IndexEntry indexEntry) {
+    public ProjectListItem(final IndexEntry indexEntry) {
         setupUI();
         entry = indexEntry;
         nameLabel.setText(entry.getName());
@@ -72,7 +72,7 @@ public class ProjectListItem extends JPanel {
         setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         Main.setupEnvironment();
         final ProjectListItem projectListItem = new ProjectListItem(new IndexEntry("0.0.1", "/jotoh/usr/lol", "Untitled Project 1", LocalDateTime.now()));
         final JFrame jFrame = new JFrame();
@@ -84,11 +84,11 @@ public class ProjectListItem extends JPanel {
         jFrame.setVisible(true);
     }
 
-    public void bindDeleteEvent(ActionListener actionListener) {
+    public void bindDeleteEvent(final ActionListener actionListener) {
         deleteButton.addActionListener(actionListener);
     }
 
-    public void bindSelectionEvent(Consumer<IndexEntry> projectSelection) {
+    public void bindSelectionEvent(final Consumer<IndexEntry> projectSelection) {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(final MouseEvent e) {

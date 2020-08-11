@@ -47,25 +47,25 @@ public class Transformation {
      * The non-translated canvas visual boundary representation of the {@link Canvas}.
      */
     @Getter
-    private Rectangle2D boundary = new Rectangle2D.Double();
+    private final Rectangle2D boundary = new Rectangle2D.Double();
 
     /**
      * Revert a transformed {@link Point2D} on the canvas.
      *
-     * @param point Transformed point on the canvas.
-     * @return Reverted point of inverted transformation.
+     * @param point transformed point on the canvas
+     * @return reverted point of inverted transformation
      */
-    public Point2D revert(Point2D point) {
+    public Point2D revert(final Point2D point) {
         return new Point2D.Double((point.getX() - offset.getX()) / scale, (point.getY() - offset.getY()) / scale);
     }
 
     /**
      * Transform a {@link Point2D}.
      *
-     * @param point Point to be transformed.
-     * @return Transformed point.
+     * @param point point to be transformed
+     * @return transformed point
      */
-    public Point2D transform(Point2D point) {
+    public Point2D transform(final Point2D point) {
         return new Point2D.Double(scale * point.getX() + offset.getX(), scale * point.getY() - offset.getY());
     }
 
@@ -75,7 +75,7 @@ public class Transformation {
      * @return Affine transformation from the internal {@link Transformation}.
      */
     public AffineTransform getAffineTransformation() {
-        AffineTransform affineTransform = new AffineTransform();
+        final AffineTransform affineTransform = new AffineTransform();
         affineTransform.translate(offset.getX(), offset.getY());
         affineTransform.scale(scale, scale);
         return affineTransform;
@@ -84,9 +84,9 @@ public class Transformation {
     /**
      * Update the {@link #boundary} corresponding to the viewport {@link Component}.
      *
-     * @param c The viewport component.
+     * @param c the viewport component
      */
-    public void updateBoundary(Component c) {
+    public void updateBoundary(final Component c) {
         final Point2D upperLeft = revert(new Point2D.Double(0, 0));
         final Point2D lowerRight = revert(new Point2D.Double(UI_SCALE * c.getWidth(), UI_SCALE * c.getHeight()));
         boundary.setFrameFromDiagonal(
@@ -100,7 +100,7 @@ public class Transformation {
     /**
      * Get the mouse press listener.
      *
-     * @return The mouse listener for the mouse press event.
+     * @return the mouse listener for the mouse press event
      */
     public MouseListener getMouseListener() {
         return new MouseAdapter() {
@@ -116,9 +116,9 @@ public class Transformation {
      * Get the mouse dragging listener.
      *
      * @param canvas The canvas being repainted and providing the visual boundary for {@link #updateBoundary(Component)}.
-     * @return The mouse listener for the drag event.
+     * @return the mouse listener for the drag event
      */
-    public MouseMotionListener getMouseMotionListener(Canvas canvas) {
+    public MouseMotionListener getMouseMotionListener(final Canvas canvas) {
         return new MouseMotionAdapter() {
             @Override
             public void mouseDragged(final MouseEvent e) {
@@ -137,9 +137,9 @@ public class Transformation {
      * Get the mouse zoom listener.
      *
      * @param c The component being repainted and providing the visual boundary for {@link #updateBoundary(Component)}.
-     * @return The mouse listener for the scroll event.
+     * @return the mouse listener for the scroll event
      */
-    public MouseWheelListener getMouseWheelListener(Component c) {
+    public MouseWheelListener getMouseWheelListener(final Component c) {
         return new MouseAdapter() {
             @Override
             public void mouseWheelMoved(final MouseWheelEvent e) {
@@ -159,9 +159,9 @@ public class Transformation {
      * Get the resize component listener.
      *
      * @param c The component being repainted and providing the visual boundary for {@link #updateBoundary(Component)}.
-     * @return The component listener for the resize event.
+     * @return the component listener for the resize event
      */
-    public ComponentListener getComponentListener(Component c) {
+    public ComponentListener getComponentListener(final Component c) {
         return new ComponentAdapter() {
             @Override
             public void componentResized(final ComponentEvent e) {

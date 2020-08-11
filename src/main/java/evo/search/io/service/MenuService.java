@@ -3,6 +3,8 @@ package evo.search.io.service;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.util.function.Consumer;
 
 /**
@@ -10,115 +12,128 @@ import java.util.function.Consumer;
  */
 public class MenuService {
 
+
+    /**
+     * Construct a menu bar with some menus.
+     *
+     * @param menus menus to add to the menu bar
+     * @return menu bar with menus
+     */
+    public static MenuBar menuBar(final Menu... menus) {
+        final MenuBar menuBar = new MenuBar();
+        for (final Menu menu : menus)
+            menuBar.add(menu);
+        return menuBar;
+    }
+
     /**
      * Construct a named menu with some children.
      *
-     * @param text     Name of the menu.
-     * @param children Items in the menu.
-     * @return A named menu with given items.
+     * @param text     name of the menu
+     * @param children items in the menu
+     * @return a named menu with given items
      */
-    public static JMenu menu(String text, Object... children) {
-        final JMenu jMenu = new JMenu(text);
+    public static Menu menu(final String text, final Object... children) {
+        final Menu menu = new Menu(text);
 
-        for (Object child : children) {
-            if (child instanceof JMenuItem) {
-                jMenu.add((JMenuItem) child);
-            } else if (child instanceof Action) {
-                jMenu.add((Action) child);
-            } else if (child instanceof JSeparator) {
-                jMenu.addSeparator();
-            } else if (child instanceof Component) {
-                jMenu.add((Component) child);
+        for (final Object child : children) {
+            if (child instanceof MenuItem) {
+                menu.add((MenuItem) child);
+            } else if (child instanceof String) {
+                menu.add((String) child);
             }
         }
-        return jMenu;
+        return menu;
     }
 
     /**
-     * Construct a named popup menu with some children.
+     * Construct a menu item with a label, an action and a shortcut.
      *
-     * @param text     Name of the popup menu.
-     * @param children Items in the popup menu.
-     * @return A named popup menu with given items.
+     * @param label  menu label
+     * @param action menu action
+     * @param s      menu item shortcut
+     * @return menu item with label, action and shortcut
      */
-    public static JPopupMenu popupMenu(String text, Object... children) {
-        final JPopupMenu jPopupMenu = new JPopupMenu();
-        for (Object child : children) {
-            if (child instanceof JMenuItem) {
-                jPopupMenu.add((JMenuItem) child);
-            } else if (child instanceof Action) {
-                jPopupMenu.add((Action) child);
-            } else if (child instanceof JSeparator) {
-                jPopupMenu.addSeparator();
-            } else if (child instanceof Component) {
-                jPopupMenu.add((Component) child);
-            }
+    public static MenuItem item(final String label, final ActionListener action, final MenuShortcut s) {
+        final MenuItem menuItem = new MenuItem(label, s);
+        menuItem.addActionListener(action);
+        return menuItem;
+    }
+
+    /**
+     * Construct a menu item with a label and an action.
+     *
+     * @param label  menu label
+     * @param action menu action
+     * @return menu item with label, action and shortcut
+     */
+    public static MenuItem item(final String label, final ActionListener action) {
+        return item(label, action, null);
+    }
+
+    /**
+     * Construct a new menu shortcut with a key code and the shift modifier flag.
+     *
+     * @param key              which key code to react to
+     * @param useShiftModifier shift must be pressed
+     * @return menu shortcut
+     * @see KeyEvent
+     */
+    public static MenuShortcut shortcut(final int key, final boolean useShiftModifier) {
+        return new MenuShortcut(key, useShiftModifier);
+    }
+
+    /**
+     * Construct a new menu shortcut with a key code.
+     * By default, the shift modifier flag is set to {@code false}.
+     *
+     * @param key which key code to react to
+     * @return menu shortcut
+     * @see KeyEvent
+     */
+    public static MenuShortcut shortcut(final int key) {
+        return shortcut(key, false);
+    }
+
+    /**
+     * Construct a new menu shortcut with a key char and the shift modifier flag.
+     *
+     * @param key              which key char to react to
+     * @param useShiftModifier shift must be pressed
+     * @return menu shortcut
+     */
+    public static MenuShortcut shortcut(final char key, final boolean useShiftModifier) {
+        return new MenuShortcut(charToNum(key), useShiftModifier);
+    }
+
+    /**
+     * Construct a new menu shortcut with a key char.
+     * By default, the shift modifier flag is set to {@code false}.
+     *
+     * @param key which key char to react to
+     * @return menu shortcut
+     */
+    public static MenuShortcut shortcut(final char key) {
+        return shortcut(key, false);
+    }
+
+
+    /**
+     * Convert a char to an {@link KeyEvent} keycode.
+     *
+     * @param inputChar char to convert to keycode
+     * @return numeric key event key code
+     */
+    private static int charToNum(final char inputChar) {
+        if (inputChar == '!') {
+            return (KeyEvent.VK_EXCLAMATION_MARK);
+        } else if (inputChar == ' ') {
+            return (KeyEvent.VK_SPACE);
         }
-        return jPopupMenu;
-    }
-
-    /**
-     * Construct a named action item.
-     *
-     * @param name   Name of the action.
-     * @param action Action to perform.
-     * @return A named action item.
-     */
-    public static Action item(String name, Consumer<ActionEvent> action) {
-        return item(name, action, null);
-    }
-
-    /**
-     * Construct a named action item associated with a key stroke.
-     *
-     * @param name   Name of the action.
-     * @param action Action to perform.
-     * @param stroke Keystroke to invoke the action
-     * @return A named action item associated with a key stroke.
-     */
-    public static Action item(String name, Consumer<ActionEvent> action, KeyStroke stroke) {
-        return item(name, null, action, stroke);
-    }
-
-    /**
-     * Construct a named action item associated with a key stroke and an icon.
-     *
-     * @param name   Name of the action.
-     * @param icon   Icon for the action item.
-     * @param action Action to perform.
-     * @param stroke Keystroke to invoke the action
-     * @return A named action item associated with a key stroke and an icon.
-     */
-    public static Action item(String name, Icon icon, Consumer<ActionEvent> action, KeyStroke stroke) {
-        final AbstractAction abstractAction = new AbstractAction(name, icon) {
-            @Override
-            public void actionPerformed(final ActionEvent e) {
-                action.accept(e);
-            }
-        };
-        if (stroke != null) {
-            abstractAction.putValue(Action.ACCELERATOR_KEY, stroke);
+        if (Character.isUpperCase(inputChar)) {
+            return (int) inputChar + 10000;
+        } else {
+            return (int) inputChar - 32;
         }
-        return abstractAction;
-    }
-
-    /**
-     * Construct a separator with {@link SwingConstants#HORIZONTAL} orientation.
-     *
-     * @return Horizontal separator item.
-     */
-    public static JSeparator separator() {
-        return separator(SwingConstants.HORIZONTAL);
-    }
-
-    /**
-     * Construct a separator with {@link SwingConstants#HORIZONTAL} orientation.
-     *
-     * @param orientation An integer specifying <code>SwingConstants.HORIZONTAL</code>
-     *                    or <code>SwingConstants.VERTICAL</code>.
-     * @return A separator item with given orientation.
-     */
-    public static JSeparator separator(int orientation) {
-        return new JSeparator(orientation);
     }
 }

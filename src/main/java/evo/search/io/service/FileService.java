@@ -28,18 +28,18 @@ import java.util.Objects;
 @Slf4j
 public class FileService {
 
-    public static File promptForLoad(String title) {
-        JFrame parent = new JFrame();
-        FileDialog fileDialog = new FileDialog(parent, title, FileDialog.LOAD);
+    public static File promptForLoad(final String title) {
+        final JFrame parent = new JFrame();
+        final FileDialog fileDialog = new FileDialog(parent, title, FileDialog.LOAD);
         fileDialog.setVisible(true);
-        String fileName = fileDialog.getFile();
+        final String fileName = fileDialog.getFile();
         if (fileName == null) {
             return null;
         }
         return new File(fileDialog.getDirectory() + fileName);
     }
 
-    public static File promptForDirectory(String title) {
+    public static File promptForDirectory(final String title) {
         System.setProperty("apple.awt.fileDialogForDirectories", "true");
         final File loadDirectory = promptForLoad(title);
 
@@ -55,8 +55,8 @@ public class FileService {
         return promptForDirectory(LangService.get("load.directory"));
     }
 
-    static void save(File configFolder, List<Configuration> configurations) {
-        HashMap<String, Integer> configurationNumber = new HashMap<>();
+    static void save(final File configFolder, final List<Configuration> configurations) {
+        final HashMap<String, Integer> configurationNumber = new HashMap<>();
 
         configurations.forEach(configuration -> {
             String fileName = configuration.getName();
@@ -73,25 +73,25 @@ public class FileService {
         });
     }
 
-    public static void write(File file, Document document) {
-        try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+    public static void write(final File file, final Document document) {
+        try (final FileOutputStream fileOutputStream = new FileOutputStream(file)) {
             fileOutputStream.write(document.asXML().getBytes());
             fileOutputStream.flush();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             log.error("Could not serialize document in XML file: " + file.getPath(), e);
         }
     }
 
-    public static Document read(File file) {
-        SAXReader reader = new SAXReader();
+    public static Document read(final File file) {
+        final SAXReader reader = new SAXReader();
         try {
             reader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        } catch (SAXException ignored) {
+        } catch (final SAXException ignored) {
         }
         Document document = DocumentHelper.createDocument();
         try {
             document = reader.read(file);
-        } catch (DocumentException | MalformedURLException e) {
+        } catch (final DocumentException | MalformedURLException e) {
             log.error("Could not parse XML file: " + file.getPath(), e);
         }
         return document;
@@ -101,26 +101,26 @@ public class FileService {
         for (final String configFileName : Objects.requireNonNull(folder).list()) {
             try {
                 Files.deleteIfExists(Path.of(folder.getPath(), configFileName));
-            } catch (IOException ignored) {
+            } catch (final IOException ignored) {
             }
         }
     }
 
-    static File getFile(String path) {
+    static File getFile(final String path) {
         final File file = new File(path);
 
         try {
             if (file.exists() || file.createNewFile()) {
                 return file;
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             log.error("Could not create directory '" + path + "'", e);
         }
 
         return null;
     }
 
-    static File getDir(String path) {
+    static File getDir(final String path) {
         final File file = new File(path);
 
         if (file.exists() || file.mkdirs()) {

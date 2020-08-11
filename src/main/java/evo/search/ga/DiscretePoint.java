@@ -32,17 +32,17 @@ public class DiscretePoint implements Cloneable {
     /**
      * Transfer the discretized polar coordinate to a cartesian coordinate.
      *
-     * @return Cartesian coordinate point.
+     * @return cartesian coordinate point
      */
     public Point2D toPoint2D() {
-        double angle = getAngle();
+        final double angle = getAngle();
         return new Point2D.Double(distance * Math.cos(angle), distance * Math.sin(angle));
     }
 
     /**
      * Get the radian angle for the discretized angle.
      *
-     * @return Radian angle of the polar coordinate.
+     * @return radian angle of the polar coordinate
      */
     public double getAngle() {
         return position / ((double) positions) * 2 * Math.PI;
@@ -57,7 +57,7 @@ public class DiscretePoint implements Cloneable {
     public DiscretePoint clone() {
         try {
             return (DiscretePoint) super.clone();
-        } catch (CloneNotSupportedException ignore) {
+        } catch (final CloneNotSupportedException ignore) {
             return new DiscretePoint(positions, position, distance);
         }
     }
@@ -65,7 +65,7 @@ public class DiscretePoint implements Cloneable {
     /**
      * Returns a string representation of the discrete point.
      *
-     * @return A string representation of the discrete point.
+     * @return a string representation of the discrete point
      */
     @Override
     public String toString() {
@@ -75,17 +75,17 @@ public class DiscretePoint implements Cloneable {
     /**
      * Calculate the euclidean distance to another {@link DiscretePoint}.
      *
-     * @param other Other discrete point.
+     * @param other other discrete point
      * @return The euclidean distance to another {@link DiscretePoint}.
      */
-    public double distance(DiscretePoint other) {
+    public double distance(final DiscretePoint other) {
         return MathUtils.distance(getAngle(), distance, other.getAngle(), other.distance);
     }
 
     /**
      * Get the polar coordinates distance squared.
      *
-     * @return The polar coordinates distance squared.
+     * @return the polar coordinates distance squared
      */
     public double getDistanceSquared() {
         return distance * distance;
@@ -96,7 +96,7 @@ public class DiscretePoint implements Cloneable {
      *
      * @param other Other {@link DiscretePoint} to swap the distance with.
      */
-    public void swapDistances(DiscretePoint other) {
+    public void swapDistances(final DiscretePoint other) {
         final double temp = this.distance;
         distance = other.distance;
         other.distance = temp;
@@ -107,7 +107,7 @@ public class DiscretePoint implements Cloneable {
      *
      * @param other Other {@link DiscretePoint} to swap the position with.
      */
-    public void swapPositions(DiscretePoint other) {
+    public void swapPositions(final DiscretePoint other) {
         final int temp = position;
         position = other.position;
         other.position = temp;

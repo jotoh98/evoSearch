@@ -10,12 +10,9 @@ import evo.search.io.entities.Project;
 import evo.search.io.service.EventService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.model.ConfigComboModel;
-import evo.search.view.model.ConfigTableModel;
-import evo.search.view.model.MutatorTableModel;
 import evo.search.view.part.Canvas;
 import io.jenetics.engine.EvolutionResult;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -26,10 +23,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -56,6 +51,9 @@ public class MainForm extends JFrame {
     private JComboBox<Object> configComboBox;
     private JButton addFirstConfigButton;
     private JLabel versionLabel;
+    private JTextField nameField;
+    private JTable historyTable;
+    private JButton stopButton;
 
     private DefaultTableModel historyTableModel;
 
@@ -63,20 +61,6 @@ public class MainForm extends JFrame {
 
     private Evolution evolution;
 
-    /**
-     * Custom table model for the simple configuration table.
-     */
-    @Setter
-    private ConfigTableModel configTableModel = null;
-
-    /**
-     * Custom table model for the mutator selection table.
-     */
-    @Setter
-    private MutatorTableModel mutatorTableModel = null;
-    private JTextField nameField;
-    private JTable historyTable;
-    private JButton stopButton;
 
     /**
      * Construct the main form for the swing application.
@@ -267,23 +251,6 @@ public class MainForm extends JFrame {
     private void clearHistory() {
         while (historyTableModel.getRowCount() > 0)
             historyTableModel.removeRow(historyTableModel.getRowCount() - 1);
-    }
-
-    private static Method $$$cachedGetBundleMethod$$$ = null;
-
-    private String $$$getMessageFromBundle$$$(final String path, final String key) {
-        ResourceBundle bundle;
-        try {
-            final Class<?> thisClass = this.getClass();
-            if ($$$cachedGetBundleMethod$$$ == null) {
-                final Class<?> dynamicBundleClass = thisClass.getClassLoader().loadClass("com.intellij.DynamicBundle");
-                $$$cachedGetBundleMethod$$$ = dynamicBundleClass.getMethod("getBundle", String.class, Class.class);
-            }
-            bundle = (ResourceBundle) $$$cachedGetBundleMethod$$$.invoke(null, path, thisClass);
-        } catch (final Exception e) {
-            bundle = ResourceBundle.getBundle(path);
-        }
-        return bundle.getString(key);
     }
 
 }

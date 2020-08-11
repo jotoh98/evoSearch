@@ -3,21 +3,18 @@ package evo.search.view;
 import evo.search.Evolution;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
-import evo.search.ga.mutators.SwapGeneMutator;
-import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
+import evo.search.util.ListUtils;
 import evo.search.util.RandomUtils;
 import evo.search.view.listener.DocumentEditHandler;
 import evo.search.view.model.MutatorTableModel;
-import io.jenetics.AbstractAlterer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import javax.swing.event.*;
+import javax.swing.table.TableCellEditor;
+import java.awt.event.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -25,6 +22,8 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Slf4j
 public class ConfigPanel extends JDialog {
@@ -46,224 +45,17 @@ public class ConfigPanel extends JDialog {
     private JButton shuffleTreasuresButton;
     private JButton shuffleDistancesButton;
     private JButton permutateDistancesButton;
-
-    private Configuration configuration;
-
-    private ConfigurationDialog parent;
-
-    public static void main(final String[] args) {
-        final ConfigPanel dialog = new ConfigPanel();
-        dialog.setConfiguration(Configuration.builder().build());
-        dialog.pack();
-        dialog.setSize(400, 400);
-        dialog.setVisible(true);
-        System.exit(0);
-    }
-
     private JButton permutateTreasuresButton;
-
-    public void setParent(final ConfigurationDialog parent) {
-        this.parent = parent;
-        propagateScroll(mutatorScrollPane);
-        propagateScroll(distancesScrollPane);
-        propagateScroll(treasuresScrollPane);
-    }
-
-    public void propagateScroll(final JScrollPane scrollPane) {
-        if (parent == null) {
-            return;
-        }
-        scrollPane.addMouseWheelListener(e -> {
-            final JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
-
-            if (!verticalScrollBar.isShowing()) {
-                parent.getConfigScrollWrapper().dispatchEvent(e);
-                return;
-            }
-
-            if (e.getWheelRotation() < 0 && verticalScrollBar.getValue() == 0) {
-                parent.getConfigScrollWrapper().dispatchEvent(e);
-            } else if (verticalScrollBar.getValue() + scrollPane.getHeight() == verticalScrollBar.getMaximum()) {
-                parent.getConfigScrollWrapper().dispatchEvent(e);
-            }
-        });
-    }
-
-    private void bindSpinner(final JSpinner spinner, final int initialValue, final Consumer<Integer> valueConsumer) {
-        bindSpinner(spinner, initialValue, valueConsumer, () -> {
-            if ((int) spinner.getValue() < 0) {
-                spinner.setValue(0);
-            }
-        });
-    }
-
-    private void bindSpinner(final JSpinner spinner, final int initialValue, final Consumer<Integer> valueConsumer, final Runnable change) {
-        spinner.setValue(initialValue);
-        spinner.addChangeListener(e -> {
-            change.run();
-            parent.triggerChange();
-            try {
-                valueConsumer.accept((int) spinner.getValue());
-            } catch (final Exception ignored) {
-            }
-        });
-    }
-
-    private void bindLimit() {
-        bindSpinner(limitSpinner, configuration.getLimit(), configuration::setLimit);
-    }
-
-    private void bindPosition() {
-        bindSpinner(positionsSpinner, configuration.getPositions(), configuration::setPositions);
-    }
-
-    private void bindPopulation() {
-        bindSpinner(populationSpinner, configuration.getPopulation(), configuration::setPopulation, () -> {
-            int populationInput = (int) populationSpinner.getValue();
-            if (populationInput < 1) {
-                populationSpinner.setValue(1);
-                populationInput = 1;
-            }
-            if (populationInput < (int) offspringSpinner.getValue()) {
-                offspringSpinner.setValue(populationInput);
-            }
-            if (populationInput < (int) survivorsSpinner.getValue()) {
-                survivorsSpinner.setValue(populationInput);
-            }
-        });
-    }
-
-    private void bindOffspring() {
-        bindSpinner(offspringSpinner, configuration.getOffspring(), configuration::setOffspring, () -> {
-            final int offspring = (int) offspringSpinner.getValue();
-            if (offspring < 0) {
-                offspringSpinner.setValue(0);
-            }
-            if (offspring > (int) populationSpinner.getValue()) {
-                populationSpinner.setValue(offspring);
-            }
-        });
-    }
-
-    private void bindDistances() {
-        printDistances(configuration.getDistances());
-
-        distancesTextArea.getDocument().addDocumentListener((DocumentEditHandler) e -> {
-            parent.triggerChange();
-            final String input = distancesTextArea.getText();
-
-            final List<Double> distances = Arrays.stream(input.split("\\s*,\\s*"))
-                    .map(string -> {
-                        try {
-                            return Double.parseDouble(string);
-                        } catch (final Exception ignored) {
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-
-            configuration.setDistances(distances);
-        });
-
-        distancesTextArea.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(final KeyEvent e) {
-                if (e.getKeyChar() == KeyEvent.VK_ENTER) {
-                    printDistances(configuration.getDistances());
-                    e.consume();
-                }
-            }
-        });
-    }
-
-    private void printDistances(final List<Double> distances) {
-        distancesTextArea.setText(printConsecutive(distances, String::valueOf));
-    }
-
-    private <T> String printConsecutive(final List<T> list, final Function<T, String> mapper) {
-        return list
-                .stream()
-                .map(mapper)
-                .reduce((s, s2) -> s + ", " + s2)
-                .orElse("");
-    }
-
-    private void bindTreasures() {
-
-        printTreasures(configuration.getTreasures());
-
-        final AtomicBoolean smartInsert = new AtomicBoolean(false);
-
-        treasuresTextArea.getDocument()
-                .addDocumentListener((DocumentEditHandler) e -> getTreasureInput(configuration));
-
-        treasuresTextArea.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(final MouseEvent e) {
-                smartInsert.set(false);
-            }
-        });
-
-        treasuresTextArea.addKeyListener(new KeyAdapter() {
-
-            @Override
-            public void keyTyped(final KeyEvent e) {
-                parent.triggerChange();
-                final String text = treasuresTextArea.getText();
-                final int caretPosition = treasuresTextArea.getCaretPosition();
-                if (!smartInsert.get() && e.getKeyChar() == ',' || e.getKeyChar() == '(') {
-                    treasuresTextArea.insert(e.getKeyChar() == ',' ? ", (, )" : "(, )", caretPosition);
-                    treasuresTextArea.setCaretPosition(caretPosition + (e.getKeyChar() == ',' ? 3 : 1));
-                    smartInsert.set(true);
-                    e.consume();
-                    return;
-                }
-                if (smartInsert.get() && e.getKeyChar() == KeyEvent.VK_TAB) {
-                    if (text.length() > caretPosition + 2) {
-                        treasuresTextArea.setCaretPosition(caretPosition + 2);
-                    }
-                    smartInsert.set(false);
-                    e.consume();
-                }
-            }
-
-            @Override
-            public void keyPressed(final KeyEvent e) {
-                if (smartInsert.get() && e.getKeyChar() == KeyEvent.VK_TAB) {
-                    e.consume();
-                }
-                if (e.getKeyChar() == KeyEvent.VK_ENTER) {
-                    e.consume();
-                    getTreasureInput(configuration);
-                    printTreasures(configuration.getTreasures());
-                }
-            }
-        });
-    }
-
+    @Getter
+    private Configuration configuration;
+    private ConfigurationDialog parent;
     private JComboBox<Evolution.Fitness> fitnessComboBox;
 
-    private void printTreasures(final List<DiscretePoint> treasures) {
-        treasuresTextArea.setText(printConsecutive(
-                treasures,
-                discretePoint -> String.format("(%s, %s)", discretePoint.getPosition(), discretePoint.getDistance())
-        ));
-    }
-
-    private void bindSurvivors() {
-        bindSpinner(survivorsSpinner, configuration.getSurvivors(), configuration::setSurvivors, () -> {
-            final int survivors = (int) survivorsSpinner.getValue();
-            if (survivors < 0) {
-                survivorsSpinner.setValue(0);
-            }
-            if (survivors > (int) populationSpinner.getValue()) {
-                populationSpinner.setValue(survivors);
-            }
-        });
-    }
-
-    public ConfigPanel() {
+    /**
+     * Constructs a single configuration panel.
+     * Inserts default values.
+     */
+    public ConfigPanel(final Configuration configuration) {
         setModal(true);
 
         shuffleDistancesButton.setEnabled(false);
@@ -318,56 +110,28 @@ public class ConfigPanel extends JDialog {
         fitnessListModel.addAll(Arrays.asList(Evolution.Fitness.values()));
 
         mutatorTable.setModel(mutatorTableModel);
-        mutatorTableModel.addMutator(false, SwapGeneMutator.class, .5);
-        mutatorTableModel.addMutator(false, SwapPositionsMutator.class, .5);
 
-        mutatorScrollPane.addMouseWheelListener(e -> {
-
-        });
+        setConfiguration(configuration);
     }
 
-    private void bindMutators() {
-        for (final DiscreteAlterer configAlterer : configuration.getAlterers()) {
-            for (final MutatorTableModel.MutatorConfig mutatorConfig : mutatorTableModel.getMutatorConfigs()) {
-                if (configAlterer.getClass().equals(mutatorConfig.getMutator())) {
-                    mutatorConfig.setSelected(true);
-                    final double probability = ((AbstractAlterer<?, ?>) configAlterer).probability();
-                    mutatorConfig.setProbability(probability);
-                    break;
-                }
-            }
-        }
-
-        mutatorTableModel.addTableModelListener(l -> {
-            parent.triggerChange();
-            final List<DiscreteAlterer> mutatorInstances = mutatorTableModel.getMutatorConfigs().stream()
-                    .filter(MutatorTableModel.MutatorConfig::isSelected)
-                    .map(mutatorConfig -> {
-                        try {
-                            return mutatorConfig.instantiate();
-                        } catch (final Exception e) {
-                            log.error("Instantiation of mutator failed", e);
-                        }
-                        return null;
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            configuration.setAlterers(mutatorInstances);
-        });
-
-        mutatorTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(final MouseEvent e) {
-                final int clickedRow = mutatorTable.rowAtPoint(e.getPoint());
-                final int clickedCol = mutatorTable.columnAtPoint(e.getPoint());
-                if (clickedCol == 0) {
-                    final boolean selected = (boolean) mutatorTableModel.getValueAt(clickedRow, clickedCol);
-                    mutatorTableModel.setValueAt(!selected, clickedRow, clickedCol);
-                }
-            }
-        });
+    /**
+     * Assign a parent to the panel for button bindings and scroll propagation.
+     * Only accepts a {@link ConfigurationDialog}.
+     *
+     * @param parent configuration dialog parent
+     */
+    public void setParent(final ConfigurationDialog parent) {
+        this.parent = parent;
+        propagateScroll(mutatorScrollPane);
+        propagateScroll(distancesScrollPane);
+        propagateScroll(treasuresScrollPane);
     }
 
+    /**
+     * Assign a configuration to the panel for value binding.
+     *
+     * @param configuration configuration to display
+     */
     public void setConfiguration(final Configuration configuration) {
         this.configuration = configuration;
         shuffleDistancesButton.setEnabled(true);
@@ -385,7 +149,59 @@ public class ConfigPanel extends JDialog {
         bindSurvivors();
     }
 
-    private void getTreasureInput(final Configuration configuration) {
+    /**
+     * Propagate a scroll inside of the {@link ConfigPanel} to
+     * the {@link ConfigurationDialog}s scroll panel, if the inner
+     * scroll reaches its borders.
+     *
+     * @param scrollPane the inner scroll panel propagating the scroll event
+     */
+    public void propagateScroll(final JScrollPane scrollPane) {
+        if (parent == null) {
+            return;
+        }
+        scrollPane.addMouseWheelListener(e -> {
+            final JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
+
+            if (!verticalScrollBar.isShowing()) {
+                parent.getConfigScrollWrapper().dispatchEvent(e);
+                return;
+            }
+
+            if (e.getWheelRotation() < 0 && verticalScrollBar.getValue() == 0) {
+                parent.getConfigScrollWrapper().dispatchEvent(e);
+            } else if (verticalScrollBar.getValue() + scrollPane.getHeight() == verticalScrollBar.getMaximum()) {
+                parent.getConfigScrollWrapper().dispatchEvent(e);
+            }
+        });
+    }
+
+    /**
+     * Print a consecutive list of distance values separated by a comma.
+     *
+     * @param distances list of double
+     */
+    private void printDistances(final List<Double> distances) {
+        distancesTextArea.setText(ListUtils.printConsecutive(distances, String::valueOf, ", "));
+    }
+
+    /**
+     * Print a consecutive list of discrete treasure points separated by a comma.
+     *
+     * @param treasures list of discrete points
+     */
+    private void printTreasures(final List<DiscretePoint> treasures) {
+        treasuresTextArea.setText(ListUtils.printConsecutive(
+                treasures,
+                discretePoint -> String.format("(%s, %s)", discretePoint.getPosition(), discretePoint.getDistance()),
+                ", "
+        ));
+    }
+
+    /**
+     * Parse the treasure point fields input and add it as a list of discrete points to the configuration.
+     */
+    private void getTreasureInput() {
         final String text = treasuresTextArea.getText();
         final Pattern pattern = Pattern.compile("\\((\\d+)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\)");
         final Matcher matcher = pattern.matcher(text);
@@ -395,7 +211,6 @@ public class ConfigPanel extends JDialog {
             try {
                 final int position = Integer.parseInt(matcher.group(1));
                 final double distance = Double.parseDouble(matcher.group(2));
-                //TODO: add positions
                 treasures.add(new DiscretePoint(0, position, distance));
             } catch (final NumberFormatException ignored) {
             }
@@ -403,6 +218,112 @@ public class ConfigPanel extends JDialog {
         configuration.setTreasures(treasures);
     }
 
+    /**
+     * Get a list of selected and instantiated discrete alterers.
+     *
+     * @return list of selected discrete alterers
+     */
+    private List<DiscreteAlterer> getSelectedAlterers() {
+        return IntStream.of(mutatorTable.getSelectionModel().getSelectedIndices())
+                .mapToObj(row -> {
+                    final String simpleName = (String) mutatorTable.getValueAt(row, 0);
+                    final Class<? extends DiscreteAlterer> altererClass = DiscreteAlterer.getSubclasses().stream()
+                            .filter(aClass -> aClass.getSimpleName().equals(simpleName))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (altererClass == null) return null;
+
+                    final double probability = (double) mutatorTable.getValueAt(row, 1);
+
+                    try {
+                        return altererClass.getDeclaredConstructor(double.class)
+                                .newInstance(probability);
+                    } catch (final Exception e) {
+                        log.error("Could not instantiate mutator.", e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Bind a value to an initial value.
+     * It triggers a change in the assigned {@link ConfigurationDialog}, runs a change handler and a value consumer.
+     *
+     * @param spinner       spinner to bind the value to
+     * @param initialValue  the initial value to be bound
+     * @param valueConsumer consumer of the new int value
+     * @param change        change listener
+     */
+    private void bindSpinner(final JSpinner spinner, final int initialValue, final Consumer<Integer> valueConsumer, final Runnable change) {
+        spinner.setValue(initialValue);
+        spinner.addChangeListener(e -> {
+            change.run();
+            parent.triggerChange();
+            try {
+                valueConsumer.accept((int) spinner.getValue());
+            } catch (final Exception ignored) {
+            }
+        });
+    }
+
+    /**
+     * Bind a positive value to a spinner.
+     * The input value has to be positive.
+     *
+     * @param spinner       spinner to bind the value to
+     * @param initialValue  the initial value to be bound
+     * @param valueConsumer consumer of the new int value
+     * @see #bindSpinner(JSpinner, int, Consumer, Runnable)
+     */
+    private void bindSpinner(final JSpinner spinner, final int initialValue, final Consumer<Integer> valueConsumer) {
+        bindSpinner(spinner, initialValue, valueConsumer, () -> {
+            if ((int) spinner.getValue() < 0) {
+                spinner.setValue(0);
+            }
+        });
+    }
+
+    /**
+     * Print the distances to their output and bind the inputs value to the distances in the {@link Configuration}.
+     */
+    private void bindDistances() {
+        printDistances(configuration.getDistances());
+
+        distancesTextArea.getDocument().addDocumentListener((DocumentEditHandler) e -> {
+            parent.triggerChange();
+            final String input = distancesTextArea.getText();
+
+            final List<Double> distances = Arrays.stream(input.split("\\s*,\\s*"))
+                    .map(string -> {
+                        try {
+                            return Double.parseDouble(string);
+                        } catch (final Exception ignored) {
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            configuration.setDistances(distances);
+        });
+
+        distancesTextArea.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(final KeyEvent e) {
+                if (e.getKeyChar() == KeyEvent.VK_ENTER) {
+                    printDistances(configuration.getDistances());
+                    e.consume();
+                }
+            }
+        });
+    }
+
+    /**
+     * Select the given fitness method and bind the selection to the fitness in the {@link Configuration}.
+     */
     private void bindFitness() {
         fitnessListModel.setSelectedItem(configuration.getFitness());
         fitnessComboBox.addActionListener(e -> {
@@ -411,4 +332,162 @@ public class ConfigPanel extends JDialog {
         });
     }
 
+    /**
+     * Print the given limit to the spinner and bind the value to the limit in the {@link Configuration}.
+     */
+    private void bindLimit() {
+        bindSpinner(limitSpinner, configuration.getLimit(), configuration::setLimit);
+    }
+
+    private void bindMutators() {
+        mutatorTable.getSelectionModel().setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
+        for (final DiscreteAlterer configAlterer : configuration.getAlterers()) {
+            final int rowByName = mutatorTableModel.getRowByName(configAlterer.getClass().getSimpleName());
+            if (rowByName >= 0) {
+                mutatorTable.getSelectionModel().addSelectionInterval(rowByName, rowByName);
+                mutatorTableModel.setValueAt(configAlterer.getProbability(), rowByName, 1);
+            }
+        }
+
+        mutatorTable.getSelectionModel().addListSelectionListener(e -> {
+            parent.triggerChange();
+            configuration.setAlterers(getSelectedAlterers());
+        });
+    }
+
+    /**
+     * Print the given offspring to the spinner and bind the value to the offspring in the {@link Configuration}.
+     * The offset has to be in the interval [0, {@link Configuration#getPopulation()}]. If it gets bigger, the
+     * {@link #populationSpinner}s value increases.
+     */
+    private void bindOffspring() {
+        bindSpinner(offspringSpinner, configuration.getOffspring(), configuration::setOffspring, () -> {
+            final int offspring = (int) offspringSpinner.getValue();
+            if (offspring < 0) {
+                offspringSpinner.setValue(0);
+            }
+            if (offspring > (int) populationSpinner.getValue()) {
+                populationSpinner.setValue(offspring);
+            }
+        });
+    }
+
+    /**
+     * Print the given positions to the spinner and bind the value to the positions in the {@link Configuration}.
+     */
+    private void bindPosition() {
+        bindSpinner(positionsSpinner, configuration.getPositions(), configuration::setPositions);
+    }
+
+    /**
+     * Print the given offspring to the spinner and bind the value to the limit in the {@link Configuration}.
+     * The offset has to be greater than 0, {@link Configuration#getOffspring()} and
+     * {@link Configuration#getSurvivors()} ()}. If it gets smaller than the last two, the two decrease.
+     */
+    private void bindPopulation() {
+        bindSpinner(populationSpinner, configuration.getPopulation(), configuration::setPopulation, () -> {
+            int populationInput = (int) populationSpinner.getValue();
+            if (populationInput < 1) {
+                populationSpinner.setValue(1);
+                populationInput = 1;
+            }
+            if (populationInput < (int) offspringSpinner.getValue()) {
+                offspringSpinner.setValue(populationInput);
+            }
+            if (populationInput < (int) survivorsSpinner.getValue()) {
+                survivorsSpinner.setValue(populationInput);
+            }
+        });
+    }
+
+    /**
+     * Print the given survivors to the spinner and bind the value to the survivors in the {@link Configuration}.
+     * The offset has to be in the interval [0, {@link Configuration#getPopulation()}]. If it gets bigger, the
+     * {@link #populationSpinner}s value increases.
+     */
+    private void bindSurvivors() {
+        bindSpinner(survivorsSpinner, configuration.getSurvivors(), configuration::setSurvivors, () -> {
+            final int survivors = (int) survivorsSpinner.getValue();
+            if (survivors < 0) {
+                survivorsSpinner.setValue(0);
+            }
+            if (survivors > (int) populationSpinner.getValue()) {
+                populationSpinner.setValue(survivors);
+            }
+        });
+    }
+
+    /**
+     * Print the treasure points to their output and bind the inputs value to the treasure points
+     * in the {@link Configuration}.
+     */
+    private void bindTreasures() {
+
+        printTreasures(configuration.getTreasures());
+
+        final AtomicBoolean smartInsert = new AtomicBoolean(false);
+
+        treasuresTextArea.getDocument()
+                .addDocumentListener((DocumentEditHandler) e -> getTreasureInput());
+
+        treasuresTextArea.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(final MouseEvent e) {
+                smartInsert.set(false);
+            }
+        });
+
+        treasuresTextArea.addKeyListener(new KeyAdapter() {
+
+            @Override
+            public void keyTyped(final KeyEvent e) {
+                parent.triggerChange();
+                final String text = treasuresTextArea.getText();
+                final int caretPosition = treasuresTextArea.getCaretPosition();
+                if (!smartInsert.get() && e.getKeyChar() == ',' || e.getKeyChar() == '(') {
+                    treasuresTextArea.insert(e.getKeyChar() == ',' ? ", (, )" : "(, )", caretPosition);
+                    treasuresTextArea.setCaretPosition(caretPosition + (e.getKeyChar() == ',' ? 3 : 1));
+                    smartInsert.set(true);
+                    e.consume();
+                    return;
+                }
+                if (smartInsert.get() && e.getKeyChar() == KeyEvent.VK_TAB) {
+                    if (text.length() > caretPosition + 2) {
+                        treasuresTextArea.setCaretPosition(caretPosition + 2);
+                    }
+                    smartInsert.set(false);
+                    e.consume();
+                }
+            }
+
+            @Override
+            public void keyPressed(final KeyEvent e) {
+                if (smartInsert.get() && e.getKeyChar() == KeyEvent.VK_TAB) {
+                    e.consume();
+                }
+                if (e.getKeyChar() == KeyEvent.VK_ENTER) {
+                    e.consume();
+                    getTreasureInput();
+                    printTreasures(configuration.getTreasures());
+                }
+            }
+        });
+    }
+
+    /**
+     * Default intellij gui forms method for custom generated components.
+     * The {@link #mutatorTable}s selection is limited to the first column and is extending and toggles the selected.
+     *
+     * @see JTable#changeSelection(int, int, boolean, boolean)
+     */
+    private void createUIComponents() {
+        mutatorTable = new JTable() {
+            @Override
+            public void changeSelection(final int rowIndex, final int columnIndex, final boolean toggle, final boolean extend) {
+                if (columnIndex == 0)
+                    super.changeSelection(rowIndex, columnIndex, true, false);
+            }
+        };
+    }
 }

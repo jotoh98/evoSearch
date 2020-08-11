@@ -11,7 +11,6 @@ import evo.search.io.service.EventService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.listener.DocumentEditHandler;
 import lombok.Getter;
-import lombok.Value;
 
 import javax.swing.*;
 import javax.swing.event.ListDataEvent;
@@ -27,29 +26,130 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * The form holding all the configuration panels and a selection list with their names.
+ */
 public class ConfigurationDialog extends JDialog {
+    /**
+     * Root pane.
+     */
     private JPanel contentPane;
+
+    /**
+     * Ok button.
+     * Saves changes and closes the window immediately.
+     */
     private JButton buttonOK;
+
+    /**
+     * Cancel button.
+     * Deletes unsaved changes, if the deletion is also confirmed in a prompt.
+     */
     private JButton buttonCancel;
+
+    /**
+     * Apply button.
+     * Saves changes without closing the window.
+     */
     private JButton applyButton;
+
+    /**
+     * Bottom pane holding the main buttons
+     * {@link #buttonOK},
+     * {@link #buttonCancel} and
+     * {@link #applyButton}.
+     */
     private JPanel bottomPane;
-    private JList<ConfigTuple> configChooserList;
+
+    /**
+     * Selection list displaying the configs names to switch between {@link ConfigPanel}s.
+     */
+    private JList<ConfigPanel> configChooserList;
+
+    /**
+     * List model of the {@link #configChooserList}.
+     */
+    private final DefaultListModel<ConfigPanel> configListModel = new DefaultListModel<>();
+
+    /**
+     * Textfield to change the selected {@link Configuration}s name.
+     */
     private JTextField nameTextField;
+
+    /**
+     * Button to add a new configuration to the {@link #configChooserList}.
+     */
     private JButton addConfigButton;
-    private final DefaultListModel<ConfigTuple> configListModel = new DefaultListModel<>();
-    private JPanel listEditBar;
+
+    /**
+     * Panel holding the {@link #nameTextField}.
+     */
     private JPanel configNamePanel;
+
+    /**
+     * Button to remove a configuration from the {@link #configChooserList}.
+     */
     private JButton removeConfigButton;
-    @Getter
-    private JScrollPane configScrollWrapper;
+
+    /**
+     * Button to duplicate a configuration of the {@link #configChooserList}.
+     */
     private JButton duplicateConfigButton;
 
+    /**
+     * Bar holding the list edit buttons.
+     */
+    private JPanel listEditBar;
+
+    @Getter
+    private JScrollPane configScrollWrapper;
+
+    /**
+     * Test main method.
+     *
+     * @param args ignored java cli args
+     */
+    public static void main(final String[] args) {
+        final List<Configuration> configurations = Arrays.asList(
+                Configuration.builder()
+                        .version("undefined")
+                        .name("one")
+                        .limit(1000)
+                        .positions(2)
+                        .distances(Arrays.asList(10d, 20d))
+                        .treasures(Collections.singletonList(new DiscretePoint(2, 0, 10)))
+                        .alterers(Collections.singletonList(new SwapPositionsMutator(0.7)))
+                        .build(),
+                Configuration.builder()
+                        .version("undefined")
+                        .name("two")
+                        .limit(100)
+                        .positions(3)
+                        .distances(Arrays.asList(15d, 25d, 35d))
+                        .treasures(Arrays.asList(new DiscretePoint(3, 0, 10), new DiscretePoint(3, 2, 20)))
+                        .fitness(Evolution.Fitness.SINGULAR)
+                        .build()
+        );
+
+        Main.setupEnvironment();
+        final ConfigurationDialog dialog = new ConfigurationDialog(configurations);
+        dialog.showFrame();
+    }
+
+    /**
+     * Configuration dialog constructor.
+     * <p>
+     * Creates and configures the panel window and creates the sub-panels
+     * for the list of configurations to be displayed and edited.
+     *
+     * @param configurations list of configurations to be displayed/edited
+     */
     public ConfigurationDialog(final List<Configuration> configurations) {
         customUISetup();
 
         configurations.stream()
                 .map(Configuration::clone)
-                .forEach(this::showConfiguration);
+                .forEach(this::createConfigPanel);
 
         setupChooserList();
 
@@ -66,6 +166,7 @@ public class ConfigurationDialog extends JDialog {
         buttonOK.addActionListener(e -> onOK());
         buttonCancel.addActionListener(e -> onCancel());
         applyButton.addActionListener(e -> onApply());
+
         addWindowListener(new WindowAdapter() {
             public void windowClosing(final WindowEvent e) {
                 onCancel();
@@ -82,6 +183,22 @@ public class ConfigurationDialog extends JDialog {
         setMaximumSize(new Dimension(Integer.MAX_VALUE, 700));
     }
 
+    /**
+     * Create a configuration panel.
+     *
+     * @param configuration configurations to be displayed/edited
+     */
+    public void createConfigPanel(final Configuration configuration) {
+        final ConfigPanel configPanel = new ConfigPanel(configuration);
+        configPanel.setParent(this);
+        configListModel.addElement(configPanel);
+    }
+
+    /**
+     * Bind the remove buttons enabled state to the condition, that
+     * the configuration selection list contains items to remove.
+     * Also bind an empty list behaviour.
+     */
     private void bindConfigListModel() {
         configListModel.addListDataListener(new ListDataListener() {
             @Override
@@ -101,37 +218,12 @@ public class ConfigurationDialog extends JDialog {
         });
     }
 
-    public static void main(final String[] args) {
-        final List<Configuration> configurations = Arrays.asList(
-                Configuration.builder()
-                        .version("undefined")
-                        .name("one")
-                        .limit(1000)
-                        .positions(2)
-                        .distances(Arrays.asList(10d, 20d))
-                        .treasures(Arrays.asList(new DiscretePoint(2, 0, 10)))
-                        .alterers(Collections.singletonList(new SwapPositionsMutator(0.7)))
-                        .build(),
-                Configuration.builder()
-                        .version("undefined")
-                        .name("two")
-                        .limit(100)
-                        .positions(3)
-                        .distances(Arrays.asList(15d, 25d, 35d))
-                        .treasures(Arrays.asList(new DiscretePoint(3, 0, 10), new DiscretePoint(3, 2, 20)))
-                        .fitness(Evolution.Fitness.SINGULAR)
-                        .build()
-        );
-
-        Main.setupEnvironment();
-        final ConfigurationDialog dialog = new ConfigurationDialog(Collections.emptyList());
-        dialog.showFrame();
-    }
-
+    /**
+     * Bind the configuration selection list buttons behaviours.
+     * In general, a button works on selected items (removing them, duplicating them, etc.).
+     */
     private void bindConfigListButtons() {
-        addConfigButton.addActionListener(e -> {
-            addConfiguration(new Configuration());
-        });
+        addConfigButton.addActionListener(e -> addConfiguration(new Configuration()));
 
         removeConfigButton.addActionListener(e -> {
             triggerChange();
@@ -156,41 +248,64 @@ public class ConfigurationDialog extends JDialog {
         duplicateConfigButton.addActionListener(e -> duplicateSelectedConfiguration());
     }
 
+    /**
+     * Add a new configuration to the selection list and create a new panel.
+     *
+     * @param configuration configuration to be displayed
+     */
     private void addConfiguration(final Configuration configuration) {
         triggerChange();
         final int selectedIndex = configChooserList.getSelectedIndex();
         if (selectedIndex == -1) {
-            showConfiguration(0, configuration);
+            createConfigPanel(0, configuration);
             configChooserList.setSelectedIndex(0);
         } else {
-            showConfiguration(selectedIndex + 1, configuration);
+            createConfigPanel(selectedIndex + 1, configuration);
             configChooserList.setSelectedIndex(selectedIndex + 1);
         }
     }
 
+    /**
+     * Create a new configuration panel and insert a handle into the selection list.
+     *
+     * @param index         insertion index in the selection list
+     * @param configuration configuration to display
+     */
+    public void createConfigPanel(final int index, final Configuration configuration) {
+        final ConfigPanel configPanel = new ConfigPanel(configuration);
+        configPanel.setParent(this);
+        configListModel.add(index, configPanel);
+    }
+
+    /**
+     * Set up the configuration selection list.
+     */
     private void setupChooserList() {
         configChooserList.setModel(configListModel);
 
         configChooserList.setCellRenderer(new DarkDefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index, final boolean isSelected, final boolean cellHasFocus) {
-                final ConfigTuple configTuple = (ConfigTuple) value;
-                return super.getListCellRendererComponent(list, configTuple.getConfiguration().getName(), index, isSelected, cellHasFocus);
+                return super.getListCellRendererComponent(list, ((ConfigPanel) value).getConfiguration().getName(), index, isSelected, cellHasFocus);
             }
         });
 
         configChooserList.addListSelectionListener(e -> {
-            final ConfigTuple selectedTuple = configChooserList.getSelectedValue();
+            final ConfigPanel selectedTuple = configChooserList.getSelectedValue();
             if (selectedTuple == null) {
                 return;
             }
             nameTextField.setText(selectedTuple.getConfiguration().getName());
-            configScrollWrapper.getViewport().setView(selectedTuple.getPanel().getRootPanel());
+            configScrollWrapper.getViewport().setView(selectedTuple.getRootPanel());
         });
 
         configChooserList.setSelectedIndex(0);
     }
 
+    /**
+     * Do some custom ui setups.
+     * Mainly changing colors and border.
+     */
     private void customUISetup() {
         configNamePanel.setBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("EvoSearch.darker"))
@@ -203,6 +318,10 @@ public class ConfigurationDialog extends JDialog {
         );
     }
 
+    /**
+     * React to an empty selection list by disabling the remove button and
+     * displaying an empty message.
+     */
     private void bindEmptyBehaviour() {
         final boolean listEmpty = configListModel.size() == 0;
         removeConfigButton.setEnabled(!listEmpty);
@@ -211,22 +330,22 @@ public class ConfigurationDialog extends JDialog {
         }
     }
 
+    /**
+     * Duplicate the selected configuration.
+     */
     private void duplicateSelectedConfiguration() {
         triggerChange();
-        final ConfigTuple selectedConfig = configChooserList.getSelectedValue();
+        final ConfigPanel selectedConfig = configChooserList.getSelectedValue();
         if (selectedConfig != null) {
-            addConfiguration(selectedConfig.configuration.clone());
+            addConfiguration(selectedConfig.getConfiguration().clone());
         }
 
     }
 
-    public void showConfiguration(final Configuration configuration) {
-        final ConfigPanel configPanel = new ConfigPanel();
-        configPanel.setConfiguration(configuration);
-        configPanel.setParent(this);
-        configListModel.addElement(new ConfigTuple(configuration, configPanel));
-    }
-
+    /**
+     * Save the configuration is the apply button is enabled.
+     * That happens, if a configuration was changed.
+     */
     private void onApply() {
         if (applyButton.isEnabled()) {
             saveConfigurations();
@@ -234,17 +353,18 @@ public class ConfigurationDialog extends JDialog {
         applyButton.setEnabled(false);
     }
 
-    public void showConfiguration(final int index, final Configuration configuration) {
-        final ConfigPanel configPanel = new ConfigPanel();
-        configPanel.setConfiguration(configuration);
-        configPanel.setParent(this);
-        configListModel.add(index, new ConfigTuple(configuration, configPanel));
-    }
-
+    /**
+     * Trigger a changed configuration.
+     * This state is only handled by the "Apply" Buttons enabled state.
+     * This method is mainly used by the individual {@link ConfigPanel}s.
+     */
     public void triggerChange() {
         applyButton.setEnabled(true);
     }
 
+    /**
+     * Show the configuration dialog frame.
+     */
     public void showFrame() {
         setMinimumSize(new Dimension(768, 300));
         setTitle(LangService.get("run.configurations"));
@@ -252,10 +372,13 @@ public class ConfigurationDialog extends JDialog {
         setVisible(true);
     }
 
+    /**
+     * Save the configurations and trigger an {@link EventService#CONFIGS_CHANGED} event.
+     */
     private void saveConfigurations() {
         final List<Configuration> configurations = IntStream.range(0, configListModel.size())
                 .mapToObj(configListModel::getElementAt)
-                .map(ConfigTuple::getConfiguration)
+                .map(ConfigPanel::getConfiguration)
                 .collect(Collectors.toList());
 
         final Project currentProject = ProjectService.getCurrentProject();
@@ -264,6 +387,12 @@ public class ConfigurationDialog extends JDialog {
         EventService.CONFIGS_CHANGED.trigger(configurations);
     }
 
+    /**
+     * Discard the changes, if the user presses "Cancel" and confirms to delete the changes.
+     * Otherwise, it saves the changes immediately.
+     *
+     * @see #onApply()
+     */
     private void onCancel() {
         if (applyButton.isEnabled()) {
             final int saveChanges = JOptionPane.showConfirmDialog(
@@ -281,15 +410,14 @@ public class ConfigurationDialog extends JDialog {
         dispose();
     }
 
+    /**
+     * If the button "OK" is pressed, the changes are applied and the window gets closed.
+     *
+     * @see #onApply()
+     */
     private void onOK() {
         onApply();
         dispose();
-    }
-
-    @Value
-    private class ConfigTuple {
-        Configuration configuration;
-        ConfigPanel panel;
     }
 
 }

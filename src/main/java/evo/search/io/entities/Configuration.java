@@ -113,7 +113,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
 
         try {
             return (DiscreteAlterer) Class
-                    .forName(methodAttribute.getName())
+                    .forName(methodAttribute.getValue())
                     .getConstructor(double.class)
                     .newInstance(probability);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException ignored) {
@@ -145,7 +145,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
             probability = ((AbstractAlterer<?, ?>) alterer).probability();
         }
         return new DefaultElement("alterer")
-                .addAttribute("method", alterer.getClass().getSimpleName())
+                .addAttribute("method", alterer.getClass().getName())
                 .addAttribute("probability", Double.toString(probability));
     }
 

@@ -147,7 +147,9 @@ public class ConfigurationDialog extends JDialog {
     public ConfigurationDialog(final List<Configuration> configurations) {
         customUISetup();
 
-        configurations.forEach(this::createConfigPanel);
+        configurations.stream()
+                .map(Configuration::clone)
+                .forEach(this::createConfigPanel);
 
         setupChooserList();
 

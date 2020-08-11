@@ -1,6 +1,20 @@
 <p align="center">
+  <img src="https://github.com/jotoh98/evoSearch/workflows/JavaDoc/badge.svg"/>
+  <img src="https://github.com/jotoh98/evoSearch/workflows/Test%20&%20Build%20with%20maven/badge.svg"/>
+</p>
+
+<p align="center">
   <img src="icon.png" width="128px">
 </p>
+
+# How to run
+
+1. Install IntelliJ
+2. Clone the project fom Github using git
+3. Install the lombok plugin https://projectlombok.org/setup/intellij
+4. Enable 'Annotation processing' in Preferences > Build, Execution, Deployment > Compiler > Annotation Processors
+5. In the maven Tab on the right, hit refresh to download the dependencies
+6. Click on run
 
 # What is evoSearch?
 
@@ -8,10 +22,3 @@ This project arises in the course of my bachelor thesis, which examines the beha
 
 **How do we distribute these points to find treasures efficiently?**
 
-## Step 1: Two-way problem
-
-The first step of evoSearch's research lies in the consideration of the two-way problem. In two-way, the point to be found is an element of either the positive, or the negative real numbers and we start to again search from the origin. For this problem it is already known that the optimal strategy is the doubling strategy. We run one length unit in one direction, run back to the origin, then the doubled length in the other direction. This process is repeated until the treasure is found. The first part of the research is to find out if a genetic algorithm will mimic this behavior.
-
-## First test set: One-treasure-fitness
-
-For the first set of tests, the fitness function is evaluated as the run distance of the individual which was necessary to find the treasure.

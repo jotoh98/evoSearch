@@ -11,7 +11,7 @@ public class SwapGeneMutator extends SwapMutator<DiscreteGene, Double> implement
 
     /**
      * Standard probability constructor.
-     * Utilized by the {@link evo.search.view.model.MutatorTableModel}.
+     * Utilized by the {@link evo.search.view.ConfigPanel}.
      *
      * @param probability the crossover probability
      */

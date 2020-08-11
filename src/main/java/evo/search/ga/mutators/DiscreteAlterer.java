@@ -7,6 +7,8 @@ import java.util.List;
 
 /**
  * Wrapper for all {@link Alterer}s working with {@link DiscreteGene}s.
+ * Notice: All discrete alterers have to implement a constructor with
+ * a double argument for the reflection to work.
  *
  * @author jotoh
  * @since 0.0.1
@@ -21,7 +23,9 @@ public interface DiscreteAlterer extends Alterer<DiscreteGene, Double> {
     static List<Class<? extends DiscreteAlterer>> getSubclasses() {
         return List.of(
                 SwapGeneMutator.class,
-                SwapPositionsMutator.class
+                SwapPositionsMutator.class,
+                DistanceMutator.class,
+                PositionMutator.class
         );
     }
 
@@ -31,4 +35,5 @@ public interface DiscreteAlterer extends Alterer<DiscreteGene, Double> {
      * @return the alterers probability
      */
     double getProbability();
+
 }

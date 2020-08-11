@@ -18,12 +18,15 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -201,6 +204,11 @@ public class MainForm extends JFrame {
             public boolean isCellEditable(final int row, final int column) {
                 return false;
             }
+
+            @Override
+            public Class<?> getColumnClass(final int column) {
+                return column == 0 ? Integer.class : Double.class;
+            }
         };
 
         historyTable.addMouseListener(new MouseAdapter() {
@@ -216,9 +224,14 @@ public class MainForm extends JFrame {
 
         historyTableModel = (DefaultTableModel) historyTable.getModel();
 
-        historyTableModel.addTableModelListener(e -> {
-            historyTable.scrollRectToVisible(historyTable.getCellRect(historyTable.getRowCount() - 1, 0, true));
-        });
+        final TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(historyTableModel);
+        sorter.setComparator(0, Comparator.comparingInt(value -> (int) value));
+        sorter.setComparator(1, Comparator.comparingDouble(value -> (double) value));
+        historyTable.setRowSorter(sorter);
+
+        historyTableModel.addTableModelListener(e -> historyTable.scrollRectToVisible(
+                historyTable.getCellRect(historyTable.getRowCount() - 1, 0, true)
+        ));
     }
 
     /**
@@ -288,7 +301,7 @@ public class MainForm extends JFrame {
      */
     private void clearHistory() {
         while (historyTableModel.getRowCount() > 0)
-            historyTableModel.removeRow(historyTableModel.getRowCount() - 1);
+            historyTableModel.removeRow(0);
     }
 
 }

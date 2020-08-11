@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -111,5 +112,22 @@ public class ListUtils {
             ret.add(col);
         }
         return ret;
+    }
+
+    /**
+     * Prints list of objects in a consecutive order.
+     *
+     * @param list      list of objects to be printed
+     * @param mapper    mapping function to map the objects to strings
+     * @param separator item string separator
+     * @param <T>       list item type
+     * @return string of printed list
+     */
+    public static <T> String printConsecutive(final List<T> list, final Function<T, String> mapper, final String separator) {
+        return list
+                .stream()
+                .map(mapper)
+                .reduce((s, s2) -> s + separator + s2)
+                .orElse("");
     }
 }

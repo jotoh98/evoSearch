@@ -10,12 +10,9 @@ import evo.search.io.entities.Project;
 import evo.search.io.service.EventService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.model.ConfigComboModel;
-import evo.search.view.model.ConfigTableModel;
-import evo.search.view.model.MutatorTableModel;
 import evo.search.view.part.Canvas;
 import io.jenetics.engine.EvolutionResult;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -26,10 +23,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 

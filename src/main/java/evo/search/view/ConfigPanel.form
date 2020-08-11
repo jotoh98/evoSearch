@@ -167,7 +167,7 @@
             </properties>
             <border type="none"/>
             <children>
-              <component id="a838" class="javax.swing.JTable" binding="mutatorTable">
+              <component id="a838" class="javax.swing.JTable" binding="mutatorTable" custom-create="true">
                 <constraints/>
                 <properties>
                   <preferredScrollableViewportSize width="200" height="100"/>

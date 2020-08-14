@@ -12,8 +12,11 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -336,6 +339,7 @@ public class ConfigPanel extends JDialog {
     }
 
     private void bindMutators() {
+
         mutatorTable.getSelectionModel().setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
         for (final DiscreteAlterer configAlterer : configuration.getAlterers()) {
@@ -349,6 +353,34 @@ public class ConfigPanel extends JDialog {
         mutatorTable.getSelectionModel().addListSelectionListener(e -> {
             parent.triggerChange();
             configuration.setAlterers(getSelectedAlterers());
+        });
+
+        final DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(final JTable table, final Object value, final boolean isSelected, final boolean hasFocus, final int row, final int column) {
+                final Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (isSelected)
+                    component.setBackground(new Color(36, 83, 6));
+
+                if(!isSelected || hasFocus)
+                    component.setBackground(null);
+                return component;
+            }
+        };
+        mutatorTable.setDefaultRenderer(Double.class, renderer);
+        mutatorTable.setDefaultRenderer(String.class, renderer);
+
+        mutatorTable.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(final FocusEvent e) {
+                mutatorScrollPane.requestFocus();
+                mutatorTable.repaint();
+            }
+
+            @Override
+            public void focusLost(final FocusEvent e) {
+                mutatorTable.repaint();
+            }
         });
     }
 

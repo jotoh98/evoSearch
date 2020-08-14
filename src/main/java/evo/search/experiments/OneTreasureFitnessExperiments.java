@@ -4,6 +4,10 @@ import com.opencsv.CSVWriter;
 import evo.search.Evolution;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscretePoint;
+import evo.search.ga.mutators.DistanceMutator;
+import evo.search.ga.mutators.PositionMutator;
+import evo.search.ga.mutators.SwapGeneMutator;
+import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.util.ListUtils;
 import evo.search.util.RandomUtils;
@@ -29,22 +33,14 @@ public class OneTreasureFitnessExperiments extends Experiment {
 
         Writer writer = null;
 
-        String filename;
+        final String filename;
         if (args.length > 0)
             filename = args[0].replaceFirst(".\\w+$", "");
         else
             filename = "experiment";
 
-        if (Files.exists(Path.of(filename + ".csv"))) {
-            int i = 0;
-            String formatted;
-            while (Files.exists(Path.of(formatted = String.format("%s-%d.csv", filename, i))))
-                i++;
-            filename = formatted;
-        } else filename += ".csv";
-
         try {
-            writer = new FileWriter(new File(filename));
+            writer = new FileWriter(getFile(filename, ".csv"));
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -78,6 +74,12 @@ public class OneTreasureFitnessExperiments extends Experiment {
                                 .positions(positions)
                                 .limit(limit)
                                 .distances(new ArrayList<>(distances))
+                                .alterers(List.of(
+                                        new SwapGeneMutator(0.02),
+                                        new SwapPositionsMutator(0.02),
+                                        new DistanceMutator(0.01),
+                                        new PositionMutator(0.015)
+                                ))
                                 .treasures(List.of(treasure))
                                 .build()
                         )

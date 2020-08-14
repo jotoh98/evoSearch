@@ -103,7 +103,7 @@ public class Evolution implements Runnable {
                 .selector(new StochasticUniversalSelector<>())
                 .minimizing();
 
-        final List<? extends DiscreteAlterer> alterers = configuration.getAlterers();
+        final List<? extends DiscreteAlterer> alterers = new ArrayList<>(configuration.getAlterers());
 
         if (alterers.size() > 0) {
             final DiscreteAlterer first = alterers.remove(0);

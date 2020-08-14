@@ -2,10 +2,13 @@ package evo.search.view.part;
 
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
+import evo.search.util.MathUtils;
+import evo.search.view.render.Ray2D;
 import evo.search.view.render.StringShape;
 import evo.search.view.render.Style;
 import evo.search.view.render.Transformation;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -16,9 +19,8 @@ import java.awt.event.MouseMotionListener;
 import java.awt.geom.*;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Canvas to be painted on.
@@ -72,40 +74,40 @@ public class Canvas extends JPanel {
 
             boolean hovered = false;
 
+            private void updatePopoverLocation(final MouseEvent event) {
+                popover.setLocation(event.getX() + 10, event.getY() - 5);
+            }
+
             @Override
             public void mouseDragged(final MouseEvent event) {
-                popover.setLocation(event.getX(), event.getY());
+                updatePopoverLocation(event);
             }
 
             @Override
             public void mouseMoved(final MouseEvent event) {
-                popover.setLocation(event.getX(), event.getY());
-                final Point2D mousePosition = new Point2D.Double(event.getX() * Transformation.UI_SCALE, event.getY() * Transformation.UI_SCALE);
-                final Point2D revertedPosition = transformation.revert(mousePosition);
+                final Point2D revertedPosition = transformation.revert(event.getPoint());
                 final double epsilonEnvironment = 10 / transformation.getScale();
 
-                final List<Point2D> hoveredPoints = points.keySet().stream()
+                points.keySet().stream()
                         .filter(point2D -> point2D.distance(revertedPosition) < epsilonEnvironment)
-                        .sorted(Comparator.comparingDouble(point -> point.distance(revertedPosition)))
-                        .collect(Collectors.toList());
-
-                if (hoveredPoints.size() == 0) {
-                    popover.setVisible(false);
-                    popover.setText("");
-                    if (hovered) {
-                        repaint();
-                    }
-                    hovered = false;
-                    return;
-                }
-
-                hovered = true;
-
-                final Point2D point2D = hoveredPoints.get(0);
-
-                popover.setText(point2D.toString());
-                popover.setVisible(true);
-                repaint();
+                        .min(Comparator.comparingDouble(point -> point.distance(revertedPosition)))
+                        .ifPresentOrElse(
+                                point2D -> {
+                                    hovered = true;
+                                    popover.setText(String.format("(%.2f, %.2f)", point2D.getX(), point2D.getY()));
+                                    updatePopoverLocation(event);
+                                    popover.setVisible(true);
+                                    repaint();
+                                },
+                                () -> {
+                                    popover.setVisible(false);
+                                    popover.setText("");
+                                    if (hovered) {
+                                        repaint();
+                                    }
+                                    hovered = false;
+                                }
+                        );
             }
 
 
@@ -128,11 +130,12 @@ public class Canvas extends JPanel {
      *
      * @param g graphics to render the items with
      */
+    @SneakyThrows
     @Override
     protected void paintComponent(final Graphics g) {
         super.paintComponent(g);
         final Graphics2D graphics2D = (Graphics2D) g.create();
-        graphics2D.setTransform(transformation.getAffineTransformation());
+        graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         shapes.forEach((shape, style) -> render(graphics2D, shape, style));
         points.forEach((point2D, style) -> render(graphics2D, point2D, style));
         strings.forEach((stringShape, style) -> render(graphics2D, stringShape, style));
@@ -156,9 +159,15 @@ public class Canvas extends JPanel {
         if (shape instanceof StringShape) {
             graphics2D.setFont(style.getFont());
             final StringShape string = (StringShape) shape;
-            graphics2D.drawString(string.getString(), string.getX(), string.getY());
+            final Point2D offset = transformation.getOffset();
+            final double scale = transformation.getScale();
+            graphics2D.drawString(string.getString(), (float) (scale * string.getX() + offset.getX()) + 5, (float) (scale * string.getY() + offset.getY()) + 8);
+        } else if (shape instanceof Ray2D) {
+            final double visible = getMaxDistanceVisible();
+            render(graphics2D, ((Ray2D) shape).render(visible), style);
         } else {
-            graphics2D.draw(shape);
+            final Shape transformedShape = transformation.getAffineTransformation().createTransformedShape(shape);
+            graphics2D.draw(transformedShape);
         }
     }
 
@@ -174,18 +183,19 @@ public class Canvas extends JPanel {
     private void render(final Graphics2D graphics2D, final Point2D point2D, final Style style) {
         final double x = point2D.getX();
         final double y = point2D.getY();
+        final float scale = 3/(float) transformation.getScale();
         switch (style.getShape()) {
             case DOT:
-                render(graphics2D, new Ellipse2D.Double(x - .3, y - .3, .6, .6), style);
+                render(graphics2D, new Ellipse2D.Double(x - scale, y - scale, 2 * scale, 2 * scale), style);
                 return;
             case CROSS:
                 final GeneralPath path = new GeneralPath();
-                path.append(new Line2D.Double(x - .3, y + .3, x + .3, y - .3), false);
-                path.append(new Line2D.Double(x - .3, y - .3, x + .3, y + .3), false);
+                path.append(new Line2D.Double(x - scale, y + scale, x + scale, y - scale), false);
+                path.append(new Line2D.Double(x - scale, y - scale, x + scale, y + scale), false);
                 render(graphics2D, path, style);
                 return;
             case RECT:
-                render(graphics2D, new Rectangle2D.Double(x - .3, y - .3, .6, .6), style);
+                render(graphics2D, new Rectangle2D.Double(x - scale, y - scale, 2 * scale, 2 * scale), style);
         }
     }
 
@@ -202,11 +212,10 @@ public class Canvas extends JPanel {
         final AtomicInteger index = new AtomicInteger();
         chromosome.forEach(gene -> {
             final Point2D point = gene.getAllele().toPoint2D();
-            enqueue(String.valueOf(index.get()), point, Style.builder().color(Color.WHITE).build());
+            enqueue(String.valueOf(index.get() + 1), point, Style.builder().color(Color.WHITE).build());
             enqueue(point, Style.builder().color(Color.GREEN).build());
             index.getAndIncrement();
         });
-
 
         if (availablePosition > 2) {
             Point2D previous = new Point2D.Double();
@@ -238,10 +247,10 @@ public class Canvas extends JPanel {
             final int x = (int) Math.round(Math.cos(position / (double) amount * 2 * Math.PI) * 100);
             final int y = (int) Math.round(Math.sin(position / (double) amount * 2 * Math.PI) * 100);
             enqueue(
-                    new Line2D.Double(0, 0, x, y),
+                    new Ray2D(0, 0, x, y),
                     Style.builder()
                             .color(Color.lightGray)
-                            .stroke(new BasicStroke(.3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0, new float[]{1}, 0))
+                            .stroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0, new float[]{4}, 0))
                             .build()
             );
         }
@@ -285,5 +294,17 @@ public class Canvas extends JPanel {
             shapes.put(shape, style);
             repaint();
         });
+    }
+
+    public double getMaxDistanceVisible() {
+        return Stream.of(
+                new Point2D.Double(0,0),
+                new Point2D.Double(getWidth(),0),
+                new Point2D.Double(0,getHeight()),
+                new Point2D.Double(getWidth(),getHeight())
+        )
+                .mapToDouble(point -> point.distance(transformation.getOffset()))
+                .max()
+                .orElse(0) / transformation.getScale();
     }
 }

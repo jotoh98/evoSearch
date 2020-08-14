@@ -79,7 +79,7 @@ public class DiscretePoint implements Cloneable {
      * @return The euclidean distance to another {@link DiscretePoint}.
      */
     public double distance(final DiscretePoint other) {
-        return MathUtils.distance(getAngle(), distance, other.getAngle(), other.distance);
+        return MathUtils.polarDistance(getAngle(), distance, other.getAngle(), other.distance);
     }
 
     /**

@@ -21,7 +21,7 @@ public class Style {
      * The stroke style.
      */
     @Builder.Default
-    private final Stroke stroke = new BasicStroke(.3f);
+    private final Stroke stroke = new BasicStroke(2);
 
     /**
      * The stroke color of the shape.
@@ -54,7 +54,7 @@ public class Style {
      * Rendering font for {@link java.awt.font.GlyphVector}s.
      */
     @Builder.Default
-    private final Font font = new Font(Font.SANS_SERIF, Font.PLAIN, 2);
+    private final Font font = new Font(Font.SANS_SERIF, Font.PLAIN, 11);
 
     /**
      * List of point shape styles.

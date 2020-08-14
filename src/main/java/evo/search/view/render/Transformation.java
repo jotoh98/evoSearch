@@ -8,8 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.stream.Stream;
 
 /**
  * The canvas rendering transformation.
@@ -19,35 +21,28 @@ import java.awt.geom.Rectangle2D;
 public class Transformation {
 
     /**
-     * A const for behaviour scaling factor.
-     */
-    public static final double UI_SCALE = 2.0;
-
-    /**
      * A backup of the internal offset vector to translate upon.
      */
     final private Point2D offsetBackup = new Point2D.Double();
+
     /**
      * The transformation offset vector.
      */
     @Getter
     @Setter
     private Point2D offset = new Point2D.Double();
+
     /**
      * The transformation scaling factor.
      */
     @Getter
     @Setter
     private double scale = 1d;
+
     /**
      * The point where a drag event begins to translate relative to.
      */
     private Point2D pressOffset;
-    /**
-     * The non-translated canvas visual boundary representation of the {@link Canvas}.
-     */
-    @Getter
-    private final Rectangle2D boundary = new Rectangle2D.Double();
 
     /**
      * Revert a transformed {@link Point2D} on the canvas.
@@ -62,11 +57,21 @@ public class Transformation {
     /**
      * Transform a {@link Point2D}.
      *
-     * @param point point to be transformed
+     * @param point point to transform
      * @return transformed point
      */
     public Point2D transform(final Point2D point) {
-        return new Point2D.Double(scale * point.getX() + offset.getX(), scale * point.getY() - offset.getY());
+        return new Point2D.Double(scale * point.getX() + offset.getX(), scale * point.getY() + offset.getY());
+    }
+
+    /**
+     * Transform a {@link Line2D}.
+     *
+     * @param line line to transform
+     * @return transformed line
+     */
+    public Line2D transform(final Line2D line) {
+        return new Line2D.Double(transform(line.getP1()), transform(line.getP2()));
     }
 
     /**
@@ -82,22 +87,6 @@ public class Transformation {
     }
 
     /**
-     * Update the {@link #boundary} corresponding to the viewport {@link Component}.
-     *
-     * @param c the viewport component
-     */
-    public void updateBoundary(final Component c) {
-        final Point2D upperLeft = revert(new Point2D.Double(0, 0));
-        final Point2D lowerRight = revert(new Point2D.Double(UI_SCALE * c.getWidth(), UI_SCALE * c.getHeight()));
-        boundary.setFrameFromDiagonal(
-                upperLeft.getX(),
-                upperLeft.getY(),
-                lowerRight.getX(),
-                lowerRight.getY()
-        );
-    }
-
-    /**
      * Get the mouse press listener.
      *
      * @return the mouse listener for the mouse press event
@@ -106,7 +95,7 @@ public class Transformation {
         return new MouseAdapter() {
             @Override
             public void mousePressed(final MouseEvent e) {
-                pressOffset = new Point2D.Double(e.getX() * UI_SCALE, e.getY() * UI_SCALE);
+                pressOffset = e.getPoint();
                 offsetBackup.setLocation(offset.getX(), offset.getY());
             }
         };
@@ -115,19 +104,17 @@ public class Transformation {
     /**
      * Get the mouse dragging listener.
      *
-     * @param canvas The canvas being repainted and providing the visual boundary for {@link #updateBoundary(Component)}.
+     * @param canvas canvas being repainted
      * @return the mouse listener for the drag event
      */
     public MouseMotionListener getMouseMotionListener(final Canvas canvas) {
         return new MouseMotionAdapter() {
             @Override
             public void mouseDragged(final MouseEvent e) {
-                final Point2D mousePosition = new Point2D.Double(e.getX() * UI_SCALE, e.getY() * UI_SCALE);
                 offset.setLocation(
-                        offsetBackup.getX() + mousePosition.getX() - pressOffset.getX(),
-                        offsetBackup.getY() + mousePosition.getY() - pressOffset.getY()
+                        offsetBackup.getX() + e.getX() - pressOffset.getX(),
+                        offsetBackup.getY() + e.getY() - pressOffset.getY()
                 );
-                updateBoundary(canvas);
                 canvas.repaint();
             }
         };
@@ -136,7 +123,7 @@ public class Transformation {
     /**
      * Get the mouse zoom listener.
      *
-     * @param c The component being repainted and providing the visual boundary for {@link #updateBoundary(Component)}.
+     * @param c component being repainted
      * @return the mouse listener for the scroll event
      */
     public MouseWheelListener getMouseWheelListener(final Component c) {
@@ -144,12 +131,15 @@ public class Transformation {
             @Override
             public void mouseWheelMoved(final MouseWheelEvent e) {
                 final double amount = Math.pow(1.05, e.getScrollAmount());
+                final double dirX = offset.getX() - e.getX();
+                final double dirY = offset.getY() - e.getY();
                 if (e.getPreciseWheelRotation() > 0) {
                     scale *= amount;
+                    offset.setLocation(e.getX() + dirX * amount, e.getY() + dirY * amount);
                 } else {
                     scale /= amount;
+                    offset.setLocation(e.getX() + dirX / amount, e.getY() + dirY / amount);
                 }
-                updateBoundary(c);
                 c.repaint();
             }
         };
@@ -158,14 +148,13 @@ public class Transformation {
     /**
      * Get the resize component listener.
      *
-     * @param c The component being repainted and providing the visual boundary for {@link #updateBoundary(Component)}.
+     * @param c component being repainted
      * @return the component listener for the resize event
      */
     public ComponentListener getComponentListener(final Component c) {
         return new ComponentAdapter() {
             @Override
             public void componentResized(final ComponentEvent e) {
-                updateBoundary(c);
                 c.repaint();
             }
         };

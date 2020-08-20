@@ -90,7 +90,6 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
     @Builder.Default
     private boolean chooseWithoutPermutation = true;
 
-
     @Builder.Default
     private double distanceMutationDelta = 1.0;
 
@@ -146,6 +145,13 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
         }
     }
 
+    private static Element writeTreasure(final DiscretePoint point) {
+        return new DefaultElement("treasure")
+                .addAttribute("amount", String.valueOf(point.getPositions()))
+                .addAttribute("position", String.valueOf(point.getPosition()))
+                .addAttribute("distance", String.valueOf(point.getDistance()));
+    }
+
     private static Element writeAlterer(final DiscreteAlterer alterer) {
         double probability = .5;
         if (alterer instanceof AbstractAlterer) {
@@ -156,13 +162,11 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
                 .addAttribute("probability", Double.toString(probability));
     }
 
-    private static Element writeTreasure(final DiscretePoint point) {
-        return XmlService.writePoint("treasure", point);
-    }
-
     @Override
     public Configuration parse(final Document document) {
         final Element rootElement = document.getRootElement();
+
+        if (rootElement == null) return this;
 
         final Element properties = rootElement.element("properties");
 
@@ -283,4 +287,5 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
 
         return DocumentHelper.createDocument(root);
     }
+
 }

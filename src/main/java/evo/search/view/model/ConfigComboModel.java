@@ -5,11 +5,19 @@ import evo.search.io.service.ProjectService;
 import evo.search.view.LangService;
 
 import javax.swing.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.IntConsumer;
 
 /**
  * Combo box with edit button as first static element.
  */
 public class ConfigComboModel extends DefaultComboBoxModel<Object> {
+
+    /**
+     * List of listeners for the event of a change of the selected index.
+     */
+    final List<IntConsumer> selectIndexListeners = new ArrayList<>();
 
     /**
      * Translated "Edit Configuration" text.
@@ -54,10 +62,19 @@ public class ConfigComboModel extends DefaultComboBoxModel<Object> {
     public void setSelectedItem(final Object anObject) {
         if (!anObject.equals(EDIT_TEXT)) {
             super.setSelectedItem(anObject);
-            ProjectService.getCurrentProject()
-                    .setSelectedConfiguration(getIndexOf(anObject));
+            selectIndexListeners.forEach(listener -> listener.accept(getIndexOf(anObject)));
             return;
         }
         EventService.OPEN_CONFIG.trigger(ProjectService.getCurrentProject().getConfigurations());
     }
+
+    /**
+     * Add a index listener to the event of a change of the selected index.
+     *
+     * @param selectionListener selected index change listener
+     */
+    public void addSelectionListener(final IntConsumer selectionListener) {
+        selectIndexListeners.add(selectionListener);
+    }
+
 }

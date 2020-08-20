@@ -4,6 +4,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.Spacer;
 import evo.search.Main;
 import evo.search.io.entities.Project;
+import evo.search.io.entities.Workspace;
 import evo.search.io.service.FileService;
 import evo.search.io.service.MenuService;
 import evo.search.io.service.ProjectService;
@@ -18,12 +19,15 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
 @Slf4j
 public class ChooserForm extends JFrame {
+
     private JButton addButton;
     private JPanel rootPanel;
     private JButton openButton;
@@ -72,7 +76,7 @@ public class ChooserForm extends JFrame {
     }
 
     private void onCreateProject() {
-        final File directory = FileService.promptForDirectory();
+        final Path directory = FileService.promptForDirectory();
         if (directory == null) {
             return;
         }
@@ -87,10 +91,11 @@ public class ChooserForm extends JFrame {
         }
 
         final Project untitledProject = new Project();
-        untitledProject.setPath(directory.getPath());
+        untitledProject.setPath(directory.toString());
         untitledProject.setName("Untitled");
         untitledProject.setVersion(Main.VERSION);
-        if (ProjectService.setupNewProject(Objects.requireNonNull(directory), untitledProject)) {
+        ProjectService.setupNewProject(directory, untitledProject);
+        if (Files.exists(directory.resolve(ProjectService.PROJECT_LEVEL_HIDDEN))) {
             ProjectService.addProjectEntry(untitledProject);
             ProjectService.setCurrentProject(untitledProject);
             openMainForm();
@@ -98,7 +103,7 @@ public class ChooserForm extends JFrame {
     }
 
     private void onOpenProject() {
-        final File directory = FileService.promptForDirectory();
+        final Path directory = FileService.promptForDirectory();
         if (directory == null) {
             JOptionPane.showConfirmDialog(
                     this,
@@ -139,7 +144,7 @@ public class ChooserForm extends JFrame {
 
             listItem.bindSelectionEvent(selectedProject -> {
                 final Project projectFromDir = ProjectService
-                        .loadProjectFromDirectory(new File(selectedProject.getPath()));
+                        .loadProjectFromDirectory(Path.of(selectedProject.getPath()));
 
                 if (projectFromDir == null) {
                     final int deleteOption = JOptionPane.showConfirmDialog(this, LangService.get("project.want.delete"), LangService.get("project.does.not.exist"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
@@ -176,6 +181,7 @@ public class ChooserForm extends JFrame {
     private void setupFrame() {
         setTitle(Main.APP_TITLE);
         setSize(new Dimension(600, 400));
+        setLocationRelativeTo(null);
         setResizable(false);
         setContentPane(rootPanel);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -208,7 +214,9 @@ public class ChooserForm extends JFrame {
 
     private void openMainForm() {
         ProjectService.saveRegistered();
+        final Workspace workspace = ProjectService.loadCurrentWorkspace();
         final MainForm mainForm = new MainForm();
+        mainForm.setWorkspace(workspace);
         mainForm.showFrame();
         dispose();
     }

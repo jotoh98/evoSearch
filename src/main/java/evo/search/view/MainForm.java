@@ -7,6 +7,7 @@ import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
+import evo.search.io.entities.Workspace;
 import evo.search.io.service.EventService;
 import evo.search.io.service.MenuService;
 import evo.search.io.service.ProjectService;
@@ -14,6 +15,7 @@ import evo.search.view.model.ConfigComboModel;
 import evo.search.view.part.Canvas;
 import io.jenetics.engine.EvolutionResult;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -22,10 +24,12 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -64,6 +68,8 @@ public class MainForm extends JFrame {
 
     private final Project project = ProjectService.getCurrentProject();
 
+    @Setter
+    private Workspace workspace = new Workspace();
 
     /**
      * Construct the main form for the swing application.
@@ -88,11 +94,9 @@ public class MainForm extends JFrame {
 
         configComboModel.addAll(project.getConfigurations());
 
-        if (configComboModel.getSize() > 1) {
-            final int selectedIndex = project.getSelectedConfiguration();
-            project.setSelectedConfiguration(Math.max(1, selectedIndex));
-            configComboBox.setSelectedIndex(Math.max(1, selectedIndex));
-        }
+        configComboModel.addSelectionListener(index -> {
+            workspace.setSelectedConfiguration(index);
+        });
 
         EventService.CONFIGS_CHANGED.addListener(changedConfigurations -> {
             final Object selectedItem = configComboModel.getSelectedItem();
@@ -127,6 +131,14 @@ public class MainForm extends JFrame {
 
         nameField.setText(project.getName());
         nameField.setBorder(BorderFactory.createEmptyBorder());
+
+        mainSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY,
+                l -> workspace.setMainDividerLocation(mainSplit.getDividerLocation())
+        );
+
+        logSplitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY,
+                l -> workspace.setLogDividerLocation(logSplitPane.getDividerLocation())
+        );
     }
 
     public void updateConfigListView() {
@@ -140,6 +152,58 @@ public class MainForm extends JFrame {
      * Set up the jFrame for the swing application.
      */
     public void showFrame() {
+        setupMenuBar();
+        setTitle(Main.APP_TITLE);
+        setMinimumSize(new Dimension(700, 500));
+        final Dimension mainSize = workspace.getMainSize();
+        final Point mainLocation = workspace.getMainLocation();
+        final int selectedConfig = Math.max(0, workspace.getSelectedConfiguration());
+
+        configComboBox.setSelectedIndex(1 + selectedConfig);
+
+        if (mainSize.width > 0 && mainSize.height > 0)
+            setPreferredSize(mainSize);
+
+        pack();
+        setLocation(mainLocation);
+        logSplitPane.setDividerLocation(workspace.getLogDividerLocation());
+        mainSplit.setDividerLocation(workspace.getMainDividerLocation());
+        setContentPane(rootPanel);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        setWindowListeners();
+
+        setVisible(true);
+    }
+
+    private void setWindowListeners() {
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(final WindowEvent e) {
+                new ChooserForm();
+                ProjectService.saveProjectWorkspace(workspace);
+                super.windowClosed(e);
+            }
+        });
+
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(final ComponentEvent e) {
+                workspace.setMainSize(getSize());
+                workspace.setMainLocation(getLocation());
+            }
+        });
+
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(final MouseEvent e) {
+                workspace.setMainLocation(getLocation());
+            }
+        });
+
+    }
+
+    private void setupMenuBar() {
         setMenuBar(MenuService.menuBar(
                 MenuService.menu(
                         LangService.get("run.menu"),
@@ -163,19 +227,6 @@ public class MainForm extends JFrame {
                         )
                 )
         ));
-
-        setTitle(Main.APP_TITLE);
-        setMinimumSize(new Dimension(700, 500));
-        setContentPane(rootPanel);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosed(final WindowEvent e) {
-                new ChooserForm();
-                super.windowClosed(e);
-            }
-        });
-        setVisible(true);
     }
 
     /**
@@ -189,8 +240,8 @@ public class MainForm extends JFrame {
                 message -> textArea1.append(message + "\n")
         );
         EventService.REPAINT_CANVAS.addListener(chromosome -> {
-            getCanvas().clear();
-            getCanvas().render(chromosome);
+            canvas.clear();
+            canvas.render(chromosome);
         });
     }
 
@@ -209,32 +260,14 @@ public class MainForm extends JFrame {
             }
         };
 
-        historyTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(final MouseEvent e) {
-                final int selectedRow = historyTable.rowAtPoint(e.getPoint());
-                if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return;
+        historyTable.getSelectionModel().addListSelectionListener(e -> {
+            final int selectedRow = historyTable.getSelectedRow();
+            if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return;
 
-                final int index = historyTable.convertRowIndexToModel(selectedRow);
-                if (index < 0 || index >= history.size()) return;
+            final int index = historyTable.convertRowIndexToModel(selectedRow);
+            if (index < 0 || index >= history.size()) return;
 
-                EventService.REPAINT_CANVAS.trigger(history.get(index));
-            }
-        });
-
-        historyTable.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyReleased(final KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_DOWN) {
-                    final int selectedRow = historyTable.getSelectedRow();
-                    if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return;
-
-                    final int index = historyTable.convertRowIndexToModel(selectedRow);
-                    if (index < 0 || index >= history.size()) return;
-
-                    EventService.REPAINT_CANVAS.trigger(history.get(index));
-                }
-            }
+            EventService.REPAINT_CANVAS.trigger(history.get(index));
         });
 
         historyTable.setModel(new DefaultTableModel(new Object[]{"Generation", "Fitness"}, 0));

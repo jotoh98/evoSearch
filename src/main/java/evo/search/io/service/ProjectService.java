@@ -4,23 +4,28 @@ import evo.search.Main;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.IndexEntry;
 import evo.search.io.entities.Project;
+import evo.search.io.entities.Workspace;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.dom4j.Document;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Stream;
 
 @Slf4j
 public class ProjectService {
 
-    private static final String PROJECT_LEVEL_HIDDEN = ".evo";
-    private static final String CONFIG = "config.json";
+    public static final String PROJECT_LEVEL_HIDDEN = ".evo";
     private static final String PROJECT_SETTING = "settings.xml";
-    private static final String CONFIG_XML = "config.xml";
+    private static final String WORKSPACE_XML = "workspace.xml";
     private static final String PROJECT_XML = "project.xml";
     private static final String CONFIG_FOLDER = "configs";
 
@@ -31,45 +36,40 @@ public class ProjectService {
     @Getter
     private static Project currentProject;
 
-    public static Configuration getCurrentConfiguration() {
-        final int index = currentProject.getSelectedConfiguration();
-        final List<Configuration> configurations = currentProject.getConfigurations();
-        if (index < 0 || index >= configurations.size()) {
-            return null;
-        }
-        return configurations.get(index);
-    }
-
     public static void addProjectEntry(final Project project) {
         indexEntries.add(new IndexEntry(project.getPath(), project.getName(), project.getVersion(), LocalDateTime.now()));
     }
 
-    public static boolean setupNewProject(final File file, final Project project) {
-        if (file == null || !file.isDirectory()) {
+    /**
+     * Set up a new project with configs folder and basic project config files.
+     *
+     * @param folder  folder to create the projects files in
+     * @param project project to save
+     */
+    public static void setupNewProject(final Path folder, final Project project) {
+        if (folder == null || !Files.exists(folder)) {
             log.error("Project destination is no directory.");
-            return false;
+            return;
         }
-        if (containsHidden(file)) {
+
+        final Path hiddenPath = folder.resolve(PROJECT_LEVEL_HIDDEN);
+        try {
+            Files.createDirectory(hiddenPath);
+        } catch (final FileAlreadyExistsException e) {
             log.error("Project destination is already set up.");
-            return false;
+            return;
+        } catch (final IOException e) {
+            log.error("Project setup didn't complete.", e);
+            return;
         }
-        final String hiddenPath = file.getPath() + File.separator + PROJECT_LEVEL_HIDDEN;
-        if (FileService.getDir(hiddenPath) == null) {
-            log.error("Project setup didn't complete.");
-        }
-        final File projectXmlFile = FileService.getFile(hiddenPath + File.separator + PROJECT_SETTING);
-        if (projectXmlFile == null) {
-            log.error("Project setup didn't complete.");
-            return false;
-        }
-        final Document document = project.serialize();
-        FileService.write(projectXmlFile, document);
 
-        return true;
-    }
-
-    public static File getProjectsIndexFile() {
-        return FileService.getFile(Main.HOME_PATH + File.separator + PROJECT_XML);
+        final Path projectXML = hiddenPath.resolve(PROJECT_SETTING);
+        try {
+            final Document document = project.serialize();
+            Files.write(projectXML, document.asXML().getBytes());
+        } catch (final IOException e) {
+            log.error("Project setup didn't complete.", e);
+        }
     }
 
     public static boolean isSetUp() {
@@ -77,48 +77,39 @@ public class ProjectService {
         return configXml.exists();
     }
 
-    public static Project loadProjectFromDirectory(final File projectDirectory) {
-        if (!projectDirectory.isDirectory()) {
+    public static Project loadProjectFromDirectory(final Path projectDirectory) {
+        if (!Files.exists(projectDirectory)) {
             log.debug("Project file is no directory.");
             return null;
         }
-        final File hiddenFile = getHiddenFile(projectDirectory);
-        if (!hiddenFile.exists()) {
+        final Path hiddenPath = projectDirectory.resolve(PROJECT_LEVEL_HIDDEN);
+        if (!Files.exists(hiddenPath)) {
             log.error("No " + PROJECT_LEVEL_HIDDEN + " file found.");
             return null;
         }
 
         final Project project = new Project();
 
-        if (hiddenFile.list() != null) {
-            for (final String evoFileName : Objects.requireNonNull(hiddenFile.list())) {
-                switch (evoFileName) {
+        try (final Stream<Path> walk = Files.walk(hiddenPath)) {
+            walk.forEach(path -> {
+                switch (path.getFileName().toString()) {
                     case PROJECT_SETTING:
-                        final File projectSettingsFile = new File(hiddenFile.toPath() + File.separator + PROJECT_SETTING);
-                        final Document projectSettings = FileService.read(projectSettingsFile);
+                        final Document projectSettings = FileService.read(path);
                         project.parse(projectSettings);
                         break;
                     case CONFIG_FOLDER:
-                        final File configDirectory = new File(hiddenFile.toPath() + File.separator + CONFIG_FOLDER);
-                        final String[] configFilesList = configDirectory.list();
-                        if (configFilesList == null) {
-                            break;
-                        }
-                        for (final String configFileName : configFilesList) {
-                            final File configFile = new File(configDirectory.getPath() + File.separator + configFileName);
-                            final Document configDocument = FileService.read(configFile);
-                            project.getConfigurations().add(new Configuration().parse(configDocument));
-                        }
-
+                        try {
+                            Files.walk(path).forEach(configFile -> {
+                                if (!configFile.toString().endsWith(".xml")) return;
+                                final Document configDocument = FileService.read(configFile);
+                                project.getConfigurations().add(new Configuration().parse(configDocument));
+                            });
+                        } catch (final IOException ignored) {}
                 }
-            }
-        }
-        return project;
-    }
+            });
+        } catch (final IOException ignored) {}
 
-    @NotNull
-    private static File getHiddenFile(final File projectFolder) {
-        return new File(projectFolder.toPath() + File.separator + PROJECT_LEVEL_HIDDEN);
+        return project;
     }
 
     public static void saveConfigurations(final File projectFolder, final List<Configuration> configurations) {
@@ -128,18 +119,56 @@ public class ProjectService {
             return;
         }
 
-        if (!containsHidden(projectFolder)) {
-            EventService.LOG.trigger("Cannot save configurations.");
+        final Path hiddenPath = projectFolder.toPath().resolve(PROJECT_LEVEL_HIDDEN);
+        if (!Files.exists(hiddenPath)) {
+            try {
+                Files.createDirectory(hiddenPath);
+            } catch (final IOException e) {
+                EventService.LOG.trigger("Cannot save configurations: " + e.getLocalizedMessage());
+                return;
+            }
         }
-        final File hiddenFile = getHiddenFile(projectFolder);
 
-        final File configFolder = FileService.getDir(hiddenFile.getPath() + File.separator + CONFIG_FOLDER);
+        final Path configFolder = hiddenPath.resolve(CONFIG_FOLDER);
 
-        if (configFolder == null) {
-            return;
+        if (!Files.isDirectory(configFolder)) {
+            try {
+                Files.createDirectory(configFolder);
+            } catch (final IOException e) {
+                EventService.LOG.trigger("Cannot save configurations: " + e.getLocalizedMessage());
+                return;
+            }
         }
-        FileService.clearFolder(configFolder);
-        FileService.save(configFolder, configurations);
+
+        try (final Stream<Path> pathStream = Files.walk(configFolder, 1, FileVisitOption.FOLLOW_LINKS)) {
+            pathStream.forEach(path -> {
+                try {
+                    Files.delete(path);
+                } catch (final IOException ignored) {}
+            });
+
+            FileService.write(configFolder, configurations);
+        } catch (final IOException ignored) {}
+
+
+    }
+
+    public static void saveProjectWorkspace(final Workspace workspace) {
+        final Path workspaceFile = Path.of(currentProject.getPath(), PROJECT_LEVEL_HIDDEN, WORKSPACE_XML);
+        FileService.write(workspaceFile, workspace.serialize());
+    }
+
+    public static Workspace loadCurrentWorkspace() {
+        if (currentProject == null) return new Workspace();
+        final Path workspacePath = Path.of(currentProject.getPath(), PROJECT_LEVEL_HIDDEN, WORKSPACE_XML);
+
+        if (Files.exists(workspacePath)) {
+            final Document workspaceDocument = FileService.read(workspacePath);
+            return new Workspace().parse(workspaceDocument);
+        }
+
+        FileService.write(workspacePath, new Workspace().serialize());
+        return new Workspace();
     }
 
     public static boolean isProjectRegistered(final Project project) {
@@ -149,11 +178,10 @@ public class ProjectService {
                 .anyMatch(path -> path.equals(project.getPath()));
     }
 
-    public static boolean containsHidden(final File file) {
-        final String[] list = file.list();
-        if (list != null && Arrays.asList(list).contains(".evo")) {
-            return true;
-        }
+    public static boolean containsHidden(final Path file) {
+        try {
+            return Files.walk(file).anyMatch(path -> path.endsWith(".evo"));
+        } catch (final IOException ignored) {}
         EventService.LOG.trigger("Current working directory is no project.");
         return false;
     }
@@ -169,27 +197,29 @@ public class ProjectService {
     }
 
     public static void readProjectIndex() {
-        final File projectsRegisterFile = getProjectsIndexFile();
-        if (projectsRegisterFile == null) {
+
+        final Path globalPath = Path.of(Main.HOME_PATH, PROJECT_XML);
+        if (!Files.exists(globalPath)) {
             log.error("Not able to get globally registered projects.");
             return;
         }
-        final Document parsedDocument = FileService.read(projectsRegisterFile);
+        final Document parsedDocument = FileService.read(globalPath);
         indexEntries.addAll(XmlService.readRegister(parsedDocument));
     }
 
     public static void writeProjectIndex(final List<IndexEntry> projects) {
-        final File projectsRegisterFile = getProjectsIndexFile();
-        if (projectsRegisterFile == null) {
+
+        final Path projectRegisterPath = Path.of(Main.HOME_PATH, PROJECT_XML);
+        if (!Files.exists(projectRegisterPath)) {
             log.error("Not able to get globally registered projects.");
             return;
         }
         final Document document = XmlService.writeRegister(projects);
-        FileService.write(projectsRegisterFile, document);
+        FileService.write(projectRegisterPath, document);
     }
-
 
     public static void saveRegistered() {
         writeProjectIndex(indexEntries);
     }
+
 }

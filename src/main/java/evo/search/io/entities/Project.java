@@ -8,7 +8,6 @@ import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
 import org.dom4j.tree.DefaultElement;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -21,13 +20,7 @@ public class Project implements XmlEntity<Project> {
     String path;
     String name;
 
-    int selectedConfiguration = -1;
-
     List<Configuration> configurations = new ArrayList<>();
-
-    public File getWorkingDirectory() {
-        return new File(path);
-    }
 
     @Override
     public Document serialize() {
@@ -35,8 +28,7 @@ public class Project implements XmlEntity<Project> {
         Arrays.asList(
                 XmlService.writeProperty("name", name),
                 XmlService.writeProperty("version", version),
-                XmlService.writeProperty("path", path),
-                XmlService.writeProperty("selectedConfiguration", selectedConfiguration)
+                XmlService.writeProperty("path", path)
         ).forEach(projectElement::add);
         return DocumentHelper.createDocument(projectElement);
     }

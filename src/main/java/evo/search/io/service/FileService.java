@@ -1,6 +1,5 @@
 package evo.search.io.service;
 
-import evo.search.Main;
 import evo.search.io.entities.Configuration;
 import evo.search.view.LangService;
 import lombok.extern.slf4j.Slf4j;
@@ -12,15 +11,12 @@ import org.xml.sax.SAXException;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * File prompting and loading service.
@@ -28,7 +24,13 @@ import java.util.Objects;
 @Slf4j
 public class FileService {
 
-    public static File promptForLoad(final String title) {
+    /**
+     * Prompt the user for a file path.
+     *
+     * @param title the prompts title
+     * @return the chosen file's path from the prompt
+     */
+    public static Path promptForLoad(final String title) {
         final JFrame parent = new JFrame();
         final FileDialog fileDialog = new FileDialog(parent, title, FileDialog.LOAD);
         fileDialog.setVisible(true);
@@ -36,14 +38,21 @@ public class FileService {
         if (fileName == null) {
             return null;
         }
-        return new File(fileDialog.getDirectory() + fileName);
+        return Path.of(fileDialog.getDirectory(), fileName);
     }
 
-    public static File promptForDirectory(final String title) {
+    /**
+     * Prompt the user for a directory.
+     *
+     * @param title the prompts title
+     * @return the chosen directory's path from the prompt
+     * @see #promptForLoad(String)
+     */
+    public static Path promptForDirectory(final String title) {
         System.setProperty("apple.awt.fileDialogForDirectories", "true");
-        final File loadDirectory = promptForLoad(title);
+        final Path loadDirectory = promptForLoad(title);
 
-        if (loadDirectory != null && !loadDirectory.isDirectory()) {
+        if (loadDirectory == null || Files.exists(loadDirectory)) {
             return null;
         }
 
@@ -51,11 +60,25 @@ public class FileService {
         return loadDirectory;
     }
 
-    public static File promptForDirectory() {
+    /**
+     * Shorthand for {@link #promptForDirectory(String)} with "Load directory" in the title.
+     *
+     * @return the chosen directory's path from the prompt
+     * @see #promptForDirectory(String)
+     * @see #promptForLoad(String)
+     */
+    public static Path promptForDirectory() {
         return promptForDirectory(LangService.get("load.directory"));
     }
 
-    static void save(final File configFolder, final List<Configuration> configurations) {
+    /**
+     * Write a list of {@link Configuration}s to a folder.
+     * File names which are not distinct are distinguished by a trailing number.
+     *
+     * @param configFolder   folder to save the configs in
+     * @param configurations list of configurations to save
+     */
+    static void write(final Path configFolder, final List<Configuration> configurations) {
         final HashMap<String, Integer> configurationNumber = new HashMap<>();
 
         configurations.forEach(configuration -> {
@@ -67,22 +90,31 @@ public class FileService {
             }
             configurationNumber.putIfAbsent(fileName, 0);
 
-            final String configFilePath = configFolder.getPath() + File.separator + fileName + ".xml";
-
-            write(new File(configFilePath), configuration.serialize());
+            write(configFolder.resolve(fileName + ".xml"), configuration.serialize());
         });
     }
 
-    public static void write(final File file, final Document document) {
-        try (final FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-            fileOutputStream.write(document.asXML().getBytes());
-            fileOutputStream.flush();
+    /**
+     * Write a xml {@link Document} to a file.
+     *
+     * @param file     the files path
+     * @param document xml document to write
+     */
+    public static void write(final Path file, final Document document) {
+        try {
+            Files.write(file, document.asXML().getBytes());
         } catch (final IOException e) {
-            log.error("Could not serialize document in XML file: " + file.getPath(), e);
+            log.error("Could not serialize document in XML file: " + file.toString(), e);
         }
     }
 
-    public static Document read(final File file) {
+    /**
+     * Read a xml {@link Document} from a file.
+     *
+     * @param file the files path
+     * @return parsed xml document
+     */
+    public static Document read(final Path file) {
         final SAXReader reader = new SAXReader();
         try {
             reader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
@@ -90,49 +122,11 @@ public class FileService {
         }
         Document document = DocumentHelper.createDocument();
         try {
-            document = reader.read(file);
+            document = reader.read(file.toFile());
         } catch (final DocumentException | MalformedURLException e) {
-            log.error("Could not parse XML file: " + file.getPath(), e);
+            log.error("Could not parse XML file: " + file.toString(), e);
         }
         return document;
     }
 
-    static void clearFolder(final File folder) {
-        for (final String configFileName : Objects.requireNonNull(folder).list()) {
-            try {
-                Files.deleteIfExists(Path.of(folder.getPath(), configFileName));
-            } catch (final IOException ignored) {
-            }
-        }
-    }
-
-    static File getFile(final String path) {
-        final File file = new File(path);
-
-        try {
-            if (file.exists() || file.createNewFile()) {
-                return file;
-            }
-        } catch (final IOException e) {
-            log.error("Could not create directory '" + path + "'", e);
-        }
-
-        return null;
-    }
-
-    static File getDir(final String path) {
-        final File file = new File(path);
-
-        if (file.exists() || file.mkdirs()) {
-            return file;
-        }
-
-        EventService.LOG.trigger("Could not create directory " + path);
-        return null;
-    }
-
-
-    private static File getGlobalDir() {
-        return getFile(Main.HOME_PATH);
-    }
 }

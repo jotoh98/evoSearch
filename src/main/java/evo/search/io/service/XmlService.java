@@ -11,7 +11,9 @@ import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.tree.DefaultElement;
 
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -23,19 +25,20 @@ public class XmlService {
     private XmlService() {
     }
 
-
     public static void readProperties(final Element parent, final BiConsumer<String, String> consumer) {
         if (parent == null) {
             return;
         }
-        forEach("property", parent, property -> {
-            final Attribute nameAttribute = property.attribute("name");
-            final Attribute valueAttribute = property.attribute("value");
-            if (nameAttribute != null && valueAttribute != null) {
-                final String value = valueAttribute.getValue();
-                consumer.accept(nameAttribute.getValue(), value.equals("null") ? null : value);
-            }
-        });
+        forEach("property", parent, property -> readProperty(property, consumer));
+    }
+
+    public static void readProperty(final Element property, final BiConsumer<String, String> consumer) {
+        final Attribute nameAttribute = property.attribute("name");
+        final Attribute valueAttribute = property.attribute("value");
+        if (nameAttribute != null && valueAttribute != null) {
+            final String value = valueAttribute.getValue();
+            consumer.accept(nameAttribute.getValue(), value.equals("null") ? null : value);
+        }
     }
 
     public static <T> Element writeProperty(final String name, final T value) {
@@ -104,14 +107,8 @@ public class XmlService {
         list.stream().map(action).forEach(parent::add);
     }
 
-    public static Element writePoint(final String name, final DiscretePoint point) {
-        return new DefaultElement(name)
-                .addAttribute("amount", String.valueOf(point.getPositions()))
-                .addAttribute("position", String.valueOf(point.getPosition()))
-                .addAttribute("distance", String.valueOf(point.getDistance()));
-    }
-
     public static <T> Element simpleElement(final String name, final T content) {
         return new DefaultElement(name).addText(String.valueOf(content));
     }
+
 }

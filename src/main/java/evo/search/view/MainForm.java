@@ -18,13 +18,14 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -58,6 +59,7 @@ public class MainForm extends JFrame {
     private JTable historyTable;
     private JButton stopButton;
     private JScrollPane historyTableScrollPane;
+    private JSplitPane logSplitPane;
     private DefaultTableModel historyTableModel;
 
     private List<DiscreteChromosome> history;
@@ -211,13 +213,14 @@ public class MainForm extends JFrame {
             }
         };
 
-        historyTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(final MouseEvent e) {
-                final int selectedRow = historyTable.getSelectedRow();
-                EventService.REPAINT_CANVAS.trigger(history.get(selectedRow));
-                super.mouseClicked(e);
-            }
+        historyTable.getSelectionModel().addListSelectionListener(e -> {
+            final int selectedRow = historyTable.getSelectedRow();
+            if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return;
+
+            final int index = historyTable.convertRowIndexToModel(selectedRow);
+            if (index < 0 || index >= history.size()) return;
+
+            EventService.REPAINT_CANVAS.trigger(history.get(index));
         });
 
         historyTable.setModel(new DefaultTableModel(new Object[]{"Generation", "Fitness"}, 0));
@@ -229,9 +232,14 @@ public class MainForm extends JFrame {
         sorter.setComparator(1, Comparator.comparingDouble(value -> (double) value));
         historyTable.setRowSorter(sorter);
 
-        historyTableModel.addTableModelListener(e -> historyTable.scrollRectToVisible(
-                historyTable.getCellRect(historyTable.getRowCount() - 1, 0, true)
-        ));
+        historyTableModel.addTableModelListener(e -> {
+            try {
+                historyTable.scrollRectToVisible(
+                        historyTable.getCellRect(historyTable.getRowCount() - 1, 0, true)
+                );
+            } catch (final IndexOutOfBoundsException ignored) {
+            }
+        });
     }
 
     /**

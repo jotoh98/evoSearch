@@ -24,11 +24,11 @@ public class MutatorTableModel extends DefaultTableModel {
     }
 
     /**
-     * Returns false just for the middle name column.
+     * Returns false for the first column.
      *
-     * @param rowIndex    Index of the queried row. Is ignored.
-     * @param columnIndex Index of the column. Not editable is the second column.
-     * @return {@code false} for the middle column, {@code true} for the other columns.
+     * @param rowIndex    index of the queried row (is ignored)
+     * @param columnIndex index of the column
+     * @return {@code false} for the first column, {@code true} for the other columns.
      */
     @Override
     public boolean isCellEditable(final int rowIndex, final int columnIndex) {

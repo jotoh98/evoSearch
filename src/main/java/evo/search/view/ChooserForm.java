@@ -217,7 +217,7 @@ public class ChooserForm extends JFrame {
         listPanel = new JPanel();
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         evoSearchLogo = new JLabel();
-        evoSearchLogo.setIcon(new ImageIcon(new ImageIcon("icon.png").getImage().getScaledInstance(100, 100, Image.SCALE_DEFAULT)));
+        evoSearchLogo.setIcon(new ImageIcon(new ImageIcon("icon.png").getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH)));
     }
 
 }

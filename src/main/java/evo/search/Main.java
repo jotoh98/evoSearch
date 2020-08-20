@@ -2,10 +2,8 @@ package evo.search;
 
 import com.github.weisj.darklaf.LafManager;
 import com.github.weisj.darklaf.theme.DarculaTheme;
-import evo.search.io.service.EventService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.ChooserForm;
-import evo.search.view.ConfigurationDialog;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NonNls;
 
@@ -49,7 +47,7 @@ public class Main {
      * @param args cli and application arguments
      */
     public static void main(final String[] args) {
-        log.info("Starting " + APP_TITLE + "...");
+        System.out.println("Starting " + APP_TITLE + "...");
         ProjectService.setupService();
         setupEnvironment();
         ChooserForm.main(args);

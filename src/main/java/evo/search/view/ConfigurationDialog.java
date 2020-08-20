@@ -382,6 +382,10 @@ public class ConfigurationDialog extends JDialog {
                 .collect(Collectors.toList());
 
         final Project currentProject = ProjectService.getCurrentProject();
+        if (currentProject == null) {
+            EventService.LOG.trigger("Could not save configurations: No project selected.");
+            return;
+        }
         ProjectService.saveConfigurations(new File(currentProject.getPath()), configurations);
         currentProject.setConfigurations(configurations);
         EventService.CONFIGS_CHANGED.trigger(configurations);

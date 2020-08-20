@@ -116,6 +116,7 @@ public class ProjectListItem extends JPanel {
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.WEST;
         panel2.add(nameLabel, gbc);
+        // deepcode ignore Missing~add~javax.swing.JPanel: Panel is spacer
         final JPanel spacer1 = new JPanel();
         spacer1.setOpaque(false);
         gbc = new GridBagConstraints();

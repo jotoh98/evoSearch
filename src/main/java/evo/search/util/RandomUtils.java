@@ -11,15 +11,15 @@ import java.util.Random;
 public class RandomUtils {
 
     /**
-     * Returns a random {@code int} value between {@code min} (inclusive) and {@code max} (inclusive).
+     * Returns a random {@code int} value between {@code min} (inclusive) and {@code max} (exclusive).
      * Utilizes the {@link RandomRegistry} from jenetics for thread-safety.
      *
      * @param min Lower range boundary (inclusive).
-     * @param max Upper range boundary (inclusive).
-     * @return Random {@code int} value between {@code min} (inclusive) and {@code max} (inclusive).
+     * @param max Upper range boundary (exclusive).
+     * @return Random {@code int} value between {@code min} (inclusive) and {@code max} (exclusive).
      */
     public static int inRange(final int min, final int max) {
-        return min + RandomRegistry.random().nextInt(max - 1 - min);
+        return min + RandomRegistry.random().nextInt(max - min);
     }
 
     /**

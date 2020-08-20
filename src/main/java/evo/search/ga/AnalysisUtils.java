@@ -136,7 +136,7 @@ public class AnalysisUtils {
      */
     public static boolean finds(final DiscretePoint point, final DiscretePoint treasure) {
         final boolean distanceEqualOrGreater = point.getDistance() >= treasure.getDistance();
-        final boolean positionEquals = point.getPosition() == point.getPosition();
+        final boolean positionEquals = point.getPosition() == treasure.getPosition();
         return positionEquals && distanceEqualOrGreater;
     }
 

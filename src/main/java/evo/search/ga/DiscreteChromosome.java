@@ -5,8 +5,6 @@ import io.jenetics.Chromosome;
 import io.jenetics.util.ISeq;
 import lombok.Value;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -77,19 +75,23 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
 
     /**
      * {@inheritDoc}
-     * That means, that all distances are distinct and all positions are greater than or equal to zero.
+     * That means, that all distances are distinct (if configured this way) and all positions are greater than or equal to zero.
      */
     @Override
     public boolean isValid() {
-        final List<Double> distinct = Stream.of(genes.toArray(DiscreteGene[]::new))
-                .map(DiscreteGene::getAllele)
-                .map(DiscretePoint::getDistance)
-                .distinct()
-                .collect(Collectors.toList());
+        final boolean noPermutation = configuration.isChooseWithoutPermutation();
+        final boolean distinct = noPermutation ||
+                Stream.of(genes.toArray(DiscreteGene[]::new))
+                        .map(DiscreteGene::getAllele)
+                        .map(DiscretePoint::getDistance)
+                        .distinct().count() == genes.size();
+
 
         final boolean positionsValid = Stream.of(genes.toArray(DiscreteGene[]::new))
-                .allMatch(discreteGene -> discreteGene.getAllele().getPosition() >= 0);
+                .mapToInt(discreteGene -> discreteGene.getAllele().getPosition())
+                .allMatch(position -> position >= 0 && position < configuration.getPositions());
 
-        return distinct.size() == genes.size() && positionsValid;
+        return distinct && positionsValid;
     }
+
 }

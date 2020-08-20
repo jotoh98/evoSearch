@@ -18,14 +18,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -213,14 +209,32 @@ public class MainForm extends JFrame {
             }
         };
 
-        historyTable.getSelectionModel().addListSelectionListener(e -> {
-            final int selectedRow = historyTable.getSelectedRow();
-            if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return;
+        historyTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(final MouseEvent e) {
+                final int selectedRow = historyTable.rowAtPoint(e.getPoint());
+                if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return;
 
-            final int index = historyTable.convertRowIndexToModel(selectedRow);
-            if (index < 0 || index >= history.size()) return;
+                final int index = historyTable.convertRowIndexToModel(selectedRow);
+                if (index < 0 || index >= history.size()) return;
 
-            EventService.REPAINT_CANVAS.trigger(history.get(index));
+                EventService.REPAINT_CANVAS.trigger(history.get(index));
+            }
+        });
+
+        historyTable.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(final KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_DOWN) {
+                    final int selectedRow = historyTable.getSelectedRow();
+                    if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return;
+
+                    final int index = historyTable.convertRowIndexToModel(selectedRow);
+                    if (index < 0 || index >= history.size()) return;
+
+                    EventService.REPAINT_CANVAS.trigger(history.get(index));
+                }
+            }
         });
 
         historyTable.setModel(new DefaultTableModel(new Object[]{"Generation", "Fitness"}, 0));
@@ -266,7 +280,10 @@ public class MainForm extends JFrame {
         startButton.setEnabled(false);
 
         final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
-        final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> historyTableModel.addRow(new Object[]{(int) result.generation(), result.bestFitness()});
+        final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
+            EventService.REPAINT_CANVAS.trigger((DiscreteChromosome) result.bestPhenotype().genotype().chromosome());
+            historyTableModel.addRow(new Object[]{(int) result.generation(), result.bestFitness()});
+        };
 
         CompletableFuture
                 .supplyAsync(() -> {

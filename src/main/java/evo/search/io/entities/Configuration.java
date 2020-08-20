@@ -87,6 +87,13 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
     @Builder.Default
     private int population = 20;
 
+    @Builder.Default
+    private boolean chooseWithoutPermutation = true;
+
+
+    @Builder.Default
+    private double distanceMutationDelta = 1.0;
+
     @Override
     public Configuration clone() {
         try {
@@ -191,6 +198,12 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
                     }
                     setFitness(fitness);
                     break;
+                case "noPermutation":
+                    setChooseWithoutPermutation(Boolean.parseBoolean(value));
+                    break;
+                case "distanceDelta":
+                    setDistanceMutationDelta(Double.parseDouble(value));
+                    break;
             }
         });
 
@@ -252,7 +265,10 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
                 XmlService.writeProperty("offspring", getOffspring()),
                 XmlService.writeProperty("survivors", getSurvivors()),
                 XmlService.writeProperty("population", getPopulation()),
-                XmlService.writeProperty("fitness", getFitness().name())
+                XmlService.writeProperty("fitness", getFitness().name()),
+                XmlService.writeProperty("noPermutation", isChooseWithoutPermutation()),
+                XmlService.writeProperty("distanceDelta", getDistanceMutationDelta())
+
         )
                 .forEach(propertiesElement::add);
 

@@ -15,8 +15,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -26,6 +26,7 @@ import java.util.stream.IntStream;
 
 @Slf4j
 public class ConfigPanel extends JDialog {
+
     private JSpinner limitSpinner;
     private JSpinner positionsSpinner;
     private JTextArea distancesTextArea;
@@ -49,6 +50,9 @@ public class ConfigPanel extends JDialog {
     private Configuration configuration;
     private ConfigurationDialog parent;
     private JComboBox<Evolution.Fitness> fitnessComboBox;
+    private JCheckBox noPermutationCheckbox;
+    private JSlider distanceMutationSlider;
+    private JLabel distanceMutationLabel;
 
     /**
      * Constructs a single configuration panel.
@@ -146,6 +150,8 @@ public class ConfigPanel extends JDialog {
         bindPopulation();
         bindOffspring();
         bindSurvivors();
+        bindPermutationOnly();
+        bindDistanceMutation();
     }
 
     /**
@@ -355,6 +361,11 @@ public class ConfigPanel extends JDialog {
             configuration.setAlterers(getSelectedAlterers());
         });
 
+        mutatorTable.getModel().addTableModelListener(l -> {
+            parent.triggerChange();
+            configuration.setAlterers(getSelectedAlterers());
+        });
+
         final DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(final JTable table, final Object value, final boolean isSelected, final boolean hasFocus, final int row, final int column) {
@@ -362,7 +373,7 @@ public class ConfigPanel extends JDialog {
                 if (isSelected)
                     component.setBackground(new Color(36, 83, 6));
 
-                if(!isSelected || hasFocus)
+                if (!isSelected || hasFocus)
                     component.setBackground(null);
                 return component;
             }
@@ -504,6 +515,28 @@ public class ConfigPanel extends JDialog {
     }
 
     /**
+     * Sets the state for the checkbox regarding the permutation-independence.
+     */
+    private void bindPermutationOnly() {
+        noPermutationCheckbox.setSelected(configuration.isChooseWithoutPermutation());
+        noPermutationCheckbox.addChangeListener(e -> {
+            configuration.setChooseWithoutPermutation(noPermutationCheckbox.isSelected());
+            parent.triggerChange();
+        });
+    }
+
+    private void bindDistanceMutation() {
+        distanceMutationSlider.addChangeListener(e -> {
+            final double value = distanceMutationSlider.getValue() / (double) distanceMutationSlider.getMaximum();
+            distanceMutationLabel.setText(String.format("\u00B1 %.2f", value));
+            parent.triggerChange();
+            configuration.setDistanceMutationDelta(value);
+        });
+
+        distanceMutationSlider.setValue((int) configuration.getDistanceMutationDelta() * distanceMutationSlider.getMaximum());
+    }
+
+    /**
      * Default intellij gui forms method for custom generated components.
      * The {@link #mutatorTable}s selection is limited to the first column and is extending and toggles the selected.
      *
@@ -518,4 +551,5 @@ public class ConfigPanel extends JDialog {
             }
         };
     }
+
 }

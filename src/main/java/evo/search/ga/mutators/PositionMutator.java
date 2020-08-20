@@ -1,7 +1,7 @@
 package evo.search.ga.mutators;
 
 import evo.search.ga.DiscreteGene;
-import evo.search.io.entities.Configuration;
+import evo.search.util.RandomUtils;
 import io.jenetics.Mutator;
 
 import java.util.Random;
@@ -34,9 +34,8 @@ public class PositionMutator extends Mutator<DiscreteGene, Double> implements Di
      */
     @Override
     protected DiscreteGene mutate(final DiscreteGene gene, final Random random) {
-        final Configuration configuration = gene.getConfiguration();
-        final int position = (int) Math.round(random.nextDouble() * configuration.getPositions());
-        return new DiscreteGene(configuration, position, gene.getDistance());
+        final int newPosition = RandomUtils.inRange(0, gene.getConfiguration().getPositions());
+        return new DiscreteGene(gene.getConfiguration(), newPosition, gene.getDistance());
     }
 
 }

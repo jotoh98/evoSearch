@@ -5,10 +5,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public abstract class Experiment {
+
     public static void printProgress(int progress, final int amount) {
         progress = Math.min(amount, progress);
 
-        System.out.println("|" + "-".repeat(progress) + " ".repeat(amount - progress) + "|\r");
+        progress *= 40.0 / amount;
+
+        System.out.print("\b".repeat(44));
+        System.out.print("|" + "#".repeat(progress) + " ".repeat(40 - progress) + "|");
     }
 
     public static File getFile(final String name, final String extension) {
@@ -22,4 +26,5 @@ public abstract class Experiment {
         } else filename += extension;
         return new File(filename);
     }
+
 }

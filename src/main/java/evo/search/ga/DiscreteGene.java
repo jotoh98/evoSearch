@@ -1,20 +1,24 @@
 package evo.search.ga;
 
 import evo.search.io.entities.Configuration;
+import evo.search.util.ListUtils;
+import evo.search.util.RandomUtils;
 import io.jenetics.Gene;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
 /**
  * Discrete genome carrying a {@link DiscretePoint} allele.
  */
-@Value
+@AllArgsConstructor
+@Data
 public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
 
     Configuration configuration;
 
-    int position;
+    private int position;
 
-    double distance;
+    private double distance;
 
     /**
      * {@inheritDoc}
@@ -29,6 +33,9 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
      */
     @Override
     public DiscreteGene newInstance() {
+        final int position = RandomUtils.inRange(0, configuration.getPositions());
+        if (configuration.isChooseWithoutPermutation())
+            return new DiscreteGene(configuration, position, ListUtils.chooseRandom(configuration.getDistances()));
         return new DiscreteGene(configuration, position, distance);
     }
 
@@ -57,4 +64,5 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
     public String toString() {
         return String.format("DiscreteGene{ pos=%d, dist=%s}", position, distance);
     }
+
 }

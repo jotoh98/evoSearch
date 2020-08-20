@@ -33,7 +33,9 @@ public class DistanceMutator extends Mutator<DiscreteGene, Double> implements Di
      */
     @Override
     protected DiscreteGene mutate(final DiscreteGene gene, final Random random) {
-        return new DiscreteGene(gene.getConfiguration(), gene.getPosition(), gene.getDistance() + random.nextDouble() * 2 - 1);
+        final double delta = gene.getConfiguration().getDistanceMutationDelta();
+        final double newDistance = gene.getDistance() + (random.nextDouble() * 2 - 1) * delta;
+        return new DiscreteGene(gene.getConfiguration(), gene.getPosition(), Math.max(0, newDistance));
     }
 
 }

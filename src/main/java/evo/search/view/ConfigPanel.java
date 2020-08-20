@@ -529,11 +529,12 @@ public class ConfigPanel extends JDialog {
         distanceMutationSlider.addChangeListener(e -> {
             final double value = distanceMutationSlider.getValue() / (double) distanceMutationSlider.getMaximum();
             distanceMutationLabel.setText(String.format("\u00B1 %.2f", value));
-            parent.triggerChange();
+            if (parent != null)
+                parent.triggerChange();
             configuration.setDistanceMutationDelta(value);
         });
 
-        distanceMutationSlider.setValue((int) configuration.getDistanceMutationDelta() * distanceMutationSlider.getMaximum());
+        distanceMutationSlider.setValue((int) Math.round(configuration.getDistanceMutationDelta() * distanceMutationSlider.getMaximum()));
     }
 
     /**

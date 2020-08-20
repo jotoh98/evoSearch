@@ -16,6 +16,7 @@ import javax.swing.*;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -30,6 +32,7 @@ import java.util.stream.IntStream;
  * The form holding all the configuration panels and a selection list with their names.
  */
 public class ConfigurationDialog extends JDialog {
+
     /**
      * Root pane.
      */
@@ -157,10 +160,19 @@ public class ConfigurationDialog extends JDialog {
         bindConfigListModel();
         bindConfigListButtons();
 
+        final AtomicBoolean typed = new AtomicBoolean(false);
+
         nameTextField.getDocument().addDocumentListener((DocumentAdapter) e -> {
-            triggerChange();
+            if (typed.get()) triggerChange();
             configChooserList.getSelectedValue().getConfiguration().setName(nameTextField.getText());
             configChooserList.repaint();
+        });
+
+        nameTextField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(final KeyEvent e) {
+                typed.set(true);
+            }
         });
 
         buttonOK.addActionListener(e -> onOK());

@@ -1,6 +1,7 @@
 <p align="center">
-  <img src="https://github.com/jotoh98/evoSearch/workflows/JavaDoc/badge.svg"/>
-  <img src="https://github.com/jotoh98/evoSearch/workflows/Test%20&%20Build%20with%20maven/badge.svg"/>
+  <img src="https://github.com/jotoh98/evoSearch/workflows/JavaDoc/badge.svg" alt="javadoc"/>
+  <img src="https://github.com/jotoh98/evoSearch/workflows/Test%20&%20Build%20with%20maven/badge.svg" alt="maven"/>
+  <img src="https://www.deepcode.ai/api/gh/badge?key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwbGF0Zm9ybTEiOiJnaCIsIm93bmVyMSI6ImpvdG9oOTgiLCJyZXBvMSI6ImV2b1NlYXJjaCIsImluY2x1ZGVMaW50IjpmYWxzZSwiYXV0aG9ySWQiOjE1ODE2LCJpYXQiOjE1OTc5MjMwMzN9.doZjCykUD9Bol5VroHvwzckxC1rk9EMf7uNDSKJ-nlQ" alt="DeepCode badge">
 </p>
 
 <p align="center">

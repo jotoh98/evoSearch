@@ -10,44 +10,99 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.lang.reflect.Method;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+/**
+ * Dialog to shuffle elements with a distance range and amount.
+ *
+ * @param <T> return type of values shuffled by the dialog
+ */
 public class ShuffleDialog<T> extends JDialog {
 
+    /**
+     * Standard minimum distance to shuffle.
+     */
     private static final double MIN_DISTANCE = 1.0;
+
+    /**
+     * Standard maximum distance to shuffle.
+     */
     private static final double MAX_DISTANCE = 9.0;
+
+    /**
+     * Standard amount of shuffled elements.
+     */
     private static final int AMOUNT = 10;
 
     static {
         Main.setupEnvironment();
     }
 
-    private final AtomicBoolean okPressed = new AtomicBoolean(false);
-    private JPanel contentPane;
-    private JButton buttonOK;
-    private JButton buttonCancel;
-    private JSpinner amountSpinner;
-    private JProgressBar shuffleProgressBar;
-    private JFormattedTextField minDistanceTextField;
-    private JFormattedTextField maxDistanceTextField;
+    /**
+     * Shuffle process cancel property.
+     */
     private final AtomicBoolean processCanceled = new AtomicBoolean(false);
+    /**
+     * Root pane of the dialog.
+     */
+    private JPanel contentPane;
+    /**
+     * Button to start shuffling.
+     */
+    private JButton buttonOK;
+    /**
+     * Button to cancel shuffling.
+     */
+    private JButton buttonCancel;
+    /**
+     * Spinner of the shuffle amount property.
+     */
+    private JSpinner amountSpinner;
+    /**
+     * Shuffle progress bar.
+     */
+    private JProgressBar shuffleProgressBar;
+    /**
+     * Input of the minimum distance shuffled.
+     */
+    private JFormattedTextField minDistanceTextField;
+    /**
+     * Input of the maximum distance shuffled.
+     */
+    private JFormattedTextField maxDistanceTextField;
+    /**
+     * Consumer of the shuffled list.
+     */
     @Setter
     private Consumer<List<T>> treasureConsumer = discretePoints -> {
     };
+
+    /**
+     * Completable future of the shuffle process.
+     */
     private CompletableFuture<List<T>> shuffledFuture = null;
+
+    /**
+     * Supplier of random elements with given min and max distance.
+     */
     @Setter
     private BiFunction<Double, Double, T> randomSupplier;
+
+    /**
+     * Positions amount to choose from.
+     */
     @Setter
     private int positions = 2;
 
+    /**
+     * Construct a shuffle dialog.
+     */
     public ShuffleDialog() {
         setContentPane(contentPane);
         setModal(true);
@@ -72,12 +127,20 @@ public class ShuffleDialog<T> extends JDialog {
         pack();
     }
 
+    /**
+     * Testing entry point of the shuffle dialog.
+     *
+     * @param args cli args (ignored)
+     */
     public static void main(final String[] args) {
         final ShuffleDialog<DiscretePoint> dialog = new ShuffleDialog<>();
         dialog.setRandomSupplier(dialog::shuffleTreasures);
         dialog.setVisible(true);
     }
 
+    /**
+     * Shuffle action on button ok click.
+     */
     private void onOK() {
         minDistanceTextField.setEnabled(false);
         maxDistanceTextField.setEnabled(false);
@@ -93,7 +156,6 @@ public class ShuffleDialog<T> extends JDialog {
 
         shuffleProgressBar.setMaximum(amount);
 
-        okPressed.set(true);
         shuffledFuture = CompletableFuture
                 .supplyAsync(() -> {
                     final ArrayList<T> shuffledTreasures = new ArrayList<>();
@@ -107,16 +169,25 @@ public class ShuffleDialog<T> extends JDialog {
         shuffledFuture
                 .exceptionally(throwable -> null)
                 .thenAccept(discretePoints -> {
-                    okPressed.set(false);
                     treasureConsumer.accept(discretePoints);
                     close();
                 });
     }
 
+    /**
+     * Treasure supplier by min and max distance.
+     *
+     * @param minDistance minimum distance for shuffled treasures
+     * @param maxDistance maximum distance for shuffled treasures
+     * @return shuffled treasure discrete point
+     */
     public DiscretePoint shuffleTreasures(final double minDistance, final double maxDistance) {
         return RandomUtils.generatePoint(positions, minDistance, maxDistance);
     }
 
+    /**
+     * Action for cancel button click.
+     */
     private void onCancel() {
         if (shuffledFuture != null) {
             processCanceled.set(true);
@@ -125,13 +196,20 @@ public class ShuffleDialog<T> extends JDialog {
         close();
     }
 
+    /**
+     * Dialog close action.
+     */
     private void close() {
         setVisible(false);
         dispose();
     }
 
+    /**
+     * Custom generated text fields.
+     */
     private void createUIComponents() {
         minDistanceTextField = new JFormattedTextField(new DecimalFormat());
         maxDistanceTextField = new JFormattedTextField(new DecimalFormat());
     }
+
 }

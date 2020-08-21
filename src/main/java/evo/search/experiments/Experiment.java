@@ -4,8 +4,17 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Basic experiment class providing utilities for experiments.
+ */
 public abstract class Experiment {
 
+    /**
+     * Print a progress bar graph to the console.
+     *
+     * @param progress current amount of progress
+     * @param amount   overall amount of work
+     */
     public static void printProgress(int progress, final int amount) {
         progress = Math.min(amount, progress);
 
@@ -15,6 +24,13 @@ public abstract class Experiment {
         System.out.print("|" + "#".repeat(progress) + " ".repeat(40 - progress) + "|");
     }
 
+    /**
+     * Get a distinct file from the file system.
+     *
+     * @param name      name prefix to use
+     * @param extension file extension to use
+     * @return file handler to a distinct file
+     */
     public static File getFile(final String name, final String extension) {
         String filename = name;
         if (Files.exists(Path.of(filename + extension))) {

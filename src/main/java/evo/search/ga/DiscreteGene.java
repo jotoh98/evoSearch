@@ -14,10 +14,27 @@ import lombok.Data;
 @Data
 public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
 
+    /**
+     * Configuration providing context for the gene. Mainly used to calculate the allele.
+     *
+     * @see #getAllele()
+     * @see DiscretePoint#positions
+     */
     Configuration configuration;
 
+    /**
+     * The discrete genes position index. This is the index of the ray the gene's allele will be
+     * sitting on.
+     *
+     * @see DiscretePoint#position
+     */
     private int position;
 
+    /**
+     * The genes distance corresponding the the alleles distance.
+     *
+     * @see DiscretePoint#distance
+     */
     private double distance;
 
     /**

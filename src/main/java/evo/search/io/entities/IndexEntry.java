@@ -9,16 +9,43 @@ import org.dom4j.tree.DefaultElement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Global project register entry used to save registered projects in the file system.
+ */
 @Value
 public class IndexEntry {
 
+    /**
+     * Date format used to display the {@link #lastUsed} property.
+     */
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ISO_DATE_TIME;
 
+    /**
+     * File system path of the project.
+     */
     String path;
+
+    /**
+     * Name of the project.
+     */
     String name;
+
+    /**
+     * Version of the project.
+     */
     String version;
+
+    /**
+     * Time since last project use.
+     */
     LocalDateTime lastUsed;
 
+    /**
+     * Parse an {@link IndexEntry} from an {@link Element}.
+     *
+     * @param element element to parse
+     * @return parsed index entry
+     */
     public static IndexEntry parse(final Element element) {
         final Attribute pathAttribute = element.attribute("path");
         final Attribute nameAttribute = element.attribute("name");
@@ -36,6 +63,11 @@ public class IndexEntry {
         return new IndexEntry(path, name, version, lastUsed);
     }
 
+    /**
+     * Serialize an {@link IndexEntry} to an {@link Element}.
+     *
+     * @return serialized index entry
+     */
     public Element createElement() {
         return new DefaultElement("entry")
                 .addAttribute("path", path)
@@ -44,4 +76,5 @@ public class IndexEntry {
                 .addAttribute("lastUsed", DATE_FORMAT.format(lastUsed));
 
     }
+
 }

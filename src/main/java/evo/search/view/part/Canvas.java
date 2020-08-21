@@ -2,7 +2,6 @@ package evo.search.view.part;
 
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
-import evo.search.util.MathUtils;
 import evo.search.view.render.Ray2D;
 import evo.search.view.render.StringShape;
 import evo.search.view.render.Style;
@@ -51,6 +50,9 @@ public class Canvas extends JPanel {
     @Getter
     private final HashMap<StringShape, Style> strings = new HashMap<>();
 
+    /**
+     * Label to display string data without rendering it on the canvas.
+     */
     @Getter
     final private JLabel popover = new JLabel();
 
@@ -69,20 +71,48 @@ public class Canvas extends JPanel {
         addComponentListener(transformation.getComponentListener(this));
     }
 
+    /**
+     * Generates the listener for the mouses hovering position.
+     * Updates the popovers location and/or displays underlying points in the popover.
+     *
+     * @return mouse motion listener for the popover
+     */
     private MouseMotionListener getHoverListener() {
         return new MouseMotionAdapter() {
 
-            boolean hovered = false;
+            /**
+             * State of whether a point is being hovered.
+             */
+            boolean pointHovered = false;
 
+            /**
+             * Updates the popover's position in placing it at a slightly offset
+             * mouse events (thus cursor) location.
+             *
+             * @param event mouse event to get the position
+             */
             private void updatePopoverLocation(final MouseEvent event) {
                 popover.setLocation(event.getX() + 10, event.getY() - 5);
             }
 
+            /**
+             * {@inheritDoc}
+             * Updates the popover location on drag.
+             *
+             * @param event mouse event to pass through to the update
+             * @see #updatePopoverLocation(MouseEvent)
+             */
             @Override
             public void mouseDragged(final MouseEvent event) {
                 updatePopoverLocation(event);
             }
 
+            /**
+             * Update the point being displayed in the popover (if one exists).
+             * Otherwise, the popover disappears.
+             *
+             * @param event mouse event to get the mouse's position from.
+             */
             @Override
             public void mouseMoved(final MouseEvent event) {
                 final Point2D revertedPosition = transformation.revert(event.getPoint());
@@ -93,7 +123,7 @@ public class Canvas extends JPanel {
                         .min(Comparator.comparingDouble(point -> point.distance(revertedPosition)))
                         .ifPresentOrElse(
                                 point2D -> {
-                                    hovered = true;
+                                    pointHovered = true;
                                     popover.setText(String.format("(%.2f, %.2f)", point2D.getX(), point2D.getY()));
                                     updatePopoverLocation(event);
                                     popover.setVisible(true);
@@ -102,10 +132,8 @@ public class Canvas extends JPanel {
                                 () -> {
                                     popover.setVisible(false);
                                     popover.setText("");
-                                    if (hovered) {
-                                        repaint();
-                                    }
-                                    hovered = false;
+                                    if (pointHovered) repaint();
+                                    pointHovered = false;
                                 }
                         );
             }
@@ -183,7 +211,7 @@ public class Canvas extends JPanel {
     private void render(final Graphics2D graphics2D, final Point2D point2D, final Style style) {
         final double x = point2D.getX();
         final double y = point2D.getY();
-        final float scale = 3/(float) transformation.getScale();
+        final float scale = 3 / (float) transformation.getScale();
         switch (style.getShape()) {
             case DOT:
                 render(graphics2D, new Ellipse2D.Double(x - scale, y - scale, 2 * scale, 2 * scale), style);
@@ -296,15 +324,23 @@ public class Canvas extends JPanel {
         });
     }
 
+    /**
+     * The max distance visible is the maximal distance between the coordinate systems
+     * origin and one of the four canvas boundary edges. This distance is given in a coordinate-
+     * logical/unscaled way.
+     *
+     * @return maximal distance visible by canvas
+     */
     public double getMaxDistanceVisible() {
         return Stream.of(
-                new Point2D.Double(0,0),
-                new Point2D.Double(getWidth(),0),
-                new Point2D.Double(0,getHeight()),
-                new Point2D.Double(getWidth(),getHeight())
+                new Point2D.Double(0, 0),
+                new Point2D.Double(getWidth(), 0),
+                new Point2D.Double(0, getHeight()),
+                new Point2D.Double(getWidth(), getHeight())
         )
                 .mapToDouble(point -> point.distance(transformation.getOffset()))
                 .max()
                 .orElse(0) / transformation.getScale();
     }
+
 }

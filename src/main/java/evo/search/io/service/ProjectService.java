@@ -17,25 +17,60 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
+/**
+ * Project utility service.
+ * Handles current project and the global project registry.
+ */
 @Slf4j
 public class ProjectService {
 
+    /**
+     * Hidden folder name for local project level.
+     */
     public static final String PROJECT_LEVEL_HIDDEN = ".evo";
-    private static final String PROJECT_SETTING = "settings.xml";
-    private static final String WORKSPACE_XML = "workspace.xml";
+    /**
+     * File name for global project registry.
+     */
     private static final String PROJECT_XML = "project.xml";
+    /**
+     * Folder name for saved configurations in the hidden project folder.
+     */
     private static final String CONFIG_FOLDER = "configs";
 
+    /**
+     * Settings file name for the project.
+     */
+    private static final String PROJECT_SETTING = "settings.xml";
+
+    /**
+     * Workspace file name for the project.
+     */
+    private static final String WORKSPACE_XML = "workspace.xml";
+
+    /**
+     * List of registered projects.
+     */
     @Getter
     private static final List<IndexEntry> indexEntries = new ArrayList<>();
 
+    /**
+     * Currently opened project.
+     */
     @Setter
     @Getter
     private static Project currentProject;
 
+    /**
+     * Add a new project to the services index entries.
+     *
+     * @param project project to add
+     */
     public static void addProjectEntry(final Project project) {
         indexEntries.add(new IndexEntry(project.getPath(), project.getName(), project.getVersion(), LocalDateTime.now()));
     }
@@ -72,11 +107,23 @@ public class ProjectService {
         }
     }
 
+    /**
+     * Check, if the global register is set up.
+     *
+     * @return true, if the ".evoSearch" folder exist in user root, false otherwise
+     */
     public static boolean isSetUp() {
         final File configXml = new File(Main.HOME_PATH + File.separator + PROJECT_XML);
         return configXml.exists();
     }
 
+    /**
+     * Load a project from a given directory.
+     * Checks are performed to ensure, that the directory contains a project.
+     *
+     * @param projectDirectory directory with project
+     * @return loaded project if it exists, null otherwise
+     */
     public static Project loadProjectFromDirectory(final Path projectDirectory) {
         if (!Files.exists(projectDirectory)) {
             log.debug("Project file is no directory.");
@@ -112,6 +159,13 @@ public class ProjectService {
         return project;
     }
 
+    /**
+     * Save a list of configurations to a project folder.
+     * Ensures a project is set up in the provided directory and overwrites the old configurations.
+     *
+     * @param projectFolder  directory containing a project
+     * @param configurations configurations to save in the directory
+     */
     public static void saveConfigurations(final File projectFolder, final List<Configuration> configurations) {
         if (!projectFolder.exists()) {
             log.error("Cannot save configurations: Project folder does not exists: {}", projectFolder);
@@ -153,11 +207,21 @@ public class ProjectService {
 
     }
 
+    /**
+     * Save a workspace to the currently opened project.
+     *
+     * @param workspace workspace to save
+     */
     public static void saveProjectWorkspace(final Workspace workspace) {
         final Path workspaceFile = Path.of(currentProject.getPath(), PROJECT_LEVEL_HIDDEN, WORKSPACE_XML);
         FileService.write(workspaceFile, workspace.serialize());
     }
 
+    /**
+     * Load the workspace for the current project.
+     *
+     * @return workspace of the current project, empty workspace if there is no current project
+     */
     public static Workspace loadCurrentWorkspace() {
         if (currentProject == null) return new Workspace();
         final Path workspacePath = Path.of(currentProject.getPath(), PROJECT_LEVEL_HIDDEN, WORKSPACE_XML);
@@ -171,6 +235,12 @@ public class ProjectService {
         return new Workspace();
     }
 
+    /**
+     * Check if the given project is registered in the services list. Checks by equality of paths.
+     *
+     * @param project project to check
+     * @return true if the project's directory exists in the services list, false otherwise
+     */
     public static boolean isProjectRegistered(final Project project) {
         return indexEntries.stream()
                 .map(IndexEntry::getPath)
@@ -178,6 +248,12 @@ public class ProjectService {
                 .anyMatch(path -> path.equals(project.getPath()));
     }
 
+    /**
+     * Check, if the directory contains the hidden ".evo" folder.
+     *
+     * @param file directory to check
+     * @return true if the hidden folder is in the given directory, false otherwise
+     */
     public static boolean containsHidden(final Path file) {
         try {
             return Files.walk(file).anyMatch(path -> path.endsWith(".evo"));
@@ -186,6 +262,9 @@ public class ProjectService {
         return false;
     }
 
+    /**
+     * Set up the global register with no project.
+     */
     public static void setupService() {
         if (!isSetUp()) {
             writeProjectIndex(Collections.emptyList());
@@ -196,6 +275,9 @@ public class ProjectService {
         }
     }
 
+    /**
+     * Read all globally registered projects into the services index entries.
+     */
     public static void readProjectIndex() {
 
         final Path globalPath = Path.of(Main.HOME_PATH, PROJECT_XML);
@@ -207,6 +289,11 @@ public class ProjectService {
         indexEntries.addAll(XmlService.readRegister(parsedDocument));
     }
 
+    /**
+     * Write the given index entries into the global register.
+     *
+     * @param projects projects entries to save
+     */
     public static void writeProjectIndex(final List<IndexEntry> projects) {
 
         final Path projectRegisterPath = Path.of(Main.HOME_PATH, PROJECT_XML);
@@ -218,6 +305,11 @@ public class ProjectService {
         FileService.write(projectRegisterPath, document);
     }
 
+    /**
+     * Save the services index entries into the global register.
+     *
+     * @see #writeProjectIndex(List)
+     */
     public static void saveRegistered() {
         writeProjectIndex(indexEntries);
     }

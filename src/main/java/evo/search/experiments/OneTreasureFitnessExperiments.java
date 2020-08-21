@@ -24,8 +24,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * Test of the {@link Evolution.Fitness#SINGULAR} fitness.
+ */
 public class OneTreasureFitnessExperiments extends Experiment {
 
+    /**
+     * Main test.
+     *
+     * @param args cli args (ignored)
+     */
     public static void main(final String[] args) {
         System.out.println("Beginning with experiment: One Treasure Fitness");
         System.out.println("Shuffle treasures...");

@@ -60,8 +60,20 @@ public class Style {
      * List of point shape styles.
      */
     public enum Shape {
+        /**
+         * Rectangular shape to display a point.
+         */
         RECT,
+
+        /**
+         * Cross shape to display a point.
+         */
         CROSS,
+
+        /**
+         * Dot shape to display a point.
+         */
         DOT
     }
+
 }

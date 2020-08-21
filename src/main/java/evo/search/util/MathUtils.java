@@ -1,9 +1,7 @@
 package evo.search.util;
 
-import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.Set;
 
 /**
  * Math utility function library.
@@ -24,6 +22,15 @@ public class MathUtils {
         return Math.sqrt(distanceA * distanceA + distanceB * distanceB - subtract);
     }
 
+    /**
+     * Calculate the euclidean distance between to points given through their coorindates.
+     *
+     * @param x1 x-coordinate of point one
+     * @param y1 y-coordinate of point one
+     * @param x2 x-coordinate of point two
+     * @param y2 y-coordinate of point two
+     * @return euclidean distance between the points
+     */
     public static double distance(final double x1, final double y1, final double x2, final double y2) {
         return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
     }

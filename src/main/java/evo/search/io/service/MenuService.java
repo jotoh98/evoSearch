@@ -2,16 +2,13 @@ package evo.search.io.service;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.util.function.Consumer;
 
 /**
  * DSL {@link JMenu} and {@link JPopupMenu} service.
  */
 public class MenuService {
-
 
     /**
      * Construct a menu bar with some menus.
@@ -117,7 +114,6 @@ public class MenuService {
         return shortcut(key, false);
     }
 
-
     /**
      * Convert a char to an {@link KeyEvent} keycode.
      *
@@ -136,4 +132,5 @@ public class MenuService {
             return (int) inputChar - 32;
         }
     }
+
 }

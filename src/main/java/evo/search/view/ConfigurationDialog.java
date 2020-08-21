@@ -104,6 +104,9 @@ public class ConfigurationDialog extends JDialog {
      */
     private JPanel listEditBar;
 
+    /**
+     *
+     */
     @Getter
     private JScrollPane configScrollWrapper;
 

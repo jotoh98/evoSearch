@@ -1,15 +1,21 @@
 package evo.search.ga;
 
 import evo.search.io.entities.Configuration;
+import io.jenetics.Chromosome;
 import io.jenetics.util.ISeq;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+/**
+ * Tests for the {@link AnalysisUtils} utilities.
+ */
 class AnalysisUtilsTest {
 
-
+    /**
+     * Test for the {@link AnalysisUtils#fill(Chromosome)} method.
+     */
     @Test
     void fillsChromosome() {
 
@@ -31,18 +37,30 @@ class AnalysisUtilsTest {
         }
     }
 
+    /**
+     * Test for the {@link AnalysisUtils#areaInSector(double, double, int)} method.
+     * Tests standard functionality.
+     */
     @Test
     void triangleArea() {
         final double area = AnalysisUtils.areaInSector(1, 1, 4);
         Assertions.assertEquals(area, .5);
     }
 
+    /**
+     * Test for the {@link AnalysisUtils#areaInSector(double, double, int)} method.
+     * Tests empty area functionality.
+     */
     @Test
     void emptyTriangleArea() {
         final double area = AnalysisUtils.areaInSector(1, 0, 10);
         Assertions.assertEquals(area, 0);
     }
 
+    /**
+     * Test for the {@link AnalysisUtils#inBetween(DiscretePoint, DiscretePoint)} method.
+     * Tests if the list is empty, because the points are opposed.
+     */
     @Test
     void emptyBetweenOpposing() {
         final int size = AnalysisUtils
@@ -51,6 +69,10 @@ class AnalysisUtilsTest {
         Assertions.assertEquals(size, 0);
     }
 
+    /**
+     * Test for the {@link AnalysisUtils#inBetween(DiscretePoint, DiscretePoint)} method.
+     * Tests if the list is empty, because the points are opposed, although they're neighbours.
+     */
     @Test
     void emptyBetweenNeighbors() {
         final int size = AnalysisUtils
@@ -59,6 +81,10 @@ class AnalysisUtilsTest {
         Assertions.assertEquals(size, 0);
     }
 
+    /**
+     * Test for the {@link AnalysisUtils#inBetween(DiscretePoint, DiscretePoint)} method.
+     * Tests if a filled-in points is correct.
+     */
     @Test
     void inBetweenDistanceCorrect() {
         final double distance = AnalysisUtils
@@ -68,6 +94,10 @@ class AnalysisUtilsTest {
         Assertions.assertEquals(distance, Math.sqrt(2) / 2);
     }
 
+    /**
+     * Test for the {@link AnalysisUtils#areaCovered(List)} method.
+     * Tests, if the area is calculated correctly.
+     */
     @Test
     void areaMaximised() {
         final double quarter = AnalysisUtils.areaCovered(List.of(new DiscretePoint(4, 0, 1), new DiscretePoint(4, 1, 1)));
@@ -81,4 +111,5 @@ class AnalysisUtilsTest {
         Assertions.assertEquals(maximisedQuarter, 2);
         Assertions.assertTrue(maximisedQuarter < better);
     }
+
 }

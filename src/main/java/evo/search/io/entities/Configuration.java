@@ -3,6 +3,7 @@ package evo.search.io.entities;
 import evo.search.Evolution;
 import evo.search.Main;
 import evo.search.ga.DiscreteChromosome;
+import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.ga.mutators.SwapGeneMutator;
@@ -67,9 +68,17 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
     @Builder.Default
     private List<DiscretePoint> treasures = new ArrayList<>();
 
+    /**
+     * Fitness method used to evaluate the individuals.
+     *
+     * @see Evolution.Fitness
+     */
     @Builder.Default
     private Evolution.Fitness fitness = Evolution.Fitness.getDefault();
 
+    /**
+     * List of alterers used during the {@link Evolution}'s mutation phase.
+     */
     @Builder.Default
     private List<? extends DiscreteAlterer> alterers = new ArrayList<>(
             Arrays.asList(
@@ -78,30 +87,50 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
             )
     );
 
+    /**
+     * Amount of offspring individuals.
+     * Has to be less or equal than {@link #population}.
+     */
     @Builder.Default
     private int offspring = 15;
 
+    /**
+     * Amount of surviving individuals.
+     * Has to be less or equal than {@link #population}.
+     */
     @Builder.Default
     private int survivors = 10;
 
+    /**
+     * Population size.
+     */
     @Builder.Default
     private int population = 20;
 
+    /**
+     * State of whether to choose the distances in a permutation
+     * during the shuffle of new individuals.
+     *
+     * @see DiscreteGene#newInstance()
+     */
     @Builder.Default
     private boolean chooseWithoutPermutation = true;
 
+    /**
+     * Value of maximum distance change during the mutation.
+     *
+     * @see evo.search.ga.mutators.DistanceMutator
+     */
     @Builder.Default
     private double distanceMutationDelta = 1.0;
 
-    @Override
-    public Configuration clone() {
-        try {
-            return (Configuration) super.clone();
-        } catch (final CloneNotSupportedException e) {
-            throw new RuntimeException("Configuration could not be cloned", e);
-        }
-    }
-
+    /**
+     * Parse a {@link DiscreteAlterer} from an {@link Element}.
+     *
+     * @param element element containing the discrete alterer
+     * @return parsed discrete alterer
+     * @see #parse(Document)
+     */
     private static DiscreteAlterer parseAlterer(final Element element) {
         final Attribute methodAttribute = element.attribute("method");
         final Attribute probabilityAttribute = element.attribute("probability");
@@ -127,6 +156,13 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
         return null;
     }
 
+    /**
+     * Parse a treasure-{@link DiscretePoint} from an {@link Element}.
+     *
+     * @param element element containing the discrete alterer
+     * @return parsed treasure point
+     * @see #parse(Document)
+     */
     private static DiscretePoint parseTreasure(final Element element) {
         final Attribute amountPositions = element.attribute("amount");
         final Attribute positionAttribute = element.attribute("position");
@@ -145,13 +181,13 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
         }
     }
 
-    private static Element writeTreasure(final DiscretePoint point) {
-        return new DefaultElement("treasure")
-                .addAttribute("amount", String.valueOf(point.getPositions()))
-                .addAttribute("position", String.valueOf(point.getPosition()))
-                .addAttribute("distance", String.valueOf(point.getDistance()));
-    }
-
+    /**
+     * Write a {@link DiscreteAlterer} to an {@link Element}.
+     *
+     * @param alterer discrete alterer to serialize
+     * @return element of serialized discrete alterer
+     * @see #serialize()
+     */
     private static Element writeAlterer(final DiscreteAlterer alterer) {
         double probability = .5;
         if (alterer instanceof AbstractAlterer) {
@@ -160,6 +196,29 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
         return new DefaultElement("alterer")
                 .addAttribute("method", alterer.getClass().getName())
                 .addAttribute("probability", Double.toString(probability));
+    }
+
+    /**
+     * Write a {@link DiscretePoint} to an {@link Element}.
+     *
+     * @param point treasure point to serialize
+     * @return element of serialized treasure point
+     * @see #serialize()
+     */
+    private static Element writeTreasure(final DiscretePoint point) {
+        return new DefaultElement("treasure")
+                .addAttribute("amount", String.valueOf(point.getPositions()))
+                .addAttribute("position", String.valueOf(point.getPosition()))
+                .addAttribute("distance", String.valueOf(point.getDistance()));
+    }
+
+    @Override
+    public Configuration clone() {
+        try {
+            return (Configuration) super.clone();
+        } catch (final CloneNotSupportedException e) {
+            throw new RuntimeException("Configuration could not be cloned", e);
+        }
     }
 
     @Override

@@ -17,15 +17,47 @@ import java.time.LocalDateTime;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
+/**
+ * Project display for the {@link evo.search.view.ChooserForm}.
+ */
 public class ProjectListItem extends JPanel {
-    private JButton deleteButton;
-    private final boolean exists;
-    private JLabel versionLabel;
-    private JLabel pathLabel;
+
+    /**
+     * Index entry displayed in the item.
+     */
     private final IndexEntry entry;
+
+    /**
+     * State whether the register entry actually exists in the file system.
+     */
+    private final boolean exists;
+
+    /**
+     * Item and entry deletion button.
+     */
+    private JButton deleteButton;
+
+    /**
+     * Label to display the project's version.
+     */
+    private JLabel versionLabel;
+
+    /**
+     * Label to display the project's path.
+     */
+    private JLabel pathLabel;
+
+    /**
+     * Label to display the project's name.
+     */
     @Getter
     private JLabel nameLabel;
 
+    /**
+     * Create a project list item from an index entry.
+     *
+     * @param indexEntry index entry to display
+     */
     public ProjectListItem(final IndexEntry indexEntry) {
         setupUI();
         entry = indexEntry;
@@ -72,6 +104,11 @@ public class ProjectListItem extends JPanel {
         setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
     }
 
+    /**
+     * Test program entry point.
+     *
+     * @param args cli args (ignored)
+     */
     public static void main(final String[] args) {
         Main.setupEnvironment();
         final ProjectListItem projectListItem = new ProjectListItem(new IndexEntry("0.0.1", "/jotoh/usr/lol", "Untitled Project 1", LocalDateTime.now()));
@@ -84,10 +121,20 @@ public class ProjectListItem extends JPanel {
         jFrame.setVisible(true);
     }
 
+    /**
+     * Bind a given deletion event listener to the delete button.
+     *
+     * @param actionListener deletion event listener
+     */
     public void bindDeleteEvent(final ActionListener actionListener) {
         deleteButton.addActionListener(actionListener);
     }
 
+    /**
+     * Bind a given selection event listener to the click event of the item.
+     *
+     * @param actionListener selection event listener
+     */
     public void bindSelectionEvent(final Consumer<IndexEntry> projectSelection) {
         addMouseListener(new MouseAdapter() {
             @Override
@@ -97,6 +144,9 @@ public class ProjectListItem extends JPanel {
         });
     }
 
+    /**
+     * Set up the ui for the list item.
+     */
     private void setupUI() {
         setLayout(new GridLayoutManager(1, 2, new Insets(3, 8, 3, 8), 0, 0));
         setOpaque(true);

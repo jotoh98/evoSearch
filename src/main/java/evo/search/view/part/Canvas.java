@@ -2,6 +2,7 @@ package evo.search.view.part;
 
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
+import evo.search.ga.DiscretePoint;
 import evo.search.view.render.Ray2D;
 import evo.search.view.render.StringShape;
 import evo.search.view.render.Style;
@@ -18,6 +19,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.geom.*;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -257,12 +259,7 @@ public class Canvas extends JPanel {
             }
         }
 
-        chromosome.getConfiguration().getTreasures().forEach(
-                treasure -> enqueue(
-                        treasure.toPoint2D(),
-                        Style.builder().shape(Style.Shape.CROSS).color(Color.RED).build()
-                )
-        );
+        renderTreasures(chromosome.getConfiguration().getTreasures());
     }
 
     /**
@@ -282,6 +279,17 @@ public class Canvas extends JPanel {
                             .build()
             );
         }
+    }
+
+    /**
+     * Render the treasure points as red crosses.
+     *
+     * @param treasures list of treasure points
+     */
+    public void renderTreasures(final List<DiscretePoint> treasures) {
+        treasures.forEach(treasure -> enqueue(
+                treasure.toPoint2D(),
+                Style.builder().color(Color.RED).shape(Style.Shape.CROSS).build()));
     }
 
     /**

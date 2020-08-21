@@ -221,6 +221,10 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
         }
     }
 
+    public void repair() {
+        //TODO: repair method, set treasure positions to position in config
+    }
+
     @Override
     public Configuration parse(final Document document) {
         final Element rootElement = document.getRootElement();

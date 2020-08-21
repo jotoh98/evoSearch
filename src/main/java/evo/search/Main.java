@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NonNls;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
+import java.nio.file.Path;
 
 /**
  * Main class.
@@ -39,7 +39,7 @@ public class Main {
     /**
      * Home path of the system wide configuration files.
      */
-    public static final String HOME_PATH = System.getProperty("user.home") + File.separator + ".evoSearch";
+    public static final Path HOME_PATH = Path.of(System.getProperty("user.home"), ".evoSearch");
 
     /**
      * Main application method.

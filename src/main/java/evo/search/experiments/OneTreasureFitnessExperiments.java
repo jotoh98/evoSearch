@@ -13,9 +13,10 @@ import evo.search.util.ListUtils;
 import evo.search.util.RandomUtils;
 import io.jenetics.util.RandomRegistry;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -44,13 +45,12 @@ public class OneTreasureFitnessExperiments extends Experiment {
         else
             filename = "experiment";
 
-        try (final FileOutputStream outputStream = new FileOutputStream(getFile(filename, ".csv"))) {
+        try (final OutputStream outputStream = Files.newOutputStream(uniquePath(filename, ".csv"))) {
 
             final int positions = 4;
             final int limit = 1000;
 
             final DiscretePoint treasure = RandomUtils.generatePoint(positions, 5, 10);
-
 
             final List<Double> distances = ListUtils.generate(14,
                     () -> RandomUtils.inRange(treasure.getDistance() - 5, treasure.getDistance() + 5)

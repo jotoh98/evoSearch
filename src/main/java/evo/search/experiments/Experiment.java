@@ -1,12 +1,15 @@
 package evo.search.experiments;
 
-import java.io.File;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
  * Basic experiment class providing utilities for experiments.
  */
+@Slf4j
 public abstract class Experiment {
 
     /**
@@ -27,20 +30,23 @@ public abstract class Experiment {
     /**
      * Get a distinct file from the file system.
      *
-     * @param name      name prefix to use
-     * @param extension file extension to use
+     * @param name name prefix to use
+     * @param ext  file extension to use
      * @return file handler to a distinct file
      */
-    public static File getFile(final String name, final String extension) {
+    public static Path uniquePath(final String name, final String ext) {
         String filename = name;
-        if (Files.exists(Path.of(filename + extension))) {
-            int i = 0;
-            String formatted;
-            while (Files.exists(Path.of(formatted = String.format("%s-%d%s", filename, i, extension))))
-                i++;
-            filename = formatted;
-        } else filename += extension;
-        return new File(filename);
+        try {
+            final long count = Files.walk(Path.of("")).filter(
+                    path -> path.getFileName().toString().matches(name + "-\\d+" + ext)
+            ).count();
+            if (count > 0)
+                filename += "-" + count;
+        } catch (final IOException e) {
+            log.error("Could not find a unique path for " + name + ext, e);
+            System.exit(1);
+        }
+        return Path.of(filename + ext);
     }
 
 }

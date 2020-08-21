@@ -82,7 +82,7 @@ public class ProjectService {
      * @param project project to save
      */
     public static void setupNewProject(final Path folder, final Project project) {
-        if (folder == null || !Files.exists(folder)) {
+        if (folder == null || Files.notExists(folder)) {
             log.error("Project destination is no directory.");
             return;
         }
@@ -113,8 +113,7 @@ public class ProjectService {
      * @return true, if the ".evoSearch" folder exist in user root, false otherwise
      */
     public static boolean isSetUp() {
-        final File configXml = new File(Main.HOME_PATH + File.separator + PROJECT_XML);
-        return configXml.exists();
+        return Files.exists(Main.HOME_PATH.resolve(PROJECT_XML));
     }
 
     /**
@@ -125,12 +124,12 @@ public class ProjectService {
      * @return loaded project if it exists, null otherwise
      */
     public static Project loadProjectFromDirectory(final Path projectDirectory) {
-        if (!Files.exists(projectDirectory)) {
+        if (Files.notExists(projectDirectory)) {
             log.debug("Project file is no directory.");
             return null;
         }
         final Path hiddenPath = projectDirectory.resolve(PROJECT_LEVEL_HIDDEN);
-        if (!Files.exists(hiddenPath)) {
+        if (Files.notExists(hiddenPath)) {
             log.error("No " + PROJECT_LEVEL_HIDDEN + " file found.");
             return null;
         }
@@ -174,7 +173,7 @@ public class ProjectService {
         }
 
         final Path hiddenPath = projectFolder.toPath().resolve(PROJECT_LEVEL_HIDDEN);
-        if (!Files.exists(hiddenPath)) {
+        if (Files.notExists(hiddenPath)) {
             try {
                 Files.createDirectory(hiddenPath);
             } catch (final IOException e) {
@@ -185,7 +184,7 @@ public class ProjectService {
 
         final Path configFolder = hiddenPath.resolve(CONFIG_FOLDER);
 
-        if (!Files.isDirectory(configFolder)) {
+        if (Files.notExists(configFolder)) {
             try {
                 Files.createDirectory(configFolder);
             } catch (final IOException e) {
@@ -279,9 +278,8 @@ public class ProjectService {
      * Read all globally registered projects into the services index entries.
      */
     public static void readProjectIndex() {
-
-        final Path globalPath = Path.of(Main.HOME_PATH, PROJECT_XML);
-        if (!Files.exists(globalPath)) {
+        final Path globalPath = Main.HOME_PATH.resolve(PROJECT_XML);
+        if (Files.notExists(globalPath)) {
             log.error("Not able to get globally registered projects.");
             return;
         }
@@ -295,9 +293,8 @@ public class ProjectService {
      * @param projects projects entries to save
      */
     public static void writeProjectIndex(final List<IndexEntry> projects) {
-
-        final Path projectRegisterPath = Path.of(Main.HOME_PATH, PROJECT_XML);
-        if (!Files.exists(projectRegisterPath)) {
+        final Path projectRegisterPath = Main.HOME_PATH.resolve(PROJECT_XML);
+        if (Files.notExists(projectRegisterPath)) {
             log.error("Not able to get globally registered projects.");
             return;
         }

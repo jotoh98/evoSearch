@@ -272,8 +272,8 @@ public class Canvas extends JPanel {
      */
     public void renderRays(final int amount) {
         for (int position = 0; position < amount; position++) {
-            final int x = (int) Math.round(Math.cos(position / (double) amount * 2 * Math.PI) * 100);
-            final int y = (int) Math.round(Math.sin(position / (double) amount * 2 * Math.PI) * 100);
+            final double x = Math.cos(position / (double) amount * 2 * Math.PI);
+            final double y = Math.sin(position / (double) amount * 2 * Math.PI);
             enqueue(
                     new Ray2D(0, 0, x, y),
                     Style.builder()

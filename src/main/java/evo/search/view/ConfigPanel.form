@@ -2,7 +2,7 @@
 <form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="evo.search.view.ConfigPanel">
   <grid id="76446" binding="rootPanel" layout-manager="GridBagLayout">
     <constraints>
-      <xy x="48" y="54" width="1823" height="524"/>
+      <xy x="48" y="54" width="1823" height="635"/>
     </constraints>
     <properties/>
     <border type="none"/>
@@ -314,6 +314,8 @@
               <enabled value="false"/>
               <focusable value="false"/>
               <lineWrap value="true"/>
+              <preferredSize width="10" height="34"/>
+              <rows value="2"/>
               <text resource-bundle="lang" key="description.permutate.only"/>
               <wrapStyleWord value="true"/>
             </properties>
@@ -347,7 +349,7 @@
               <gridbag weightx="0.0" weighty="0.0"/>
             </constraints>
             <properties>
-              <text value="Distanz-Mutation"/>
+              <text resource-bundle="lang" key="distance.mutation"/>
             </properties>
           </component>
           <component id="88b87" class="javax.swing.JLabel" binding="distanceMutationLabel">

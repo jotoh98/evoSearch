@@ -77,7 +77,7 @@ public class Evolution implements Runnable {
      * Evolution abort flag.
      */
     @Setter
-    private boolean aborted = false;
+    private boolean aborted;
 
     /**
      * Execute an evolution
@@ -263,15 +263,6 @@ public class Evolution implements Runnable {
          * Fitness method used in the evolution stream.
          */
         private final BiFunction<Evolution, DiscreteChromosome, Double> method;
-
-        /**
-         * Retrieve the default value, also for unknown identifiers.
-         *
-         * @return default fitness method
-         */
-        public static Fitness getDefault() {
-            return MAX_AREA;
-        }
 
         /**
          * Standard getter for the list of available fitness methods.

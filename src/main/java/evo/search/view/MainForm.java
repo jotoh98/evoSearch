@@ -159,9 +159,7 @@ public class MainForm extends JFrame {
 
         configComboModel.addAll(project.getConfigurations());
 
-        configComboModel.addSelectionListener(index -> {
-            workspace.setSelectedConfiguration(index);
-        });
+        configComboModel.addSelectionListener(index -> workspace.setSelectedConfiguration(index));
 
         EventService.CONFIGS_CHANGED.addListener(changedConfigurations -> {
             final Object selectedItem = configComboModel.getSelectedItem();

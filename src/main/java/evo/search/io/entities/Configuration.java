@@ -74,7 +74,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
      * @see Evolution.Fitness
      */
     @Builder.Default
-    private Evolution.Fitness fitness = Evolution.Fitness.getDefault();
+    private Evolution.Fitness fitness = Evolution.Fitness.MAX_AREA;
 
     /**
      * List of alterers used during the {@link Evolution}'s mutation phase.
@@ -257,7 +257,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
                     try {
                         fitness = Evolution.Fitness.valueOf(value);
                     } catch (final IllegalArgumentException ignored) {
-                        fitness = Evolution.Fitness.getDefault();
+                        fitness = Evolution.Fitness.MAX_AREA;
                     }
                     setFitness(fitness);
                     break;

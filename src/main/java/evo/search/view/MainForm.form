@@ -76,7 +76,6 @@
             <properties>
               <columns value="10"/>
               <opaque value="false"/>
-              <text value="ProjectName"/>
               <visible value="true"/>
             </properties>
           </component>

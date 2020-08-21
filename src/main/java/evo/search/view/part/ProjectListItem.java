@@ -28,11 +28,6 @@ public class ProjectListItem extends JPanel {
     private final IndexEntry entry;
 
     /**
-     * State whether the register entry actually exists in the file system.
-     */
-    private final boolean exists;
-
-    /**
      * Item and entry deletion button.
      */
     private JButton deleteButton;
@@ -65,7 +60,7 @@ public class ProjectListItem extends JPanel {
         versionLabel.setText(entry.getVersion());
         pathLabel.setText(entry.getPath());
 
-        exists = Files.exists(Path.of(indexEntry.getPath()));
+        final boolean exists = Files.exists(Path.of(indexEntry.getPath()));
 
         deleteButton.setIcon(UIManager.getIcon("TextField.search.clear.icon"));
         deleteButton.setVisible(false);

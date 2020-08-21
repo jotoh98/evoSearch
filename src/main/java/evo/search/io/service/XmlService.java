@@ -100,9 +100,11 @@ public class XmlService {
      * @param action consumer of the children
      */
     public static void forEach(final String name, final Element parent, final Consumer<Element> action) {
-        final Iterator<Element> elementIterator = Objects.requireNonNull(parent).elementIterator(name);
+        final Iterator<?> elementIterator = Objects.requireNonNull(parent).elementIterator(name);
         if (elementIterator != null) {
-            elementIterator.forEachRemaining(action);
+            elementIterator.forEachRemaining(o -> {
+                if (o instanceof Element) action.accept((Element) o);
+            });
         }
     }
 

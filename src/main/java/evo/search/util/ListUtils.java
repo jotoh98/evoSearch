@@ -105,7 +105,7 @@ public class ListUtils {
         final List<List<T>> ret = new ArrayList<>();
         final int N = matrix.get(0).size();
         for (int i = 0; i < N; i++) {
-            final List<T> col = new ArrayList<T>();
+            final List<T> col = new ArrayList<>();
             for (final List<T> row : matrix) {
                 col.add(row.get(i));
             }

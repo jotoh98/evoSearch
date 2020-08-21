@@ -9,6 +9,7 @@ import org.dom4j.Element;
 import org.dom4j.tree.DefaultElement;
 
 import java.awt.*;
+import java.util.Iterator;
 
 /**
  * The window workspace used to preserve the projects windows locations and settings.
@@ -143,7 +144,9 @@ public class Workspace implements XmlEntity<Workspace> {
         final Element rootElement = document.getRootElement();
         if (rootElement == null) return workspace;
 
-        rootElement.elementIterator().forEachRemaining(object -> {
+        final Iterator<?> iterator = rootElement.elementIterator();
+
+        iterator.forEachRemaining(object -> {
             if (object instanceof Element) {
                 final Element element = (Element) object;
                 switch (element.getName()) {

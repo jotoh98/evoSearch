@@ -82,27 +82,6 @@ public class Workspace implements XmlEntity<Workspace> {
     }
 
     /**
-     * Serialize the workspace to a xml {@link Document}.
-     * The root element is named <em>workspace</em>.
-     *
-     * @return serialized xml document from this workspace
-     */
-    @Override
-    public Document serialize() {
-        final Element workspace = new DefaultElement("workspace");
-
-        workspace.add(serialize("mainLocation", mainLocation));
-        workspace.add(serialize("mainSize", mainSize));
-        workspace.add(XmlService.writeProperty("configSelected", selectedConfiguration));
-        workspace.add(XmlService.writeProperty("logDivider", logDividerLocation));
-        workspace.add(XmlService.writeProperty("mainDivider", mainDividerLocation));
-        workspace.add(serialize("configLocation", configLocation));
-        workspace.add(serialize("configSize", configSize));
-
-        return DocumentHelper.createDocument(workspace);
-    }
-
-    /**
      * Parse a {@link Point} from a {@link Element}.
      *
      * @param element element to parse
@@ -128,6 +107,27 @@ public class Workspace implements XmlEntity<Workspace> {
         final int width = wAttr == null ? 0 : Integer.parseInt(wAttr.getValue());
         final int height = hAttr == null ? 0 : Integer.parseInt(hAttr.getValue());
         return new Dimension(width, height);
+    }
+
+    /**
+     * Serialize the workspace to a xml {@link Document}.
+     * The root element is named <em>workspace</em>.
+     *
+     * @return serialized xml document from this workspace
+     */
+    @Override
+    public Document serialize() {
+        final Element workspace = new DefaultElement("workspace");
+
+        workspace.add(serialize("mainLocation", mainLocation));
+        workspace.add(serialize("mainSize", mainSize));
+        workspace.add(XmlService.writeProperty("configSelected", selectedConfiguration));
+        workspace.add(XmlService.writeProperty("logDivider", logDividerLocation));
+        workspace.add(XmlService.writeProperty("mainDivider", mainDividerLocation));
+        workspace.add(serialize("configLocation", configLocation));
+        workspace.add(serialize("configSize", configSize));
+
+        return DocumentHelper.createDocument(workspace);
     }
 
     /**

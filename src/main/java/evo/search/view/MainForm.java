@@ -24,12 +24,10 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -40,34 +38,101 @@ import java.util.function.Consumer;
 @Getter
 public class MainForm extends JFrame {
 
-    private JPanel rootPanel;
-    private JPanel toolbar;
-    private JProgressBar progressBar;
-    private JLabel logLabel;
-    private JTabbedPane configTabs;
-    private final List<Configuration> configurations = new ArrayList<>();
-    private JSplitPane mainSplit;
-    private Canvas canvas;
-    private JPanel bottomBar;
-    private JTextArea textArea1;
+    /**
+     * Combo box model for the configurations combo box.
+     */
     private final ConfigComboModel configComboModel = new ConfigComboModel();
-    private JButton startButton;
-    private JComboBox<Object> configComboBox;
-    private JButton addFirstConfigButton;
-    private JLabel versionLabel;
-    private JTextField nameField;
-    private JTable historyTable;
-    private JButton stopButton;
-    private JScrollPane historyTableScrollPane;
-    private JSplitPane logSplitPane;
-    private DefaultTableModel historyTableModel;
-
-    private List<DiscreteChromosome> history;
-
-    private Evolution evolution;
-
+    /**
+     * List of registered configurations.
+     */
+    private final List<Configuration> configurations = new ArrayList<>();
+    /**
+     * Current project for this form.
+     */
     private final Project project = ProjectService.getCurrentProject();
-
+    /**
+     * Main forms root panel.
+     */
+    private JPanel rootPanel;
+    /**
+     * Top toolbar pane.
+     */
+    private JPanel toolbar;
+    /**
+     * Label to display the projects version.
+     */
+    private JLabel versionLabel;
+    /**
+     * Text field to display/change the projects name.
+     */
+    private JTextField nameField;
+    /**
+     * First config button. Displayed if no configuration is registered yet.
+     */
+    private JButton addFirstConfigButton;
+    /**
+     * Combo box with configurations to choose.
+     */
+    private JComboBox<Object> configComboBox;
+    /**
+     * Evolution start button.
+     */
+    private JButton startButton;
+    /**
+     * Evolution stop button.
+     */
+    private JButton stopButton;
+    /**
+     * Vertical split pane dividing the upper widget/canvas and the lower logging area.
+     */
+    private JSplitPane logSplitPane;
+    /**
+     * Horizontal split pane containing the canvas and widget tab pane.
+     */
+    private JSplitPane mainSplit;
+    /**
+     * Left widget tab pane
+     */
+    private JTabbedPane widgetTabs;
+    /**
+     * Table displaying the evolutions best individuals and fitness per generation.
+     */
+    private JTable historyTable;
+    /**
+     * Table model of the history table.
+     */
+    private DefaultTableModel historyTableModel;
+    /**
+     * The canvas displaying individuals.
+     */
+    private Canvas canvas;
+    /**
+     * Big log text pane.
+     */
+    private JTextArea logTextPane;
+    /**
+     * Lower fixed toolbar.
+     */
+    private JPanel bottomBar;
+    /**
+     * Small log label.
+     */
+    private JLabel logLabel;
+    /**
+     * Evolution progress bar.
+     */
+    private JProgressBar progressBar;
+    /**
+     * History of best individuals.
+     */
+    private List<DiscreteChromosome> history;
+    /**
+     * Instantiated evolution generating the history.
+     */
+    private Evolution evolution;
+    /**
+     * Workspace configuration for this forms window.
+     */
     @Setter
     private Workspace workspace = new Workspace();
 
@@ -141,6 +206,11 @@ public class MainForm extends JFrame {
         );
     }
 
+    /**
+     * Bind the configuration combo boxes empty state.
+     * If the list of configs is empty, the combo box is replaced by the button
+     * to add the first configuration.
+     */
     public void updateConfigListView() {
         final boolean listEmpty = configComboModel.getSize() == 1;
         configComboBox.setVisible(!listEmpty);
@@ -176,6 +246,9 @@ public class MainForm extends JFrame {
         setVisible(true);
     }
 
+    /**
+     * Add window listeners to update the workspace properties.
+     */
     private void setWindowListeners() {
         addWindowListener(new WindowAdapter() {
             @Override
@@ -203,6 +276,9 @@ public class MainForm extends JFrame {
 
     }
 
+    /**
+     * Set up the windows menu bar with shortcuts.
+     */
     private void setupMenuBar() {
         setMenuBar(MenuService.menuBar(
                 MenuService.menu(
@@ -237,7 +313,7 @@ public class MainForm extends JFrame {
                 string -> getLogLabel().setText(string)
         );
         EventService.LOG.addListener(
-                message -> textArea1.append(message + "\n")
+                message -> logTextPane.append(message + "\n")
         );
         EventService.REPAINT_CANVAS.addListener(chromosome -> {
             canvas.clear();
@@ -245,9 +321,11 @@ public class MainForm extends JFrame {
         });
     }
 
+    /**
+     * Custom create the history table's component and bind its behaviours.
+     */
     public void createUIComponents() {
 
-        historyTableScrollPane = new JScrollPane();
         historyTable = new JTable() {
             @Override
             public boolean isCellEditable(final int row, final int column) {
@@ -307,8 +385,8 @@ public class MainForm extends JFrame {
 
         clearHistory();
 
-        getProgressBar().setMaximum(selectedConfiguration.getLimit());
-        getProgressBar().setVisible(true);
+        progressBar.setMaximum(selectedConfiguration.getLimit());
+        progressBar.setVisible(true);
         stopButton.setEnabled(true);
         startButton.setEnabled(false);
 

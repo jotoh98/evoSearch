@@ -15,6 +15,9 @@ import java.util.stream.Stream;
 @Value
 public class DiscreteChromosome implements Chromosome<DiscreteGene> {
 
+    /**
+     * Configuration providing context about the chromosome.
+     */
     Configuration configuration;
 
     /**
@@ -25,7 +28,8 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene> {
     /**
      * Generate a new {@link DiscreteChromosome} from the given sequence of genes.
      *
-     * @param genes sequence of genes to copy into the new instance
+     * @param configuration configuration for context actions
+     * @param genes         sequence of genes to copy into the new instance
      * @return a chromosome with the given sequence of genes
      */
     public static DiscreteChromosome of(final Configuration configuration, final ISeq<DiscreteGene> genes) {

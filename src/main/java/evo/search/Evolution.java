@@ -229,9 +229,34 @@ public class Evolution implements Runnable {
     @Getter
     @AllArgsConstructor
     public enum Fitness {
+        /**
+         * The singular method computes the fitness based on the competitive ratio of
+         * finding one distinct treasure point.
+         *
+         * @see #fitnessSingular(Chromosome)
+         */
         SINGULAR(Evolution::fitnessSingular),
+        /**
+         * The multi method computes the fitness based on the competitive ratio of
+         * finding a set of distinct treasure points.
+         *
+         * @see #fitnessMulti(Chromosome)
+         */
         MULTI(Evolution::fitnessMulti),
+        /**
+         * The worst case method computes the fitness based on the maximum length over all
+         * points to find their worst-case treasure (when the treasure is just an epsilon further
+         * away from the origin than the point).
+         *
+         * @see #fitnessWorstCase(Chromosome)
+         */
         WORST_CASE(Evolution::fitnessWorstCase),
+        /**
+         * The max area method computes the fitness based on the competitive ratio of explored space
+         * divided by the path's length.
+         *
+         * @see #fitnessMaximisingArea(Chromosome)
+         */
         MAX_AREA(Evolution::fitnessMaximisingArea);
 
         /**

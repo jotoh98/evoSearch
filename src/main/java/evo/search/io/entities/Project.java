@@ -12,14 +12,32 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Project entity to be saved in the file system.
+ */
 @Slf4j
 @Data
 @RequiredArgsConstructor
 public class Project implements XmlEntity<Project> {
+
+    /**
+     * Projects version number for file compatibility.
+     */
     String version;
+
+    /**
+     * Projects file system path.
+     */
     String path;
+
+    /**
+     * Projects name.
+     */
     String name;
 
+    /**
+     * List of projects registered configurations.
+     */
     List<Configuration> configurations = new ArrayList<>();
 
     @Override
@@ -49,4 +67,5 @@ public class Project implements XmlEntity<Project> {
         });
         return this;
     }
+
 }

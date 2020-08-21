@@ -112,4 +112,5 @@ public class DiscretePoint implements Cloneable {
         position = other.position;
         other.position = temp;
     }
+
 }

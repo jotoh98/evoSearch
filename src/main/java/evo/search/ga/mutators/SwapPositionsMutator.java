@@ -61,4 +61,5 @@ public class SwapPositionsMutator extends SwapMutator<DiscreteGene, Double> impl
     protected void swapPositions(final MSeq<DiscreteGene> mSeq, final int a, final int b) {
         mSeq.get(a).getAllele().swapDistances(mSeq.get(b).getAllele());
     }
+
 }

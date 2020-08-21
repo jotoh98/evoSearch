@@ -24,39 +24,141 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * This panel manages all the inputs to change the configurations properties.
+ * The {@link ConfigurationDialog} holds one panel per {@link Configuration}.
+ */
 @Slf4j
 public class ConfigPanel extends JDialog {
 
-    private JSpinner limitSpinner;
-    private JSpinner positionsSpinner;
-    private JTextArea distancesTextArea;
-    private JTextArea treasuresTextArea;
-    private JTable mutatorTable;
-    private JScrollPane mutatorScrollPane;
-    private JSpinner populationSpinner;
-    private JSpinner offspringSpinner;
-    private JSpinner survivorsSpinner;
-    private final DefaultComboBoxModel<Evolution.Fitness> fitnessListModel = new DefaultComboBoxModel<>();
+    /**
+     * Table model of the mutators table.
+     *
+     * @see MutatorTableModel
+     */
     private final MutatorTableModel mutatorTableModel = new MutatorTableModel();
+    /**
+     * List model of the fitness method selection.
+     */
+    private final DefaultComboBoxModel<Evolution.Fitness> fitnessListModel = new DefaultComboBoxModel<>();
+    /**
+     * Root panel of this config panel.
+     */
     @Getter
     private JPanel rootPanel;
+    /**
+     * Spinner input for the limit of generations.
+     */
+    private JSpinner limitSpinner;
+    /**
+     * Spinner input for the amount of rays.
+     */
+    private JSpinner positionsSpinner;
+    /**
+     * Text area for the distances.
+     */
+    private JTextArea distancesTextArea;
+    /**
+     * Text area for the treasure points.
+     */
+    private JTextArea treasuresTextArea;
+    /**
+     * Table for the mutators.
+     * Handles selection input (which mutators are selected) and their probability.
+     */
+    private JTable mutatorTable;
+    /**
+     * Scroll pane holding the {@link #mutatorTable}. Propagates the scroll to the {@link ConfigurationDialog} scroll pane.
+     *
+     * @see #propagateScroll(JScrollPane)
+     */
+    private JScrollPane mutatorScrollPane;
+    /**
+     * Spinner input for the population size.
+     */
+    private JSpinner populationSpinner;
+    /**
+     * Spinner input for the amount of offspring individuals.
+     */
+    private JSpinner offspringSpinner;
+    /**
+     * Spinner input for the amount of survivor individuals.
+     */
+    private JSpinner survivorsSpinner;
+    /**
+     * Scroll pane wrapping the {@link #distancesTextArea}. Propagates the scroll to the {@link ConfigurationDialog} scroll pane.
+     *
+     * @see #propagateScroll(JScrollPane)
+     */
     private JScrollPane distancesScrollPane;
+    /**
+     * Scroll pane wrapping the {@link #treasuresTextArea}. Propagates the scroll to the {@link ConfigurationDialog} scroll pane.
+     *
+     * @see #propagateScroll(JScrollPane)
+     */
     private JScrollPane treasuresScrollPane;
+    /**
+     * Button to shuffle a new list of treasures.
+     *
+     * @see ShuffleDialog
+     */
     private JButton shuffleTreasuresButton;
-    private JButton shuffleDistancesButton;
-    private JButton permutateDistancesButton;
+    /**
+     * Button to shuffle the list of treasures.
+     */
     private JButton permutateTreasuresButton;
+    /**
+     * Button to shuffle a new list of distances.
+     *
+     * @see ShuffleDialog
+     */
+    private JButton shuffleDistancesButton;
+    /**
+     * Button to shuffle the list of distances.
+     */
+    private JButton permutateDistancesButton;
+    /**
+     * Configuration associated with this config panel. The bindings of the inputs correspond with this instance.
+     * To preserve the old configuration in a case of dismissed changes, this instance is a clone of the original,
+     * file system persistent configuration.
+     */
     @Getter
     private Configuration configuration;
+    /**
+     * Parent dialog of this panel. Used for naming bindings and change triggers.
+     *
+     * @see ConfigurationDialog#triggerChange()
+     */
     private ConfigurationDialog parent;
+    /**
+     * Combo box for the fitness method selection.
+     */
     private JComboBox<Evolution.Fitness> fitnessComboBox;
+    /**
+     * Checkbox for the choose distance without permutation property.
+     *
+     * @see Configuration#setChooseWithoutPermutation(boolean)
+     */
     private JCheckBox noPermutationCheckbox;
+
+    /**
+     * Slider for the maximum value of distance mutation.
+     * The distances can be mutated adding or subtracting a certain value times a random number between 1 and 0.
+     *
+     * @see evo.search.ga.mutators.DistanceMutator
+     */
     private JSlider distanceMutationSlider;
+
+    /**
+     * Label displaying the value inside of the {@link #distanceMutationSlider}.
+     */
     private JLabel distanceMutationLabel;
 
     /**
      * Constructs a single configuration panel.
-     * Inserts default values.
+     * Binds the configuration to the inputs and inserts default values.
+     *
+     * @param configuration configuration displayed in this panel
      */
     public ConfigPanel(final Configuration configuration) {
         setModal(true);
@@ -151,7 +253,7 @@ public class ConfigPanel extends JDialog {
         bindOffspring();
         bindSurvivors();
         bindPermutationOnly();
-        bindDistanceMutation();
+        bindDistanceMutationDelta();
     }
 
     /**
@@ -344,6 +446,10 @@ public class ConfigPanel extends JDialog {
         bindSpinner(limitSpinner, configuration.getLimit(), configuration::setLimit);
     }
 
+    /**
+     * Bind the mutator tables selection and probability values
+     * to the list of mutators in the configuration.
+     */
     private void bindMutators() {
 
         mutatorTable.getSelectionModel().setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
@@ -525,7 +631,13 @@ public class ConfigPanel extends JDialog {
         });
     }
 
-    private void bindDistanceMutation() {
+    /**
+     * Bind the checkbox value of the {@link #distanceMutationSlider} to the configuration and
+     * the {@link #distanceMutationLabel}'s text value.
+     * The slider returns an {@code int} value between 0 and 100 so it is normalized to a {@code double}
+     * value between 0 and 1.
+     */
+    private void bindDistanceMutationDelta() {
         distanceMutationSlider.addChangeListener(e -> {
             final double value = distanceMutationSlider.getValue() / (double) distanceMutationSlider.getMaximum();
             distanceMutationLabel.setText(String.format("\u00B1 %.2f", value));

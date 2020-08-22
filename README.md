@@ -2,6 +2,8 @@
   <img src="https://github.com/jotoh98/evoSearch/workflows/JavaDoc/badge.svg" alt="javadoc"/>
   <img src="https://github.com/jotoh98/evoSearch/workflows/Test%20&%20Build%20with%20maven/badge.svg" alt="maven"/>
   <img src="https://www.deepcode.ai/api/gh/badge?key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwbGF0Zm9ybTEiOiJnaCIsIm93bmVyMSI6ImpvdG9oOTgiLCJyZXBvMSI6ImV2b1NlYXJjaCIsImluY2x1ZGVMaW50IjpmYWxzZSwiYXV0aG9ySWQiOjE1ODE2LCJpYXQiOjE1OTc5MjMwMzN9.doZjCykUD9Bol5VroHvwzckxC1rk9EMf7uNDSKJ-nlQ" alt="DeepCode badge">
+  <a href="https://codeclimate.com/github/jotoh98/evoSearch/maintainability"><img src="https://api.codeclimate.com/v1/badges/ea7ba5c93c9ea92de1aa/maintainability" /></a>
+  <a href="https://codeclimate.com/github/jotoh98/evoSearch/test_coverage"><img src="https://api.codeclimate.com/v1/badges/ea7ba5c93c9ea92de1aa/test_coverage" /></a>
 </p>
 
 <p align="center">

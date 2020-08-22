@@ -318,7 +318,7 @@ public class ConfigPanel extends JDialog {
             try {
                 final int position = Integer.parseInt(matcher.group(1));
                 final double distance = Double.parseDouble(matcher.group(2));
-                treasures.add(new DiscretePoint(0, position, distance));
+                treasures.add(new DiscretePoint(configuration.getPositions(), position, distance));
             } catch (final NumberFormatException ignored) {
             }
         }

@@ -163,16 +163,15 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
      * @return parsed treasure point
      * @see #parse(Document)
      */
-    private static DiscretePoint parseTreasure(final Element element) {
-        final Attribute amountPositions = element.attribute("amount");
+    private DiscretePoint parseTreasure(final Element element) {
         final Attribute positionAttribute = element.attribute("position");
         final Attribute distanceAttribute = element.attribute("distance");
-        if (positionAttribute == null || distanceAttribute == null || amountPositions == null) {
+        if (positionAttribute == null || distanceAttribute == null) {
             return null;
         }
         try {
             return new DiscretePoint(
-                    Integer.parseInt(amountPositions.getValue()),
+                    positions,
                     Integer.parseInt(positionAttribute.getValue()),
                     Double.parseDouble(distanceAttribute.getValue())
             );
@@ -207,7 +206,6 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
      */
     private static Element writeTreasure(final DiscretePoint point) {
         return new DefaultElement("treasure")
-                .addAttribute("amount", String.valueOf(point.getPositions()))
                 .addAttribute("position", String.valueOf(point.getPosition()))
                 .addAttribute("distance", String.valueOf(point.getDistance()));
     }
@@ -276,9 +274,8 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
             final ArrayList<DiscretePoint> treasures = new ArrayList<>();
             XmlService.forEach("treasure", treasuresElement, element -> {
                 final DiscretePoint discretePoint = parseTreasure(element);
-                if (discretePoint != null) {
+                if (discretePoint != null)
                     treasures.add(discretePoint);
-                }
             });
             setTreasures(treasures);
         }

@@ -24,6 +24,7 @@ public interface DiscreteAlterer extends Alterer<DiscreteGene, Double> {
         return List.of(
                 SwapGeneMutator.class,
                 SwapPositionsMutator.class,
+                SwapDistanceMutator.class,
                 DistanceMutator.class,
                 PositionMutator.class
         );

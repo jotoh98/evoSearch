@@ -91,26 +91,4 @@ public class DiscretePoint implements Cloneable {
         return distance * distance;
     }
 
-    /**
-     * Swap the distance with another {@link DiscretePoint}.
-     *
-     * @param other Other {@link DiscretePoint} to swap the distance with.
-     */
-    public void swapDistances(final DiscretePoint other) {
-        final double temp = this.distance;
-        distance = other.distance;
-        other.distance = temp;
-    }
-
-    /**
-     * Swap the position with another {@link DiscretePoint}.
-     *
-     * @param other Other {@link DiscretePoint} to swap the position with.
-     */
-    public void swapPositions(final DiscretePoint other) {
-        final int temp = position;
-        position = other.position;
-        other.position = temp;
-    }
-
 }

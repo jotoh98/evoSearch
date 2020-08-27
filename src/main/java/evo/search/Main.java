@@ -2,6 +2,7 @@ package evo.search;
 
 import com.github.weisj.darklaf.LafManager;
 import com.github.weisj.darklaf.theme.DarculaTheme;
+import evo.search.experiments.Experiment;
 import evo.search.io.service.ProjectService;
 import evo.search.view.ChooserForm;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,7 @@ import org.jetbrains.annotations.NonNls;
 import javax.swing.*;
 import java.awt.*;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 /**
  * Main class.
@@ -48,9 +50,28 @@ public class Main {
      */
     public static void main(final String[] args) {
         System.out.println("Starting " + APP_TITLE + "...");
+        if (args.length > 0 && args[0].equals("experiment")) {
+            if (args.length < 2) {
+                System.err.println("No experiment chosen.");
+                System.exit(1);
+            }
+            startExperiment(args[1], Arrays.copyOfRange(args, 2, args.length));
+            return;
+        }
         ProjectService.setupService();
         setupEnvironment();
         ChooserForm.main(args);
+    }
+
+    private static void startExperiment(final String name, final String[] args) {
+        try {
+            final Experiment experiment = (Experiment) Class.forName("evo.search.experiments." + name).getDeclaredConstructor().newInstance();
+            experiment.accept(args);
+        } catch (final ClassNotFoundException | ClassCastException e) {
+            System.err.println("Experiment class '" + name + "' could not be found");
+        } catch (final ReflectiveOperationException e) {
+            System.err.println("Experiment start failed: " + e.getMessage());
+        }
     }
 
     /**

@@ -1,15 +1,7 @@
 package evo.search.ga.mutators;
 
 import evo.search.ga.DiscreteGene;
-import evo.search.ga.DiscretePoint;
-import io.jenetics.Chromosome;
-import io.jenetics.MutatorResult;
-import io.jenetics.SwapMutator;
 import io.jenetics.util.MSeq;
-
-import java.util.Random;
-
-import static io.jenetics.internal.math.Randoms.indexes;
 
 /**
  * Mutator which swaps whole the positions between {@link DiscreteGene}s.

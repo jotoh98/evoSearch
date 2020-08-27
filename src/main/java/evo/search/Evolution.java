@@ -71,7 +71,7 @@ public class Evolution implements Runnable {
      */
     @Getter
     @Setter(AccessLevel.NONE)
-    private List<DiscreteChromosome> history;
+    private List<EvolutionResult<DiscreteGene, Double>> history;
 
     /**
      * Evolution abort flag.
@@ -129,14 +129,21 @@ public class Evolution implements Runnable {
                 .limit(configuration.getLimit())
                 .peek(historyConsumer)
                 .peek(result -> {
-                    final DiscreteChromosome bestChromosome = (DiscreteChromosome) result
-                            .bestPhenotype()
-                            .genotype()
-                            .chromosome();
-                    history.add(bestChromosome);
+                    history.add(result);
                     progressConsumer.accept(progressCounter.incrementAndGet());
                 })
                 .collect(EvolutionResult.toBestGenotype());
+    }
+
+    public List<DiscreteChromosome> getHistoryOfBestPhenotype() {
+        return history.stream()
+                .map(result ->
+                        (DiscreteChromosome) result
+                                .bestPhenotype()
+                                .genotype()
+                                .chromosome()
+                )
+                .collect(Collectors.toList());
     }
 
     /**

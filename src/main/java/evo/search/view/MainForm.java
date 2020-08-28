@@ -293,6 +293,19 @@ public class MainForm extends JFrame {
                         )
                 ),
                 MenuService.menu(
+                        "Edit",
+                        MenuService.item(
+                                "Copy",
+                                actionEvent -> onCopyChromosome(),
+                                MenuService.shortcut('c')
+                        ),
+                        MenuService.item(
+                                "Paste",
+                                actionEvent -> onPaste(),
+                                MenuService.shortcut('v')
+                        )
+                ),
+                MenuService.menu(
                         LangService.get("configuration"),
                         MenuService.item(
                                 "Edit",
@@ -337,13 +350,9 @@ public class MainForm extends JFrame {
         };
 
         historyTable.getSelectionModel().addListSelectionListener(e -> {
-            final int selectedRow = historyTable.getSelectedRow();
-            if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return;
-
-            final int index = historyTable.convertRowIndexToModel(selectedRow);
-            if (index < 0 || index >= history.size()) return;
-
-            EventService.REPAINT_CANVAS.trigger(history.get(index));
+            final DiscreteChromosome chromosome = getSelectedChromosome();
+            if (chromosome != null)
+                EventService.REPAINT_CANVAS.trigger(chromosome);
         });
 
         historyTable.setModel(new DefaultTableModel(new Object[]{"Generation", "Fitness"}, 0));
@@ -363,6 +372,26 @@ public class MainForm extends JFrame {
             } catch (final IndexOutOfBoundsException ignored) {
             }
         });
+
+        historyTable.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyTyped(final KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_PASTE)
+                    System.out.println("Paste");
+                if (e.getKeyCode() == KeyEvent.VK_COPY)
+                    onCopyChromosome();
+            }
+        });
+        //TODO: fix copy/paste listener
+    }
+
+    private DiscreteChromosome getSelectedChromosome() {
+        final int selectedRow = historyTable.getSelectedRow();
+        if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return null;
+
+        final int index = historyTable.convertRowIndexToModel(selectedRow);
+        if (index < 0 || index >= history.size()) return null;
+        return history.get(index);
     }
 
     /**
@@ -428,6 +457,19 @@ public class MainForm extends JFrame {
     private void onAbort() {
         if (evolution != null)
             evolution.setAborted(true);
+    }
+
+    private void onCopyChromosome() {
+        final DiscreteChromosome chromosome = getSelectedChromosome();
+        if (chromosome == null) return;
+        final ShareDialog shareDialog = new ShareDialog();
+        shareDialog.share(chromosome);
+        shareDialog.showDialog();
+    }
+
+    private void onPaste() {
+        //TODO:paste with parser
+        JOptionPane.showMessageDialog(this, "Paste action");
     }
 
     /**

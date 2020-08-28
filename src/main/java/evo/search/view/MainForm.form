@@ -75,6 +75,8 @@
             </constraints>
             <properties>
               <columns value="10"/>
+              <editable value="false"/>
+              <enabled value="false"/>
               <opaque value="false"/>
               <visible value="true"/>
             </properties>

@@ -15,7 +15,6 @@ import io.jenetics.util.RandomRegistry;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,22 +27,18 @@ import java.util.stream.IntStream;
 /**
  * Test of the {@link Evolution.Fitness#SINGULAR} fitness.
  */
-public class OneTreasureFitnessExperiments extends Experiment {
+public class OneTreasureFitnessExperiment extends Experiment {
 
     /**
      * Main test.
      *
      * @param args cli args (ignored)
      */
-    public static void main(final String[] args) {
+    public void accept(final String[] args) {
         System.out.println("Beginning with experiment: One Treasure Fitness");
         System.out.println("Shuffle treasures...");
 
-        final String filename;
-        if (args.length > 0)
-            filename = args[0].replaceFirst(".\\w+$", "");
-        else
-            filename = "experiment";
+        final String filename = parseFileName(args);
 
         try (final OutputStream outputStream = Files.newOutputStream(uniquePath(filename, ".csv"))) {
 
@@ -83,6 +78,7 @@ public class OneTreasureFitnessExperiments extends Experiment {
                                             new DistanceMutator(0.01),
                                             new PositionMutator(0.015)
                                     ))
+                                    .fitness(Evolution.Fitness.SINGULAR)
                                     .treasures(List.of(treasure))
                                     .build()
                             )
@@ -102,7 +98,7 @@ public class OneTreasureFitnessExperiments extends Experiment {
             CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenRun(() -> {
 
 
-                try (final CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(outputStream), ',', ' ', '"', "\n")) {
+                try (final CSVWriter csvWriter = createCSVWriter(outputStream)) {
 
                     final List<List<String>> collected = futures.stream()
                             .map(CompletableFuture::join)

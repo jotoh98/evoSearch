@@ -131,4 +131,23 @@ public class ListUtils {
                 .orElse("");
     }
 
+    /**
+     * Calculates the variance for a list of numbers.
+     *
+     * @param list list of numbers
+     * @return variance of the values
+     */
+    public static double variance(final List<? extends Number> list) {
+        final double mean = list.stream()
+                .map(Number::doubleValue)
+                .reduce(0d, Double::sum) / list.size();
+        final double sum = list
+                .stream()
+                .map(Number::doubleValue)
+                .mapToDouble(x -> x - mean)
+                .map(x -> x * x)
+                .reduce(0, Double::sum);
+        return sum / list.size();
+    }
+
 }

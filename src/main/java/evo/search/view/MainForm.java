@@ -433,7 +433,7 @@ public class MainForm extends JFrame {
 
                     evolution.run();
 
-                    history = evolution.getHistory();
+                    history = evolution.getHistoryOfBestPhenotype();
 
                     return (DiscreteChromosome) evolution.getResult().chromosome();
                 })

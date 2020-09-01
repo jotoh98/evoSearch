@@ -36,9 +36,24 @@ public class FileService {
         final FileDialog fileDialog = new FileDialog(parent, title, FileDialog.LOAD);
         fileDialog.setVisible(true);
         final String fileName = fileDialog.getFile();
-        if (fileName == null) {
+        if (fileName == null)
             return null;
-        }
+        return Path.of(fileDialog.getDirectory(), fileName);
+    }
+
+    /**
+     * Prompt the user for a file save path.
+     *
+     * @param title the prompts title
+     * @return the chosen file's path from the prompt
+     */
+    public static Path promptForSave(final String title, final String extension) {
+        final FileDialog fileDialog = new FileDialog((Dialog) null, title, FileDialog.SAVE);
+        fileDialog.setFile("Untitled" + extension);
+        fileDialog.setVisible(true);
+        final String fileName = fileDialog.getFile();
+        if (fileName == null)
+            return null;
         return Path.of(fileDialog.getDirectory(), fileName);
     }
 

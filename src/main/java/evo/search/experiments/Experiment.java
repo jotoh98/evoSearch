@@ -6,13 +6,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Basic experiment class providing utilities for experiments.
@@ -69,31 +64,11 @@ public abstract class Experiment implements Consumer<String[]> {
     }
 
     /**
-     * Get a distinct file from the file system.
+     * Create the standard formatted csv output writer.
      *
-     * @param name name prefix to use
-     * @param ext  file extension to use
-     * @return file handler to a distinct file
+     * @param outputStream output stream for the csv writer
+     * @return standard formatted csv output writer
      */
-    public static Path uniquePath(final String name, final String ext) {
-        Path candidate = Path.of(name + ext);
-        int count = 0;
-        while (Files.exists(candidate))
-            candidate = Paths.get(String.format("%s-%d%s", name, ++count, ext));
-        return candidate;
-    }
-
-    public static <T> CompletableFuture<Void> joinFutures(final List<CompletableFuture<T>> futures, final Consumer<List<T>> consumer) {
-        return CompletableFuture
-                .allOf(futures.toArray(CompletableFuture[]::new))
-                .thenRun(() -> {
-                    final List<T> results = futures.stream()
-                            .map(CompletableFuture::join)
-                            .collect(Collectors.toList());
-                    consumer.accept(results);
-                });
-    }
-
     @NotNull CSVWriter createCSVWriter(final OutputStream outputStream) {
         return new CSVWriter(new OutputStreamWriter(outputStream), ',', ' ', '"', "\n");
     }

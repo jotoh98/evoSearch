@@ -3,6 +3,7 @@ package evo.search.view.part;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
+import evo.search.io.entities.Configuration;
 import evo.search.view.render.Ray2D;
 import evo.search.view.render.StringShape;
 import evo.search.view.render.Style;
@@ -235,7 +236,11 @@ public class Canvas extends JPanel {
      * @param chromosome chromosome to render
      */
     public void render(final DiscreteChromosome chromosome) {
-        final int availablePosition = chromosome.getConfiguration().getPositions();
+        final Configuration configuration = chromosome.getConfiguration();
+
+        if (configuration == null) return;
+
+        final int availablePosition = configuration.getPositions();
 
         renderRays(availablePosition);
 
@@ -259,7 +264,7 @@ public class Canvas extends JPanel {
             }
         }
 
-        renderTreasures(chromosome.getConfiguration().getTreasures());
+        renderTreasures(configuration.getTreasures());
     }
 
     /**

@@ -9,6 +9,7 @@ import evo.search.ga.mutators.PositionMutator;
 import evo.search.ga.mutators.SwapGeneMutator;
 import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
+import evo.search.io.service.FileService;
 import evo.search.util.ListUtils;
 import evo.search.util.RandomUtils;
 import io.jenetics.util.RandomRegistry;
@@ -40,7 +41,7 @@ public class OneTreasureFitnessExperiment extends Experiment {
 
         final String filename = parseFileName(args);
 
-        try (final OutputStream outputStream = Files.newOutputStream(uniquePath(filename, ".csv"))) {
+        try (final OutputStream outputStream = Files.newOutputStream(FileService.uniquePath(filename, ".csv"))) {
 
             final int positions = 4;
             final int limit = 1000;

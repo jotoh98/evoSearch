@@ -6,6 +6,7 @@ import evo.search.ga.DiscreteGene;
 import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.*;
 import evo.search.io.entities.Configuration;
+import evo.search.io.service.FileService;
 import evo.search.util.ListUtils;
 import evo.search.util.RandomUtils;
 import io.jenetics.engine.EvolutionResult;
@@ -73,7 +74,7 @@ public class MultiTreasureFitnessExperiment extends Experiment {
 
         System.out.println("Starting " + getClass().getSimpleName());
 
-        try (final OutputStream outputStream = Files.newOutputStream(uniquePath(fileName, ".csv"))) {
+        try (final OutputStream outputStream = Files.newOutputStream(FileService.uniquePath(fileName, ".csv"))) {
 
 
             try (final CSVWriter writer = createCSVWriter(outputStream)) {

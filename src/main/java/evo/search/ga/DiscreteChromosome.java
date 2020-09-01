@@ -5,6 +5,7 @@ import io.jenetics.Chromosome;
 import io.jenetics.util.ISeq;
 import lombok.Value;
 
+import java.io.Serializable;
 import java.util.stream.Stream;
 
 /**
@@ -13,12 +14,12 @@ import java.util.stream.Stream;
  * associated with valid positional indices.
  */
 @Value
-public class DiscreteChromosome implements Chromosome<DiscreteGene> {
+public class DiscreteChromosome implements Chromosome<DiscreteGene>, Serializable {
 
     /**
      * Configuration providing context about the chromosome.
      */
-    Configuration configuration;
+    transient Configuration configuration;
 
     /**
      * Sequence of {@link DiscreteGene}s forming the chromosome.

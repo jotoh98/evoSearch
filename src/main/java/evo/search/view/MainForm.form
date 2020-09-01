@@ -217,6 +217,26 @@
                           </scrollpane>
                         </children>
                       </grid>
+                      <grid id="e5509" layout-manager="GridBagLayout">
+                        <constraints>
+                          <tabbedpane title="Runs"/>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <component id="e1afb" class="javax.swing.JList" binding="savedEvolutionsList">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="2" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <preferred-size width="150" height="50"/>
+                              </grid>
+                              <gridbag weightx="1.0" weighty="1.0"/>
+                            </constraints>
+                            <properties>
+                              <selectionMode value="0"/>
+                            </properties>
+                          </component>
+                        </children>
+                      </grid>
                     </children>
                   </tabbedpane>
                   <component id="da274" class="evo.search.view.part.Canvas" binding="canvas">

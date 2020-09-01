@@ -5,10 +5,7 @@ import io.jenetics.util.RandomRegistry;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -16,6 +13,22 @@ import java.util.stream.IntStream;
  * List utility methods.
  */
 public class ListUtils {
+
+    /**
+     * Reduce function to connect two strings via a space character.
+     */
+    public static final BinaryOperator<String> REDUCE_WITH_SPACE = separator(" ");
+
+    /**
+     * Returns a binary string reducing operator concatenating a stream of strings
+     * with a given separator.
+     *
+     * @param separator separator to place between each pair of strings
+     * @return concatenated string of the streams string separated by the given separator
+     */
+    public static BinaryOperator<String> separator(final String separator) {
+        return (s1, s2) -> s1 + separator + s2;
+    }
 
     /**
      * Generate a {@link List} with a given length through a supplier.

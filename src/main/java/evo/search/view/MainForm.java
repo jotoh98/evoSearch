@@ -24,6 +24,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -123,6 +124,10 @@ public class MainForm extends JFrame {
      */
     private JProgressBar progressBar;
     /**
+     * List to display all saved evolutions.
+     */
+    private JList<Path> savedEvolutionsList;
+    /**
      * History of best individuals.
      */
     private List<DiscreteChromosome> history;
@@ -202,6 +207,39 @@ public class MainForm extends JFrame {
         logSplitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY,
                 l -> workspace.setLogDividerLocation(logSplitPane.getDividerLocation())
         );
+
+        savedEvolutionSetup();
+    }
+
+    /**
+     * Load and setup the list of saved evolutions.
+     */
+    private void savedEvolutionSetup() {
+        savedEvolutionsList.setCellRenderer(new DarkDefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index, final boolean isSelected, final boolean cellHasFocus) {
+                final String name = ((Path) value).getFileName().toString();
+                return super.getListCellRendererComponent(list, name.replace(".evolution", ""), index, isSelected, cellHasFocus);
+            }
+        });
+        final DefaultListModel<Path> model = new DefaultListModel<>();
+        savedEvolutionsList.setModel(model);
+
+        savedEvolutionsList.addListSelectionListener(e -> {
+            final Path selectedPath = savedEvolutionsList.getSelectedValue();
+            if (selectedPath == null) return;
+
+            //TODO: consider https://stackoverflow.com/questions/14113644/java-global-reusable-loading-dialog
+            CompletableFuture.supplyAsync(() -> ProjectService.readEvolution(selectedPath))
+                    .thenAccept(evolution -> {
+                        this.evolution = evolution;
+                        this.history = evolution.getHistoryOfBestPhenotype();
+                        EventService.REPAINT_CANVAS.trigger(this.history.get(this.history.size() - 1));
+                    });
+        });
+        CompletableFuture
+                .supplyAsync(ProjectService::getSavedEvolutions)
+                .thenAccept(model::addAll);
     }
 
     /**
@@ -290,19 +328,17 @@ public class MainForm extends JFrame {
                                 LangService.get("stop"),
                                 actionEvent -> onAbort(),
                                 MenuService.shortcut('w')
-                        )
-                ),
-                MenuService.menu(
-                        "Edit",
-                        MenuService.item(
-                                "Copy",
-                                actionEvent -> onCopyChromosome(),
-                                MenuService.shortcut('c')
                         ),
-                        MenuService.item(
-                                "Paste",
-                                actionEvent -> onPaste(),
-                                MenuService.shortcut('v')
+                        MenuService.SEPARATOR,
+                        MenuService.menu(LangService.get("export"),
+                                MenuService.item(LangService.get("selected"),
+                                        event -> SwingUtilities.invokeLater(() -> {
+                                            final DiscreteChromosome selectedChromosome = getSelectedChromosome();
+                                            if (selectedChromosome != null)
+                                                ExportDialog.showDialog(List.of(selectedChromosome));
+                                        })
+                                ),
+                                MenuService.item("All", event -> SwingUtilities.invokeLater(() -> ExportDialog.showDialog(history)))
                         )
                 ),
                 MenuService.menu(
@@ -369,22 +405,16 @@ public class MainForm extends JFrame {
                 historyTable.scrollRectToVisible(
                         historyTable.getCellRect(historyTable.getRowCount() - 1, 0, true)
                 );
-            } catch (final IndexOutOfBoundsException ignored) {
+            } catch (final IndexOutOfBoundsException | NullPointerException ignored) {
             }
         });
-
-        historyTable.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyTyped(final KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_PASTE)
-                    System.out.println("Paste");
-                if (e.getKeyCode() == KeyEvent.VK_COPY)
-                    onCopyChromosome();
-            }
-        });
-        //TODO: fix copy/paste listener
     }
 
+    /**
+     * Get the chromosome selected in the {@link #historyTable}.
+     *
+     * @return selected chromosome from {@link #historyTable}
+     */
     private DiscreteChromosome getSelectedChromosome() {
         final int selectedRow = historyTable.getSelectedRow();
         if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return null;
@@ -457,19 +487,6 @@ public class MainForm extends JFrame {
     private void onAbort() {
         if (evolution != null)
             evolution.setAborted(true);
-    }
-
-    private void onCopyChromosome() {
-        final DiscreteChromosome chromosome = getSelectedChromosome();
-        if (chromosome == null) return;
-        final ShareDialog shareDialog = new ShareDialog();
-        shareDialog.share(chromosome);
-        shareDialog.showDialog();
-    }
-
-    private void onPaste() {
-        //TODO:paste with parser
-        JOptionPane.showMessageDialog(this, "Paste action");
     }
 
     /**

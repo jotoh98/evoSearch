@@ -63,6 +63,12 @@ public class Main {
         ChooserForm.main(args);
     }
 
+    /**
+     * Start an {@link Experiment} by it's class name.
+     *
+     * @param name name of the experiment class
+     * @param args args to pass to the experiment
+     */
     private static void startExperiment(final String name, final String[] args) {
         try {
             final Experiment experiment = (Experiment) Class.forName("evo.search.experiments." + name).getDeclaredConstructor().newInstance();

@@ -7,12 +7,14 @@ import io.jenetics.Gene;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * Discrete genome carrying a {@link DiscretePoint} allele.
  */
 @AllArgsConstructor
 @Data
-public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
+public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene>, Serializable {
 
     /**
      * Configuration providing context for the gene. Mainly used to calculate the allele.
@@ -20,7 +22,7 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene> {
      * @see #getAllele()
      * @see DiscretePoint#positions
      */
-    Configuration configuration;
+    transient Configuration configuration;
 
     /**
      * The discrete genes position index. This is the index of the ray the gene's allele will be

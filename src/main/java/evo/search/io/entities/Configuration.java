@@ -20,6 +20,7 @@ import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.tree.DefaultElement;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +35,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Data
-public class Configuration implements Cloneable, XmlEntity<Configuration> {
+public class Configuration implements Cloneable, XmlEntity<Configuration>, Serializable {
 
     /**
      * Version for configuration compatibility checks.
@@ -80,7 +81,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration> {
      * List of alterers used during the {@link Evolution}'s mutation phase.
      */
     @Builder.Default
-    private List<? extends DiscreteAlterer> alterers = new ArrayList<>(
+    private transient List<? extends DiscreteAlterer> alterers = new ArrayList<>(
             Arrays.asList(
                     new SwapGeneMutator(0.5),
                     new SwapPositionsMutator(0.5)

@@ -20,6 +20,7 @@ import io.jenetics.util.RandomRegistry;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,36 +36,34 @@ import java.util.stream.Collectors;
  */
 @Builder
 @Slf4j
-public class Evolution implements Runnable {
-
-    /**
-     * Configuration to use during the evolution.
-     */
-    @Getter
-    private final Configuration configuration;
+public class Evolution implements Runnable, Serializable {
 
     /**
      * Consumer of the progress generation.
      * Mainly used to monitor the progress in a progress bar.
      */
     @Builder.Default
-    private final Consumer<Integer> progressConsumer = integer -> {
+    private transient final Consumer<Integer> progressConsumer = integer -> {
     };
-
     /**
      * Consumer of the evolution progress.
      * Consumes an evolution result.
      */
     @Builder.Default
-    private final Consumer<EvolutionResult<DiscreteGene, Double>> historyConsumer = result -> {
+    private transient final Consumer<EvolutionResult<DiscreteGene, Double>> historyConsumer = result -> {
     };
-
+    /**
+     * Configuration to use during the evolution.
+     */
+    @Getter
+    @Setter
+    private Configuration configuration;
     /**
      * Final evolution result.
      */
     @Getter
     @Setter(AccessLevel.NONE)
-    private Genotype<DiscreteGene> result;
+    private transient Genotype<DiscreteGene> result;
 
     /**
      * History of individuals with the best phenotype in each generation.
@@ -77,7 +76,7 @@ public class Evolution implements Runnable {
      * Evolution abort flag.
      */
     @Setter
-    private boolean aborted;
+    private transient boolean aborted;
 
     /**
      * Execute an evolution
@@ -135,6 +134,12 @@ public class Evolution implements Runnable {
                 .collect(EvolutionResult.toBestGenotype());
     }
 
+    /**
+     * Maps the list of {@link EvolutionResult} to a list of the best {@link io.jenetics.Phenotype}s of
+     * each generation.
+     *
+     * @return list of best phenotypes per generation
+     */
     public List<DiscreteChromosome> getHistoryOfBestPhenotype() {
         return history.stream()
                 .map(result ->
@@ -279,6 +284,17 @@ public class Evolution implements Runnable {
         public static List<Fitness> getMethods() {
             return List.of(values());
         }
+    }
+
+    /**
+     * Resolve method for the {@link Serializable} functionality. Assigns the result
+     * from the serialized history during reading.
+     *
+     * @return the deserialized evolution
+     */
+    public Object readResolve() {
+        result = history.get(history.size() - 1).bestPhenotype().genotype();
+        return this;
     }
 
 }

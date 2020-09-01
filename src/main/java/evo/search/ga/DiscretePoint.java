@@ -5,13 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.awt.geom.Point2D;
+import java.io.Serializable;
 
 /**
  * Polar coordinate with discretized angle.
  */
 @AllArgsConstructor
 @Data
-public class DiscretePoint implements Cloneable {
+public class DiscretePoint implements Cloneable, Serializable {
 
     /**
      * Amount of all available rays where a discrete point can be placed.

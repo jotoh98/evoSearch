@@ -20,7 +20,6 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -401,7 +400,7 @@ public class ConfigurationDialog extends JDialog {
             EventService.LOG.trigger("Could not save configurations: No project selected.");
             return;
         }
-        ProjectService.saveConfigurations(new File(currentProject.getPath()), configurations);
+        ProjectService.saveConfigurations(currentProject.getPath(), configurations);
         currentProject.setConfigurations(configurations);
         EventService.CONFIGS_CHANGED.trigger(configurations);
     }

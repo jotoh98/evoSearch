@@ -6,6 +6,7 @@ import org.dom4j.Attribute;
 import org.dom4j.Element;
 import org.dom4j.tree.DefaultElement;
 
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -23,7 +24,7 @@ public class IndexEntry {
     /**
      * File system path of the project.
      */
-    String path;
+    Path path;
 
     /**
      * Name of the project.
@@ -55,7 +56,7 @@ public class IndexEntry {
         if (pathAttribute == null) {
             return null;
         }
-        final String path = pathAttribute.getValue();
+        final Path path = Path.of(pathAttribute.getValue());
         final String name = nameAttribute == null ? "Unknown" : nameAttribute.getValue();
         final String version = versionAttribute == null ? Main.UNKNOWN_VERSION : versionAttribute.getValue();
         final LocalDateTime lastUsed = lastUsedAttribute == null ? LocalDateTime.now() : LocalDateTime.parse(lastUsedAttribute.getValue(), DATE_FORMAT);
@@ -70,7 +71,7 @@ public class IndexEntry {
      */
     public Element createElement() {
         return new DefaultElement("entry")
-                .addAttribute("path", path)
+                .addAttribute("path", path.toString())
                 .addAttribute("name", name)
                 .addAttribute("version", version)
                 .addAttribute("lastUsed", DATE_FORMAT.format(lastUsed));

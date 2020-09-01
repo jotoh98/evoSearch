@@ -1,5 +1,6 @@
 package evo.search.io.service;
 
+import evo.search.Evolution;
 import evo.search.Main;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.IndexEntry;
@@ -10,8 +11,10 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.dom4j.Document;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
@@ -21,6 +24,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -165,14 +171,14 @@ public class ProjectService {
      * @param projectFolder  directory containing a project
      * @param configurations configurations to save in the directory
      */
-    public static void saveConfigurations(final File projectFolder, final List<Configuration> configurations) {
-        if (!projectFolder.exists()) {
+    public static void saveConfigurations(final Path projectFolder, final List<Configuration> configurations) {
+        if (Files.notExists(projectFolder)) {
             log.error("Cannot save configurations: Project folder does not exists: {}", projectFolder);
             EventService.LOG.trigger("Cannot save configurations: Project folder does not exists.");
             return;
         }
 
-        final Path hiddenPath = projectFolder.toPath().resolve(PROJECT_LEVEL_HIDDEN);
+        final Path hiddenPath = projectFolder.resolve(PROJECT_LEVEL_HIDDEN);
         if (Files.notExists(hiddenPath)) {
             try {
                 Files.createDirectory(hiddenPath);
@@ -212,7 +218,7 @@ public class ProjectService {
      * @param workspace workspace to save
      */
     public static void saveProjectWorkspace(final Workspace workspace) {
-        final Path workspaceFile = Path.of(currentProject.getPath(), PROJECT_LEVEL_HIDDEN, WORKSPACE_XML);
+        final Path workspaceFile = currentProject.getPath().resolve(PROJECT_LEVEL_HIDDEN).resolve(WORKSPACE_XML);
         FileService.write(workspaceFile, workspace.serialize());
     }
 
@@ -223,7 +229,7 @@ public class ProjectService {
      */
     public static Workspace loadCurrentWorkspace() {
         if (currentProject == null) return new Workspace();
-        final Path workspacePath = Path.of(currentProject.getPath(), PROJECT_LEVEL_HIDDEN, WORKSPACE_XML);
+        final Path workspacePath = currentProject.getPath().resolve(PROJECT_LEVEL_HIDDEN).resolve(WORKSPACE_XML);
 
         if (Files.exists(workspacePath)) {
             final Document workspaceDocument = FileService.read(workspacePath);
@@ -311,4 +317,62 @@ public class ProjectService {
         writeProjectIndex(indexEntries);
     }
 
+    /**
+     * Save the evolution to a .evolution file and back up the configuration to an xml file
+     * with the same number.
+     *
+     * @param evolution evolution to write
+     * @param prefix    file name prefix
+     */
+    public static void writeEvolution(final Evolution evolution, final String prefix) {
+        final int counter = FileService.counter(currentProject.getPath(), prefix, ".evolution");
+        try (final ObjectOutput out = new ObjectOutputStream(Files.newOutputStream(currentProject.getPath().resolve(prefix + "-" + counter + ".evolution")))) {
+            out.writeObject(evolution);
+            FileService.write(currentProject.getPath().resolve("config-" + counter + ".csv"), evolution.getConfiguration().serialize());
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Read an evolution file and the configuration.
+     *
+     * @param evolutionFile .evolution file path
+     * @return evolution with backed up configuration, if something fails, null
+     */
+    public static Evolution readEvolution(final Path evolutionFile) {
+        final Pattern pattern = Pattern.compile("\\d+");
+        final Matcher matcher = pattern.matcher(evolutionFile.getFileName().toString());
+        final Configuration configuration = new Configuration();
+        if (matcher.find()) {
+            final int counter = Integer.parseInt(matcher.group());
+            final Path configPath = evolutionFile.getParent().resolve("config-" + counter + ".csv");
+            if (Files.exists(configPath))
+                configuration.parse(FileService.read(configPath));
+        }
+        try (final ObjectInputStream objectInputStream = new ObjectInputStream(Files.newInputStream(evolutionFile))) {
+            final Evolution evolution = (Evolution) objectInputStream.readObject();
+            evolution.setConfiguration(configuration);
+            return evolution;
+        } catch (final IOException | ClassNotFoundException e) {
+            EventService.LOG.trigger("Could not load evolution " + evolutionFile.toString() + ": " + e.getLocalizedMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Scan the current projects directory for .evolution files.
+     *
+     * @return list of evolution file paths
+     */
+    public static List<Path> getSavedEvolutions() {
+        try {
+            return Files.walk(currentProject.getPath())
+                    .filter(path -> path.getFileName().toString().endsWith(".evolution"))
+                    .collect(Collectors.toList());
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
+        return Collections.emptyList();
+    }
 }

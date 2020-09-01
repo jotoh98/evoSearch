@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 
@@ -129,4 +130,34 @@ public class FileService {
         return document;
     }
 
+    /**
+     * Get a distinct file from the file system.
+     *
+     * @param name name prefix to use
+     * @param ext  file extension to use
+     * @return file handler to a distinct file
+     */
+    public static Path uniquePath(final String name, final String ext) {
+        Path candidate = Path.of(name + ext);
+        int count = 0;
+        while (Files.exists(candidate))
+            candidate = Paths.get(String.format("%s-%d%s", name, ++count, ext));
+        return candidate;
+    }
+
+    /**
+     * Counts the files matching the pattern prefix-number.suffix
+     *
+     * @param path   directory with files to count
+     * @param prefix file name prefix
+     * @param suffix file extension
+     * @return amount of files matching the pattern
+     */
+    public static int counter(final Path path, final String prefix, final String suffix) {
+        Path candidate = path.resolve(prefix + suffix);
+        int count = 0;
+        while (Files.exists(candidate))
+            candidate = path.resolve(String.format("%s%d%s", prefix, ++count, suffix));
+        return count;
+    }
 }

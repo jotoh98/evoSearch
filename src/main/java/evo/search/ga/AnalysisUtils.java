@@ -4,10 +4,7 @@ import evo.search.io.entities.Configuration;
 import evo.search.util.ListUtils;
 import io.jenetics.Chromosome;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -236,23 +233,21 @@ public class AnalysisUtils {
 
         final double[] areasCovered = new double[points.get(0).getPositions()];
 
-        return ListUtils
-                .consecMap(points, (pointA, pointB) -> {
-                    int index = Math.min(pointA.getPosition(), pointB.getPosition());
-                    final int delta = Math.abs(pointA.getPosition() - pointB.getPosition());
+        ListUtils.consec(points, (pointA, pointB) -> {
+            int index = Math.min(pointA.getPosition(), pointB.getPosition());
+            final int delta = Math.abs(pointA.getPosition() - pointB.getPosition());
 
-                    if (index == 0 && delta > 1)
-                        index = delta;
+            if (index == 0 && delta > 1)
+                index = delta;
 
-                    if (delta == 0 || delta == pointA.getPositions() / 2d)
-                        return 0d;
+            if (delta == 0 || delta == pointA.getPositions() / 2d)
+                return;
 
-                    final double areaInSector = areaInSector(pointA.getDistance(), pointB.getDistance(), pointA.getPositions());
-                    final double areaExplored = areaInSector - areasCovered[index];
-                    areasCovered[index] = Math.max(areaInSector, areasCovered[index]);
-                    return areaExplored;
-                })
-                .stream()
+            final double areaInSector = areaInSector(pointA.getDistance(), pointB.getDistance(), pointA.getPositions());
+            areasCovered[index] = Math.max(areaInSector, areasCovered[index]);
+        });
+        return Arrays
+                .stream(areasCovered)
                 .reduce(Double::sum)
                 .orElse(0d);
     }

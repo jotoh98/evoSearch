@@ -289,7 +289,8 @@ public class Canvas extends JPanel {
     public void renderTreasures(final List<DiscretePoint> treasures) {
         treasures.forEach(treasure -> enqueue(
                 treasure.toPoint2D(),
-                Style.builder().color(Color.RED).shape(Style.Shape.CROSS).build()));
+                Style.builder().color(Color.RED).shape(Style.Shape.CROSS).build()
+        ));
     }
 
     /**

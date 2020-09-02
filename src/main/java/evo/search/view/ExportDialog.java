@@ -3,7 +3,6 @@ package evo.search.view;
 import evo.search.Main;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
-import evo.search.ga.DiscretePoint;
 import evo.search.io.entities.Configuration;
 import evo.search.io.service.FileService;
 import evo.search.util.ListUtils;
@@ -61,6 +60,9 @@ public class ExportDialog extends JDialog {
      * Button to save exported contents to a file.
      */
     private JButton saveButton;
+    /**
+     * Checkbox to determine whether to export non-repeating lists.
+     */
     private JCheckBox distinct;
 
     /**
@@ -91,26 +93,6 @@ public class ExportDialog extends JDialog {
     public ExportDialog(final List<DiscreteChromosome> chromosomes) {
         this();
         this.chromosomeList = chromosomes;
-    }
-
-    /**
-     * Serialize a discrete gene to the format (1, 1.4563).
-     *
-     * @param gene gene to serialize
-     * @return serialized gene
-     */
-    private static String format(final DiscreteGene gene) {
-        return String.format("(%s, %s)", gene.getPosition(), gene.getDistance());
-    }
-
-    /**
-     * Serialize a discrete point to the format (1, 1.4563).
-     *
-     * @param point point to serialize
-     * @return serialized point
-     */
-    private static String format(final DiscretePoint point) {
-        return String.format("(%s, %s)", point.getPosition(), point.getDistance());
     }
 
     /**
@@ -153,30 +135,30 @@ public class ExportDialog extends JDialog {
                 .builder()
                 .positions(6)
                 .treasures(List.of(
-                        new DiscretePoint(6, 3, 1),
-                        new DiscretePoint(6, 6, 14),
-                        new DiscretePoint(6, 9, 4),
-                        new DiscretePoint(6, 1, 7)
+                        new DiscreteGene(6, 3, 1),
+                        new DiscreteGene(6, 6, 14),
+                        new DiscreteGene(6, 9, 4),
+                        new DiscreteGene(6, 1, 7)
                 ))
                 .build();
         ExportDialog.showDialog(List.of(
                 new DiscreteChromosome(build, List.of(
-                        new DiscreteGene(build, 1, 10),
-                        new DiscreteGene(build, 5, 2),
-                        new DiscreteGene(build, 3, 7),
-                        new DiscreteGene(build, 0, 3)
+                        new DiscreteGene(6, 1, 10),
+                        new DiscreteGene(6, 5, 2),
+                        new DiscreteGene(6, 3, 7),
+                        new DiscreteGene(6, 0, 3)
                 ).stream().collect(ISeq.toISeq())),
                 new DiscreteChromosome(build, List.of(
-                        new DiscreteGene(build, 1, 10),
-                        new DiscreteGene(build, 5, 2),
-                        new DiscreteGene(build, 3, 7),
-                        new DiscreteGene(build, 0, 3)
+                        new DiscreteGene(6, 1, 10),
+                        new DiscreteGene(6, 5, 2),
+                        new DiscreteGene(6, 3, 7),
+                        new DiscreteGene(6, 0, 3)
                 ).stream().collect(ISeq.toISeq())),
                 new DiscreteChromosome(build, List.of(
-                        new DiscreteGene(build, 1, 10),
-                        new DiscreteGene(build, 4, 2),
-                        new DiscreteGene(build, 3, 7),
-                        new DiscreteGene(build, 0, 3)
+                        new DiscreteGene(6, 1, 10),
+                        new DiscreteGene(6, 4, 2),
+                        new DiscreteGene(6, 3, 7),
+                        new DiscreteGene(6, 0, 3)
                 ).stream().collect(ISeq.toISeq()))
         ));
         System.exit(0);
@@ -239,11 +221,11 @@ public class ExportDialog extends JDialog {
                 .orElse("");
 
         if (exportTreasure.isSelected() && chromosomeList.size() > 0) {
-            final List<DiscretePoint> treasures = chromosomeList
+            final List<DiscreteGene> treasures = chromosomeList
                     .get(0)
                     .getConfiguration()
                     .getTreasures();
-            output += "\n" + printRowSeparated(treasures, DiscretePoint::getPosition, DiscretePoint::getDistance, separator);
+            output += "\n" + printRowSeparated(treasures, DiscreteGene::getPosition, DiscreteGene::getDistance, separator);
         }
 
         return output;
@@ -287,7 +269,7 @@ public class ExportDialog extends JDialog {
                 .stream()
                 .map(chromosome -> chromosome
                         .stream()
-                        .map(ExportDialog::format)
+                        .map(DiscreteGene::printSmall)
                         .reduce(ListUtils.REDUCE_WITH_SPACE)
                         .orElse("")
                 )
@@ -315,7 +297,7 @@ public class ExportDialog extends JDialog {
                     .getConfiguration()
                     .getTreasures()
                     .stream()
-                    .map(ExportDialog::format)
+                    .map(DiscreteGene::printSmall)
                     .reduce(ListUtils.REDUCE_WITH_SPACE)
                     .orElse("");
 

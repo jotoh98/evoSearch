@@ -2,7 +2,6 @@ package evo.search.view.part;
 
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
-import evo.search.ga.DiscretePoint;
 import evo.search.io.entities.Configuration;
 import evo.search.view.render.Ray2D;
 import evo.search.view.render.StringShape;
@@ -246,7 +245,7 @@ public class Canvas extends JPanel {
 
         final AtomicInteger index = new AtomicInteger();
         chromosome.forEach(gene -> {
-            final Point2D point = gene.getAllele().toPoint2D();
+            final Point2D point = gene.getAllele();
             enqueue(String.valueOf(index.get() + 1), point, Style.builder().color(Color.WHITE).build());
             enqueue(point, Style.builder().color(Color.GREEN).build());
             index.getAndIncrement();
@@ -255,7 +254,7 @@ public class Canvas extends JPanel {
         if (availablePosition > 2) {
             Point2D previous = new Point2D.Double();
             for (final DiscreteGene discreteGene : chromosome) {
-                final Point2D current = discreteGene.getAllele().toPoint2D();
+                final Point2D current = discreteGene.getAllele();
                 enqueue(
                         new Line2D.Double(previous, current),
                         Style.builder().color(Color.WHITE).build()
@@ -291,9 +290,9 @@ public class Canvas extends JPanel {
      *
      * @param treasures list of treasure points
      */
-    public void renderTreasures(final List<DiscretePoint> treasures) {
+    public void renderTreasures(final List<DiscreteGene> treasures) {
         treasures.forEach(treasure -> enqueue(
-                treasure.toPoint2D(),
+                treasure.getAllele(),
                 Style.builder().color(Color.RED).shape(Style.Shape.CROSS).build()
         ));
     }

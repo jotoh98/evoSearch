@@ -3,7 +3,6 @@ package evo.search.experiments;
 import com.opencsv.CSVWriter;
 import evo.search.Evolution;
 import evo.search.ga.DiscreteGene;
-import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.*;
 import evo.search.io.entities.Configuration;
 import evo.search.io.service.FileService;
@@ -50,7 +49,7 @@ public class MultiTreasureFitnessExperiment extends Experiment {
      * @return phenotypical list of points of the best individual
      */
     @NotNull
-    private static List<DiscretePoint> bestPhenotype(final Evolution evolution) {
+    private static List<DiscreteGene> bestPhenotype(final Evolution evolution) {
         return evolution
                 .getHistory()
                 .parallelStream()
@@ -60,7 +59,6 @@ public class MultiTreasureFitnessExperiment extends Experiment {
                 .genotype()
                 .chromosome()
                 .stream()
-                .map(DiscreteGene::getAllele)
                 .collect(Collectors.toList());
     }
 
@@ -98,11 +96,11 @@ public class MultiTreasureFitnessExperiment extends Experiment {
     private void iterativeTreasureTest(final CSVWriter writer) {
         final Configuration baseConfiguration = createConfiguration();
 
-        final List<DiscretePoint> treasures = ListUtils.generate(15, () -> RandomUtils.generatePoint(6, 10, 50));
+        final List<DiscreteGene> treasures = ListUtils.generate(15, () -> RandomUtils.generatePoint(6, 10, 50));
 
         for (int treasureAmount = 2; treasureAmount <= treasures.size(); treasureAmount++) {
             final int amount = treasureAmount;
-            final List<List<DiscretePoint>> results = new ArrayList<>();
+            final List<List<DiscreteGene>> results = new ArrayList<>();
             final AtomicInteger runIndex = new AtomicInteger();
 
             final List<CompletableFuture<Void>> futures = IntStream
@@ -119,11 +117,11 @@ public class MultiTreasureFitnessExperiment extends Experiment {
                             .runAsync(evolution)
                             .thenRun(() -> {
                                 System.out.printf("Run %d:%d finished\n", evolution.getConfiguration().getTreasures().size(), runIndex.getAndIncrement());
-                                final List<DiscretePoint> result = bestPhenotype(evolution);
+                                final List<DiscreteGene> result = bestPhenotype(evolution);
                                 results.add(result);
 
-                                final List<String> distances = result.stream().map(DiscretePoint::getDistance).map(d -> Double.toString(d)).collect(Collectors.toList());
-                                final List<String> positions = result.stream().map(DiscretePoint::getPosition).map(d -> Integer.toString(d)).collect(Collectors.toList());
+                                final List<String> distances = result.stream().map(DiscreteGene::getDistance).map(d -> Double.toString(d)).collect(Collectors.toList());
+                                final List<String> positions = result.stream().map(DiscreteGene::getPosition).map(d -> Integer.toString(d)).collect(Collectors.toList());
 
                                 distances.addAll(0, List.of(
                                         Integer.toString(amount),
@@ -152,7 +150,7 @@ public class MultiTreasureFitnessExperiment extends Experiment {
                     .stream()
                     .map(points -> points
                             .stream()
-                            .map(DiscretePoint::toPoint2D)
+                            .map(DiscreteGene::getAllele)
                             .collect(Collectors.toList())
                     )
                     .collect(Collectors.toList());

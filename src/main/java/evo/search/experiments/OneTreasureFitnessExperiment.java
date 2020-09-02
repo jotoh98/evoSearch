@@ -3,7 +3,7 @@ package evo.search.experiments;
 import com.opencsv.CSVWriter;
 import evo.search.Evolution;
 import evo.search.ga.DiscreteChromosome;
-import evo.search.ga.DiscretePoint;
+import evo.search.ga.DiscreteGene;
 import evo.search.ga.mutators.DistanceMutator;
 import evo.search.ga.mutators.PositionMutator;
 import evo.search.ga.mutators.SwapGeneMutator;
@@ -46,7 +46,7 @@ public class OneTreasureFitnessExperiment extends Experiment {
             final int positions = 4;
             final int limit = 1000;
 
-            final DiscretePoint treasure = RandomUtils.generatePoint(positions, 5, 10);
+            final DiscreteGene treasure = RandomUtils.generatePoint(positions, 5, 10);
 
             final List<Double> distances = ListUtils.generate(14,
                     () -> RandomUtils.inRange(treasure.getDistance() - 5, treasure.getDistance() + 5)

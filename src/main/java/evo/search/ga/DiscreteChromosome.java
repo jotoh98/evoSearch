@@ -93,12 +93,11 @@ public class DiscreteChromosome implements Chromosome<DiscreteGene>, Serializabl
         final boolean distinct = noPermutation ||
                 Stream.of(genes.toArray(DiscreteGene[]::new))
                         .map(DiscreteGene::getAllele)
-                        .map(DiscretePoint::getDistance)
                         .distinct().count() == genes.size();
 
 
         final boolean positionsValid = Stream.of(genes.toArray(DiscreteGene[]::new))
-                .mapToInt(discreteGene -> discreteGene.getAllele().getPosition())
+                .mapToInt(DiscreteGene::getPosition)
                 .allMatch(position -> position >= 0 && position < configuration.getPositions());
 
         return distinct && positionsValid;

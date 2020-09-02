@@ -3,8 +3,8 @@ package evo.search;
 import evo.search.ga.AnalysisUtils;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
-import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
+import evo.search.ga.mutators.DistanceMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.io.service.EventService;
 import evo.search.view.LangService;
@@ -105,6 +105,10 @@ public class Evolution implements Runnable, Serializable {
         final List<? extends DiscreteAlterer> alterers = new ArrayList<>(configuration.getAlterers());
 
         if (alterers.size() > 0) {
+            alterers.forEach(alterer -> {
+                if (alterer instanceof DistanceMutator)
+                    ((DistanceMutator) alterer).setConfiguration(configuration);
+            });
             final DiscreteAlterer first = alterers.remove(0);
             final DiscreteAlterer[] rest = alterers.toArray(DiscreteAlterer[]::new);
             evolutionBuilder.alterers(first, rest);
@@ -165,9 +169,8 @@ public class Evolution implements Runnable, Serializable {
                 .map(distance -> {
                     final int positions = configuration.getPositions();
                     final int position = RandomRegistry.random().nextInt(positions);
-                    return new DiscretePoint(positions, position, distance);
+                    return new DiscreteGene(positions, position, distance);
                 })
-                .map(discretePoint -> new DiscreteGene(configuration, discretePoint.getPosition(), discretePoint.getDistance()))
                 .collect(Collectors.toList());
 
         return new DiscreteChromosome(configuration, ISeq.of(geneList));
@@ -175,16 +178,16 @@ public class Evolution implements Runnable, Serializable {
 
     /**
      * Compute the fitness of a {@link DiscreteChromosome} based on the
-     * single first treasure {@link DiscretePoint}.
-     * This is the trace length of the individual visiting it's {@link DiscretePoint}s
+     * single first treasure {@link DiscreteGene}.
+     * This is the trace length of the individual visiting it's {@link DiscreteGene}s
      * until the treasure is found.
      *
      * @param chromosome chromosome to evaluate
      * @return chromosome fitness based on single treasure
-     * @see AnalysisUtils#traceLength(Chromosome, DiscretePoint)
+     * @see AnalysisUtils#traceLength(Chromosome, DiscreteGene)
      */
     public double fitnessSingular(final Chromosome<DiscreteGene> chromosome) {
-        final DiscretePoint treasure = configuration.getTreasures().get(0);
+        final DiscreteGene treasure = configuration.getTreasures().get(0);
         return AnalysisUtils.traceLength(chromosome, treasure);
     }
 
@@ -197,10 +200,10 @@ public class Evolution implements Runnable, Serializable {
      *
      * @param chromosome chromosome to evaluate
      * @return chromosome fitness based on multiple treasures
-     * @see AnalysisUtils#traceLength(Chromosome, DiscretePoint)
+     * @see AnalysisUtils#traceLength(Chromosome, DiscreteGene)
      */
     public double fitnessMulti(final Chromosome<DiscreteGene> chromosome) {
-        final List<DiscretePoint> treasures = configuration.getTreasures();
+        final List<DiscreteGene> treasures = configuration.getTreasures();
         return treasures.isEmpty() ? 0 : treasures.stream()
                 .mapToDouble(treasure -> AnalysisUtils.traceLength(chromosome, treasure))
                 .reduce(Double::sum)
@@ -216,7 +219,7 @@ public class Evolution implements Runnable, Serializable {
      * @see AnalysisUtils#areaCovered(List)
      */
     public double fitnessMaximisingArea(final Chromosome<DiscreteGene> chromosome) {
-        final List<DiscretePoint> points = AnalysisUtils.fill(chromosome);
+        final List<DiscreteGene> points = AnalysisUtils.fill(chromosome);
         final double area = AnalysisUtils.areaCovered(points);
         if (area <= 0)
             return Double.POSITIVE_INFINITY;
@@ -231,7 +234,7 @@ public class Evolution implements Runnable, Serializable {
      * @see AnalysisUtils#worstCase(List, int)
      */
     public double fitnessWorstCase(final Chromosome<DiscreteGene> chromosome) {
-        final List<DiscretePoint> points = AnalysisUtils.fill(chromosome);
+        final List<DiscreteGene> points = AnalysisUtils.fill(chromosome);
         return AnalysisUtils.worstCase(points, 1);
     }
 

@@ -4,7 +4,6 @@ import evo.search.Evolution;
 import evo.search.Main;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
-import evo.search.ga.DiscretePoint;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.ga.mutators.SwapGeneMutator;
 import evo.search.ga.mutators.SwapPositionsMutator;
@@ -53,7 +52,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
     @Builder.Default
     private int limit = 1000;
     /**
-     * The amount of positions available for the {@link DiscretePoint}s.
+     * The amount of positions available for the {@link DiscreteGene}s.
      */
     @Builder.Default
     private int positions = 3;
@@ -64,10 +63,10 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
     @Builder.Default
     private List<Double> distances = new ArrayList<>();
     /**
-     * List of treasure {@link DiscretePoint}s to search for.
+     * List of treasure {@link DiscreteGene}s to search for.
      */
     @Builder.Default
-    private List<DiscretePoint> treasures = new ArrayList<>();
+    private List<DiscreteGene> treasures = new ArrayList<>();
 
     /**
      * Fitness method used to evaluate the individuals.
@@ -158,27 +157,16 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
     }
 
     /**
-     * Parse a treasure-{@link DiscretePoint} from an {@link Element}.
+     * Write a {@link DiscreteGene} to an {@link Element}.
      *
-     * @param element element containing the discrete alterer
-     * @return parsed treasure point
-     * @see #parse(Document)
+     * @param point treasure point to serialize
+     * @return element of serialized treasure point
+     * @see #serialize()
      */
-    private DiscretePoint parseTreasure(final Element element) {
-        final Attribute positionAttribute = element.attribute("position");
-        final Attribute distanceAttribute = element.attribute("distance");
-        if (positionAttribute == null || distanceAttribute == null) {
-            return null;
-        }
-        try {
-            return new DiscretePoint(
-                    positions,
-                    Integer.parseInt(positionAttribute.getValue()),
-                    Double.parseDouble(distanceAttribute.getValue())
-            );
-        } catch (final NumberFormatException | NullPointerException ignored) {
-            return null;
-        }
+    private static Element writeTreasure(final DiscreteGene point) {
+        return new DefaultElement("treasure")
+                .addAttribute("position", String.valueOf(point.getPosition()))
+                .addAttribute("distance", String.valueOf(point.getDistance()));
     }
 
     /**
@@ -199,16 +187,27 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
     }
 
     /**
-     * Write a {@link DiscretePoint} to an {@link Element}.
+     * Parse a treasure-{@link DiscreteGene} from an {@link Element}.
      *
-     * @param point treasure point to serialize
-     * @return element of serialized treasure point
-     * @see #serialize()
+     * @param element element containing the discrete alterer
+     * @return parsed treasure point
+     * @see #parse(Document)
      */
-    private static Element writeTreasure(final DiscretePoint point) {
-        return new DefaultElement("treasure")
-                .addAttribute("position", String.valueOf(point.getPosition()))
-                .addAttribute("distance", String.valueOf(point.getDistance()));
+    private DiscreteGene parseTreasure(final Element element) {
+        final Attribute positionAttribute = element.attribute("position");
+        final Attribute distanceAttribute = element.attribute("distance");
+        if (positionAttribute == null || distanceAttribute == null) {
+            return null;
+        }
+        try {
+            return new DiscreteGene(
+                    positions,
+                    Integer.parseInt(positionAttribute.getValue()),
+                    Double.parseDouble(distanceAttribute.getValue())
+            );
+        } catch (final NumberFormatException | NullPointerException ignored) {
+            return null;
+        }
     }
 
     @Override
@@ -272,11 +271,11 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
 
         final Element treasuresElement = rootElement.element("treasures");
         if (treasuresElement != null) {
-            final ArrayList<DiscretePoint> treasures = new ArrayList<>();
+            final ArrayList<DiscreteGene> treasures = new ArrayList<>();
             XmlService.forEach("treasure", treasuresElement, element -> {
-                final DiscretePoint discretePoint = parseTreasure(element);
-                if (discretePoint != null)
-                    treasures.add(discretePoint);
+                final DiscreteGene DiscreteGene = parseTreasure(element);
+                if (DiscreteGene != null)
+                    treasures.add(DiscreteGene);
             });
             setTreasures(treasures);
         }

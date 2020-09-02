@@ -1,7 +1,7 @@
 package evo.search.view;
 
 import evo.search.Main;
-import evo.search.ga.DiscretePoint;
+import evo.search.ga.DiscreteGene;
 import evo.search.util.RandomUtils;
 import lombok.Setter;
 
@@ -80,7 +80,7 @@ public class ShuffleDialog<T> extends JDialog {
      * Consumer of the shuffled list.
      */
     @Setter
-    private Consumer<List<T>> treasureConsumer = discretePoints -> {
+    private Consumer<List<T>> treasureConsumer = treasures -> {
     };
 
     /**
@@ -133,7 +133,7 @@ public class ShuffleDialog<T> extends JDialog {
      * @param args cli args (ignored)
      */
     public static void main(final String[] args) {
-        final ShuffleDialog<DiscretePoint> dialog = new ShuffleDialog<>();
+        final ShuffleDialog<DiscreteGene> dialog = new ShuffleDialog<>();
         dialog.setRandomSupplier(dialog::shuffleTreasures);
         dialog.setVisible(true);
     }
@@ -168,8 +168,8 @@ public class ShuffleDialog<T> extends JDialog {
 
         shuffledFuture
                 .exceptionally(throwable -> null)
-                .thenAccept(discretePoints -> {
-                    treasureConsumer.accept(discretePoints);
+                .thenAccept(treasures -> {
+                    treasureConsumer.accept(treasures);
                     close();
                 });
     }
@@ -181,7 +181,7 @@ public class ShuffleDialog<T> extends JDialog {
      * @param maxDistance maximum distance for shuffled treasures
      * @return shuffled treasure discrete point
      */
-    public DiscretePoint shuffleTreasures(final double minDistance, final double maxDistance) {
+    public DiscreteGene shuffleTreasures(final double minDistance, final double maxDistance) {
         return RandomUtils.generatePoint(positions, minDistance, maxDistance);
     }
 

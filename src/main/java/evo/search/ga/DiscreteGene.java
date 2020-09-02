@@ -1,41 +1,42 @@
 package evo.search.ga;
 
 import evo.search.io.entities.Configuration;
-import evo.search.util.ListUtils;
+import evo.search.util.MathUtils;
 import evo.search.util.RandomUtils;
 import io.jenetics.Gene;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.awt.geom.Point2D;
 import java.io.Serializable;
 
 /**
- * Discrete genome carrying a {@link DiscretePoint} allele.
+ * Discrete genome carrying a {@link Point2D} allele.
  */
 @AllArgsConstructor
 @Data
-public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene>, Serializable {
+public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
 
     /**
      * Configuration providing context for the gene. Mainly used to calculate the allele.
      *
      * @see #getAllele()
-     * @see DiscretePoint#positions
+     * @see DiscreteGene#positions
      */
-    transient Configuration configuration;
+    private int positions;
 
     /**
      * The discrete genes position index. This is the index of the ray the gene's allele will be
      * sitting on.
      *
-     * @see DiscretePoint#position
+     * @see DiscreteGene#position
      */
     private int position;
 
     /**
      * The genes distance corresponding the the alleles distance.
      *
-     * @see DiscretePoint#distance
+     * @see DiscreteGene#distance
      */
     private double distance;
 
@@ -43,10 +44,9 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene>, Serializ
      * {@inheritDoc}
      */
     @Override
-    public DiscretePoint getAllele() {
-        if (configuration == null)
-            throw new IllegalStateException("Configuration of DiscretePoint cannot be null. ");
-        return new DiscretePoint(configuration.getPositions(), position, distance);
+    public Point2D getAllele() {
+        final double angle = getAngle();
+        return new Point2D.Double(distance * Math.cos(angle), distance * Math.sin(angle));
     }
 
     /**
@@ -54,18 +54,16 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene>, Serializ
      */
     @Override
     public DiscreteGene newInstance() {
-        final int position = RandomUtils.inRange(0, configuration.getPositions());
-        if (configuration.isChooseWithoutPermutation())
-            return new DiscreteGene(configuration, position, ListUtils.chooseRandom(configuration.getDistances()));
-        return new DiscreteGene(configuration, position, distance);
+        return new DiscreteGene(positions, RandomUtils.inRange(0, positions), distance + RandomUtils.inRange(-.1, .1));
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public DiscreteGene newInstance(final DiscretePoint value) {
-        return new DiscreteGene(configuration, value.position, value.distance);
+    public DiscreteGene newInstance(final Point2D value) {
+        final int position = (int) Math.round(Math.atan2(value.getY(), value.getX()) / (2 * Math.PI) * positions);
+        return new DiscreteGene(positions, position, value.distance(0, 0));
     }
 
     /**
@@ -76,9 +74,7 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene>, Serializ
      */
     @Override
     public boolean isValid() {
-        final boolean distanceValid = configuration.getDistances().contains(distance);
-        final boolean positionValid = configuration.getPositions() > position && position >= 0;
-        return distanceValid && positionValid;
+        return distance > 0 && position >= 0 && position < positions;
     }
 
     @Override
@@ -86,4 +82,54 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene>, Serializ
         return String.format("DiscreteGene{ pos=%d, dist=%s}", position, distance);
     }
 
+    /**
+     * Calculate the euclidean distance to another {@link DiscreteGene}.
+     *
+     * @param other other discrete point
+     * @return The euclidean distance to another {@link DiscreteGene}.
+     */
+    public double distance(final DiscreteGene other) {
+        return MathUtils.polarDistance(getAngle(), distance, other.getAngle(), other.distance);
+    }
+
+    /**
+     * Get the radian angle for the discretized angle.
+     *
+     * @return radian angle of the polar coordinate
+     */
+    public double getAngle() {
+        return position / ((double) positions) * 2 * Math.PI;
+    }
+
+    /**
+     * Get the polar coordinates distance squared.
+     *
+     * @return the polar coordinates distance squared
+     */
+    public double getDistanceSquared() {
+        return distance * distance;
+    }
+
+    /**
+     * Clones the {@link DiscreteGene}.
+     *
+     * @return A new instance of the {@link DiscreteGene}.
+     */
+    @Override
+    public DiscreteGene clone() {
+        try {
+            return (DiscreteGene) super.clone();
+        } catch (final CloneNotSupportedException ignore) {
+            return new DiscreteGene(positions, position, distance);
+        }
+    }
+
+    /**
+     * Prints a small gene representation of the form (4, 5.9).
+     *
+     * @return small string representation of the gene
+     */
+    public String printSmall() {
+        return String.format("(%s, %s)", position, distance);
+    }
 }

@@ -3,7 +3,7 @@ package evo.search.view;
 import com.github.weisj.darklaf.ui.list.DarkDefaultListCellRenderer;
 import evo.search.Evolution;
 import evo.search.Main;
-import evo.search.ga.DiscretePoint;
+import evo.search.ga.DiscreteGene;
 import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
@@ -122,7 +122,7 @@ public class ConfigurationDialog extends JDialog {
                         .limit(1000)
                         .positions(2)
                         .distances(Arrays.asList(10d, 20d))
-                        .treasures(Collections.singletonList(new DiscretePoint(2, 0, 10)))
+                        .treasures(Collections.singletonList(new DiscreteGene(2, 0, 10)))
                         .alterers(Collections.singletonList(new SwapPositionsMutator(0.7)))
                         .build(),
                 Configuration.builder()
@@ -131,7 +131,7 @@ public class ConfigurationDialog extends JDialog {
                         .limit(100)
                         .positions(3)
                         .distances(Arrays.asList(15d, 25d, 35d))
-                        .treasures(Arrays.asList(new DiscretePoint(3, 0, 10), new DiscretePoint(3, 2, 20)))
+                        .treasures(Arrays.asList(new DiscreteGene(3, 0, 10), new DiscreteGene(3, 2, 20)))
                         .fitness(Evolution.Fitness.SINGULAR)
                         .build()
         );

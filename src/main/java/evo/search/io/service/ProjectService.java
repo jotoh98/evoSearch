@@ -2,6 +2,7 @@ package evo.search.io.service;
 
 import evo.search.Evolution;
 import evo.search.Main;
+import evo.search.ga.DiscreteChromosome;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.IndexEntry;
 import evo.search.io.entities.Project;
@@ -71,6 +72,8 @@ public class ProjectService {
     @Setter
     @Getter
     private static Project currentProject;
+
+    private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
 
     /**
      * Add a new project to the services index entries.
@@ -323,15 +326,21 @@ public class ProjectService {
      *
      * @param evolution evolution to write
      * @param prefix    file name prefix
+     * @return path to the saved evolution
      */
-    public static void writeEvolution(final Evolution evolution, final String prefix) {
-        final int counter = FileService.counter(currentProject.getPath(), prefix, ".evolution");
-        try (final ObjectOutput out = new ObjectOutputStream(Files.newOutputStream(currentProject.getPath().resolve(prefix + "-" + counter + ".evolution")))) {
+    public static Path writeEvolution(final Evolution evolution, final String prefix) {
+        final int counter = FileService.counter(currentProject.getPath(), prefix + "-", ".evolution");
+        final String filename = prefix + "-" + counter + ".evolution";
+        final Path evolutionPath = currentProject.getPath().resolve(filename);
+        try (final ObjectOutput out = new ObjectOutputStream(Files.newOutputStream(evolutionPath))) {
             out.writeObject(evolution);
             FileService.write(currentProject.getPath().resolve("config-" + counter + ".csv"), evolution.getConfiguration().serialize());
+            EventService.LOG.trigger("Evolution was saved to file " + filename);
+            return evolutionPath;
         } catch (final IOException e) {
             e.printStackTrace();
         }
+        return null;
     }
 
     /**
@@ -341,11 +350,9 @@ public class ProjectService {
      * @return evolution with backed up configuration, if something fails, null
      */
     public static Evolution readEvolution(final Path evolutionFile) {
-        final Pattern pattern = Pattern.compile("\\d+");
-        final Matcher matcher = pattern.matcher(evolutionFile.getFileName().toString());
         final Configuration configuration = new Configuration();
-        if (matcher.find()) {
-            final int counter = Integer.parseInt(matcher.group());
+        final int counter = getEvolutionFileNumber(evolutionFile);
+        if (counter >= 0) {
             final Path configPath = evolutionFile.getParent().resolve("config-" + counter + ".csv");
             if (Files.exists(configPath))
                 configuration.parse(FileService.read(configPath));
@@ -353,11 +360,29 @@ public class ProjectService {
         try (final ObjectInputStream objectInputStream = new ObjectInputStream(Files.newInputStream(evolutionFile))) {
             final Evolution evolution = (Evolution) objectInputStream.readObject();
             evolution.setConfiguration(configuration);
+            evolution.getHistory().forEach(result -> result.population().forEach(phenotype -> ((DiscreteChromosome) phenotype.genotype().chromosome()).setConfiguration(configuration)));
             return evolution;
         } catch (final IOException | ClassNotFoundException e) {
-            EventService.LOG.trigger("Could not load evolution " + evolutionFile.toString() + ": " + e.getLocalizedMessage());
+            EventService.LOG.trigger("Could not load evolution " + evolutionFile.toString() + ": " + e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * Get the number from the evolution file.
+     *
+     * @param evolutionFile path to the evolution file
+     * @return number in the filename of the evolution
+     */
+    private static int getEvolutionFileNumber(final Path evolutionFile) {
+        final Matcher matcher = NUMBER_PATTERN.matcher(evolutionFile.getFileName().toString());
+        int counter = -1;
+        if (matcher.find()) {
+            try {
+                counter = Integer.parseInt(matcher.group());
+            } catch (final NumberFormatException ignored) {}
+        }
+        return counter;
     }
 
     /**
@@ -367,8 +392,14 @@ public class ProjectService {
      */
     public static List<Path> getSavedEvolutions() {
         try {
-            return Files.walk(currentProject.getPath())
-                    .filter(path -> path.getFileName().toString().endsWith(".evolution"))
+            return Files.walk(currentProject.getPath(), 1)
+                    .filter(path ->
+                            path.getFileName().toString().endsWith(".evolution")
+                    )
+                    .filter(path -> {
+                        final int number = getEvolutionFileNumber(path);
+                        return Files.exists(currentProject.getPath().resolve("config-" + number + ".csv"));
+                    })
                     .collect(Collectors.toList());
         } catch (final IOException e) {
             e.printStackTrace();

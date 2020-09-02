@@ -128,6 +128,10 @@ public class MainForm extends JFrame {
      */
     private JList<Path> savedEvolutionsList;
     /**
+     * Model for the saved evolutions list.
+     */
+    private final DefaultListModel<Path> savedEvolutionsModel = new DefaultListModel<>();
+    /**
      * History of best individuals.
      */
     private List<DiscreteChromosome> history;
@@ -222,24 +226,31 @@ public class MainForm extends JFrame {
                 return super.getListCellRendererComponent(list, name.replace(".evolution", ""), index, isSelected, cellHasFocus);
             }
         });
-        final DefaultListModel<Path> model = new DefaultListModel<>();
-        savedEvolutionsList.setModel(model);
+        savedEvolutionsList.setModel(savedEvolutionsModel);
 
         savedEvolutionsList.addListSelectionListener(e -> {
+            savedEvolutionsList.setEnabled(false);
             final Path selectedPath = savedEvolutionsList.getSelectedValue();
             if (selectedPath == null) return;
 
-            //TODO: consider https://stackoverflow.com/questions/14113644/java-global-reusable-loading-dialog
+            EventService.LOG_LABEL.trigger("Loading Evolution...");
             CompletableFuture.supplyAsync(() -> ProjectService.readEvolution(selectedPath))
                     .thenAccept(evolution -> {
+                        savedEvolutionsList.setEnabled(true);
+                        if (evolution == null) {
+                            EventService.LOG_LABEL.trigger("Loaded Evolution is empty.");
+                            return;
+                        }
+                        EventService.LOG_LABEL.trigger("Evolution loaded.");
                         this.evolution = evolution;
                         this.history = evolution.getHistoryOfBestPhenotype();
+                        this.evolution.getHistory().forEach(this::showResultInHistoryTable);
                         EventService.REPAINT_CANVAS.trigger(this.history.get(this.history.size() - 1));
                     });
         });
         CompletableFuture
                 .supplyAsync(ProjectService::getSavedEvolutions)
-                .thenAccept(model::addAll);
+                .thenAccept(savedEvolutionsModel::addAll);
     }
 
     /**
@@ -330,6 +341,9 @@ public class MainForm extends JFrame {
                                 MenuService.shortcut('w')
                         ),
                         MenuService.SEPARATOR,
+                        MenuService.item("Save",
+                                e -> SwingUtilities.invokeLater(this::saveEvolution)
+                        ),
                         MenuService.menu(LangService.get("export"),
                                 MenuService.item(LangService.get("selected"),
                                         event -> SwingUtilities.invokeLater(() -> {
@@ -350,6 +364,22 @@ public class MainForm extends JFrame {
                         )
                 )
         ));
+    }
+
+    /**
+     * Save the current evolution and configuration.
+     */
+    private void saveEvolution() {
+        if (evolution == null) {
+            JOptionPane.showMessageDialog(this, "Empty Evolution was not saved.");
+            return;
+        }
+        EventService.LOG_LABEL.trigger("Saving Evolution...");
+        CompletableFuture.runAsync(() -> {
+            final Path evolutionPath = ProjectService.writeEvolution(evolution, "run");
+            if (evolutionPath != null)
+                savedEvolutionsModel.addElement(evolutionPath);
+        }).thenRun(() -> EventService.LOG_LABEL.trigger("Evolution saved."));
     }
 
     /**
@@ -450,7 +480,7 @@ public class MainForm extends JFrame {
         final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
         final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
             EventService.REPAINT_CANVAS.trigger((DiscreteChromosome) result.bestPhenotype().genotype().chromosome());
-            historyTableModel.addRow(new Object[]{(int) result.generation(), result.bestFitness()});
+            showResultInHistoryTable(result);
         };
 
         CompletableFuture
@@ -479,6 +509,15 @@ public class MainForm extends JFrame {
                     stopButton.setEnabled(false);
                     startButton.setEnabled(true);
                 });
+    }
+
+    /**
+     * Add an evolution result to the history table.
+     *
+     * @param result result to display
+     */
+    private void showResultInHistoryTable(final EvolutionResult<DiscreteGene, Double> result) {
+        historyTableModel.addRow(new Object[]{(int) result.generation(), result.bestFitness()});
     }
 
     /**

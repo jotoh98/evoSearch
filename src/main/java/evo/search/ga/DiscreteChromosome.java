@@ -3,7 +3,9 @@ package evo.search.ga;
 import evo.search.io.entities.Configuration;
 import io.jenetics.Chromosome;
 import io.jenetics.util.ISeq;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.stream.Stream;
@@ -13,17 +15,20 @@ import java.util.stream.Stream;
  * from the {@link Configuration} in an evolved order
  * associated with valid positional indices.
  */
-@Value
+@AllArgsConstructor
 public class DiscreteChromosome implements Chromosome<DiscreteGene>, Serializable {
 
     /**
      * Configuration providing context about the chromosome.
      */
+    @Getter
+    @Setter
     transient Configuration configuration;
 
     /**
      * Sequence of {@link DiscreteGene}s forming the chromosome.
      */
+    @Getter
     ISeq<DiscreteGene> genes;
 
     /**

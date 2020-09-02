@@ -163,4 +163,27 @@ public class ListUtils {
         return sum / list.size();
     }
 
+    /**
+     * Remove repeating elements from a list.
+     *
+     * @param list list with repeating elements
+     * @param <T>  type of list items
+     * @return list without items repeating
+     */
+    public static <T> List<T> removeRepeating(final List<T> list) {
+        if (list.size() < 2)
+            return list;
+
+        final List<T> distinct = new ArrayList<>();
+        T comparison = list.get(0);
+        distinct.add(comparison);
+        for (final T item : list)
+            if (!item.equals(comparison)) {
+                distinct.add(item);
+                comparison = item;
+            }
+
+        return distinct;
+    }
+
 }

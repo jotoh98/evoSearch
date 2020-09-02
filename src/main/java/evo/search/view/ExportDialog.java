@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Export Dialog managing the export of {@link DiscreteChromosome}s.
@@ -62,6 +61,7 @@ public class ExportDialog extends JDialog {
      * Button to save exported contents to a file.
      */
     private JButton saveButton;
+    private JCheckBox distinct;
 
     /**
      * List of {@link DiscreteChromosome}s to export.
@@ -165,6 +165,18 @@ public class ExportDialog extends JDialog {
                         new DiscreteGene(build, 5, 2),
                         new DiscreteGene(build, 3, 7),
                         new DiscreteGene(build, 0, 3)
+                ).stream().collect(ISeq.toISeq())),
+                new DiscreteChromosome(build, List.of(
+                        new DiscreteGene(build, 1, 10),
+                        new DiscreteGene(build, 5, 2),
+                        new DiscreteGene(build, 3, 7),
+                        new DiscreteGene(build, 0, 3)
+                ).stream().collect(ISeq.toISeq())),
+                new DiscreteChromosome(build, List.of(
+                        new DiscreteGene(build, 1, 10),
+                        new DiscreteGene(build, 4, 2),
+                        new DiscreteGene(build, 3, 7),
+                        new DiscreteGene(build, 0, 3)
                 ).stream().collect(ISeq.toISeq()))
         ));
         System.exit(0);
@@ -206,7 +218,7 @@ public class ExportDialog extends JDialog {
         final int separatorIndex = csvSeparator.getSelectedIndex();
         final String separator = separatorIndex == 0 ? ", " : "; ";
 
-        String output = chromosomeList
+        List<String> lines = chromosomeList
                 .stream()
                 .map(chromosome -> printRowSeparated(
                         chromosome
@@ -216,6 +228,13 @@ public class ExportDialog extends JDialog {
                         DiscreteGene::getDistance,
                         separator
                 ))
+                .collect(Collectors.toList());
+
+        if (distinct.isSelected() && lines.size() > 1)
+            lines = ListUtils.removeRepeating(lines);
+
+        String output = lines
+                .stream()
                 .reduce(ListUtils.separator("\n"))
                 .orElse("");
 
@@ -264,17 +283,25 @@ public class ExportDialog extends JDialog {
      * @return latex string
      */
     private String exportLatex() {
-        Stream<String> chromosomeStrings = chromosomeList.stream().map(chromosome -> chromosome
+        List<String> individualStrings = chromosomeList
                 .stream()
-                .map(ExportDialog::format)
-                .reduce(ListUtils.REDUCE_WITH_SPACE)
-                .orElse("")
-        );
+                .map(chromosome -> chromosome
+                        .stream()
+                        .map(ExportDialog::format)
+                        .reduce(ListUtils.REDUCE_WITH_SPACE)
+                        .orElse("")
+                )
+                .collect(Collectors.toList());
+
+        if (distinct.isSelected() && individualStrings.size() > 1)
+            individualStrings = ListUtils
+                    .removeRepeating(individualStrings);
 
         if (latexUseMakros.isSelected())
-            chromosomeStrings = chromosomeStrings.map(s -> "\\individual{" + s + "}");
-
-        final List<String> individualStrings = chromosomeStrings.collect(Collectors.toList());
+            individualStrings = individualStrings
+                    .parallelStream()
+                    .map(s -> "\\individual{" + s + "}")
+                    .collect(Collectors.toList());
 
         final String separator = latexUseMakros.isSelected() ? "\n\t" : "\n";
         String reducedString = individualStrings

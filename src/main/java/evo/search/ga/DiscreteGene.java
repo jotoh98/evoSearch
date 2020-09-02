@@ -44,6 +44,8 @@ public class DiscreteGene implements Gene<DiscretePoint, DiscreteGene>, Serializ
      */
     @Override
     public DiscretePoint getAllele() {
+        if (configuration == null)
+            throw new IllegalStateException("Configuration of DiscretePoint cannot be null. ");
         return new DiscretePoint(configuration.getPositions(), position, distance);
     }
 

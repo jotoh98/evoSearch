@@ -2,6 +2,7 @@ package evo.search.ga;
 
 import evo.search.io.entities.Configuration;
 import evo.search.util.ListUtils;
+import evo.search.util.MathUtils;
 import io.jenetics.Chromosome;
 
 import java.util.ArrayList;
@@ -271,16 +272,57 @@ public class AnalysisUtils {
                     final List<DiscretePoint> list = points.subList(k, points.size() - 1);
                     final DiscretePoint worstCase = points.get(k).clone();
                     worstCase.setDistance(worstCase.getDistance() + epsilon);
-                    list.add(worstCase);
+
                     double distance = points.get(k).getDistance();
 
                     if (distance == 0)
                         distance = 1;
 
-                    return ListUtils.consecMap(list, DiscretePoint::distance).stream().reduce(Double::sum).orElse(0d) / distance;
+                    final double arc = arcDistance(points.get(points.size() - 1), worstCase);
+
+                    final double path = ListUtils
+                            .consecMap(list, DiscretePoint::distance)
+                            .stream()
+                            .reduce(Double::sum)
+                            .orElse(0d);
+
+                    return (path + arc) / distance;
                 })
                 .max(Comparator.comparingDouble(Double::doubleValue))
                 .orElse(Double.POSITIVE_INFINITY);
+    }
+
+    /**
+     * Computes the arc distance between a chromosome point and a treasure.
+     * If the distance of the chromosome point is greater than or equal to the treasure,
+     * the arc stays on the points radius. Otherwise, the radius gets increased in each step
+     * until it reaches the treasure.
+     *
+     * @param start     last point in chromosome
+     * @param worstCase worst case location
+     * @return length of arc between last chromosome point and the worst-case location
+     */
+    private static double arcDistance(final DiscretePoint start, final DiscretePoint worstCase) {
+        if (Math.abs(start.position - worstCase.position) < 2)
+            return start.distance(worstCase);
+
+        final int distancePositions = Math.abs(start.position - worstCase.position);
+        final int steps = Math.min(distancePositions, start.positions - distancePositions);
+        if (start.distance >= worstCase.distance) {
+            return steps * 2 * start.distance * Math.sin(Math.PI / start.positions);
+        } else {
+            final double distanceDelta = (worstCase.distance - start.distance) / steps;
+            final double angle = 2 * Math.PI / start.positions;
+            double sum = 0;
+            for (int i = 0; i < steps; i++)
+                sum += MathUtils.polarDistance(
+                        angle,
+                        worstCase.distance + distanceDelta * i,
+                        0,
+                        worstCase.distance + distanceDelta * (i + 1)
+                );
+            return sum;
+        }
     }
 
 }

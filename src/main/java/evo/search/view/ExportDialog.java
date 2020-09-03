@@ -5,6 +5,7 @@ import evo.search.Main;
 import evo.search.ga.DiscreteGene;
 import evo.search.io.service.FileService;
 import evo.search.util.ListUtils;
+import io.jenetics.util.ISeq;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,8 +15,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Export Dialog managing the export of {@link Evolution}s.
@@ -160,26 +161,17 @@ public class ExportDialog extends JDialog {
         final int separatorIndex = csvSeparator.getSelectedIndex();
         final String separator = separatorIndex == 0 ? ", " : "; ";
 
-        List<String> lines = evolution
-                .getHistoryOfBestPhenotype()
-                .stream()
-                .map(chromosome -> printRowSeparated(
-                        chromosome
-                                .stream()
-                                .collect(Collectors.toList()),
-                        DiscreteGene::getPosition,
-                        DiscreteGene::getDistance,
-                        separator
-                ))
-                .collect(Collectors.toList());
+        List<String> lines = ListUtils.map(evolution.getHistoryOfBestPhenotype(), chromosome -> printRowSeparated(
+                ISeq.of(chromosome).asList(),
+                DiscreteGene::getPosition,
+                DiscreteGene::getDistance,
+                separator
+        ));
 
         if (distinct.isSelected() && lines.size() > 1)
             lines = ListUtils.removeRepeating(lines);
 
-        String output = lines
-                .stream()
-                .reduce(ListUtils.separator("\n"))
-                .orElse("");
+        String output = ListUtils.reduce(lines, ListUtils.separator("\n"), "");
 
         if (exportTreasure.isSelected() && evolution.getHistory().size() > 0) {
             final List<DiscreteGene> treasures = evolution.getConfiguration().getTreasures();
@@ -200,21 +192,10 @@ public class ExportDialog extends JDialog {
      * @return row separated csv string of integers and doubles
      */
     private <T> String printRowSeparated(final List<T> items, final Function<T, Integer> position, final Function<T, Double> distance, final String separator) {
-        final String positionStrings = items
-                .stream()
-                .map(position)
-                .map(p -> Integer.toString(p))
-                .reduce(ListUtils.separator(separator))
-                .orElse("");
-
-        final String distanceStrings = items
-                .stream()
-                .map(distance)
-                .map(d -> Double.toString(d))
-                .reduce(ListUtils.separator(separator))
-                .orElse("");
-
-        return positionStrings + "\n" + distanceStrings;
+        final BinaryOperator<String> accumulator = ListUtils.separator(separator);
+        final List<String> positionStrings = ListUtils.map(items, position.andThen(p -> Integer.toString(p)));
+        final List<String> distanceStrings = ListUtils.map(items, distance.andThen(d -> Double.toString(d)));
+        return ListUtils.reduce(positionStrings, accumulator, "") + "\n" + ListUtils.reduce(distanceStrings, accumulator, "");
     }
 
     /**
@@ -223,41 +204,28 @@ public class ExportDialog extends JDialog {
      * @return latex string
      */
     private String exportLatex() {
-        List<String> individualStrings = evolution
-                .getHistoryOfBestPhenotype()
-                .stream()
-                .map(chromosome -> chromosome
-                        .stream()
-                        .map(DiscreteGene::printSmall)
-                        .reduce(ListUtils.REDUCE_WITH_SPACE)
-                        .orElse("")
-                )
-                .collect(Collectors.toList());
+
+        List<String> individualStrings = ListUtils
+                .map(evolution.getHistoryOfBestPhenotype(), chromosome -> {
+                    final StringBuilder chromosomeString = new StringBuilder();
+                    chromosome.forEach(gene -> chromosomeString.append(gene.printSmall()));
+                    return chromosomeString.toString();
+                });
 
         if (distinct.isSelected() && individualStrings.size() > 1)
             individualStrings = ListUtils
                     .removeRepeating(individualStrings);
 
         if (latexUseMakros.isSelected())
-            individualStrings = individualStrings
-                    .parallelStream()
-                    .map(s -> "\\individual{" + s + "}")
-                    .collect(Collectors.toList());
+            individualStrings = ListUtils.map(individualStrings, s -> "\\individual{" + s + "}");
 
         final String separator = latexUseMakros.isSelected() ? "\n\t" : "\n";
-        String reducedString = individualStrings
-                .stream()
-                .reduce(ListUtils.separator(separator))
-                .orElse("");
+        String reducedString = ListUtils.reduce(individualStrings, ListUtils.separator(separator), "");
 
         if (exportTreasure.isSelected() && evolution.getHistory().size() > 0 && evolution.getConfiguration().getTreasures().size() > 0) {
-            String treasures = evolution
-                    .getConfiguration()
-                    .getTreasures()
-                    .stream()
-                    .map(DiscreteGene::printSmall)
-                    .reduce(ListUtils.REDUCE_WITH_SPACE)
-                    .orElse("");
+
+            final List<String> smallPrints = ListUtils.map(evolution.getConfiguration().getTreasures(), DiscreteGene::printSmall);
+            String treasures = ListUtils.reduce(smallPrints, ListUtils.REDUCE_WITH_SPACE, "");
 
             if (latexUseMakros.isSelected())
                 treasures = "\\treasures{" + treasures + "}";

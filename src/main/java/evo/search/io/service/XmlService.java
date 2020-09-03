@@ -2,6 +2,7 @@ package evo.search.io.service;
 
 import evo.search.Main;
 import evo.search.io.entities.IndexEntry;
+import evo.search.util.ListUtils;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.dom4j.Attribute;
@@ -14,7 +15,6 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Utility service for xml-based transformation.
@@ -142,14 +142,13 @@ public class XmlService {
             return Collections.emptyList();
         }
 
-        return readElementList("entry", projects, IndexEntry::parse).stream()
-                .peek(project -> {
-                    if (project == null) {
-                        log.info("A project is broken. It will be deleted.");
-                    }
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        return ListUtils.map(
+                readElementList("entry", projects, IndexEntry::parse),
+                project -> {
+                    if (project == null) log.info("A project is broken. It will be deleted.");
+                    return project;
+                }
+        );
     }
 
     /**
@@ -176,7 +175,7 @@ public class XmlService {
      * @param <T>    type of the values
      */
     public static <T> void appendElementList(final Element parent, final List<T> list, final Function<T, Element> action) {
-        list.stream().map(action).forEach(parent::add);
+        for (final T item : list) parent.add(action.apply(item));
     }
 
     /**

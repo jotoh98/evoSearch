@@ -6,6 +6,7 @@ import evo.search.io.entities.Configuration;
 import evo.search.io.entities.IndexEntry;
 import evo.search.io.entities.Project;
 import evo.search.io.entities.Workspace;
+import evo.search.util.ListUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -249,10 +249,11 @@ public class ProjectService {
      * @return true if the project's directory exists in the services list, false otherwise
      */
     public static boolean isProjectRegistered(final Project project) {
-        return indexEntries.stream()
-                .map(IndexEntry::getPath)
-                .filter(Objects::nonNull)
-                .anyMatch(path -> path.equals(project.getPath()));
+        final List<Path> map = ListUtils.map(indexEntries, IndexEntry::getPath);
+        for (final Path path : map)
+            if (path.equals(project.getPath()))
+                return true;
+        return false;
     }
 
     /**

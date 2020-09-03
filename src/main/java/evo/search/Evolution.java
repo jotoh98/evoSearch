@@ -6,6 +6,7 @@ import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.ga.mutators.DistanceMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.io.service.EventService;
+import evo.search.util.ListUtils;
 import evo.search.view.LangService;
 import io.jenetics.Chromosome;
 import io.jenetics.Genotype;
@@ -14,6 +15,7 @@ import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
 import io.jenetics.engine.Problem;
+import io.jenetics.util.ISeq;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,7 +25,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * This class holds a configuration and executes a corresponding evolution.
@@ -94,7 +95,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
                 list -> fitnessMethod.apply(this, list),
                 Codec.of(
                         Genotype.of(configuration::shuffle, configuration.getPopulation()),
-                        g -> g.chromosome().stream().collect(Collectors.toList())
+                        g -> ISeq.of(g.chromosome()).asList()
                 )
         );
 
@@ -146,13 +147,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      * @return list of best phenotypes per generation
      */
     public List<Chromosome<DiscreteGene>> getHistoryOfBestPhenotype() {
-        return history.stream()
-                .map(result -> result
-                        .bestPhenotype()
-                        .genotype()
-                        .chromosome()
-                )
-                .collect(Collectors.toList());
+        return ListUtils.map(history, result -> result.bestPhenotype().genotype().chromosome());
     }
 
     /**
@@ -183,10 +178,10 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      */
     public double fitnessMulti(final List<DiscreteGene> chromosome) {
         final List<DiscreteGene> treasures = configuration.getTreasures();
-        return treasures.isEmpty() ? 0 : treasures.stream()
-                .mapToDouble(treasure -> AnalysisUtils.traceLength(chromosome, treasure))
-                .reduce(Double::sum)
-                .orElse(0d) / treasures.size();
+        double sum = 0;
+        for (final DiscreteGene treasure : treasures)
+            sum += AnalysisUtils.traceLength(chromosome, treasure);
+        return sum / treasures.size();
     }
 
     /**

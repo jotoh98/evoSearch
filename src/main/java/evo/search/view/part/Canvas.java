@@ -17,11 +17,10 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseMotionListener;
 import java.awt.geom.*;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 /**
  * Canvas to be painted on.
@@ -126,24 +125,29 @@ public class Canvas extends JPanel {
                 final Point2D revertedPosition = transformation.revert(event.getPoint());
                 final double epsilonEnvironment = 10 / transformation.getScale();
 
-                points.keySet().stream()
-                        .filter(point2D -> point2D.distance(revertedPosition) < epsilonEnvironment)
-                        .min(Comparator.comparingDouble(point -> point.distance(revertedPosition)))
-                        .ifPresentOrElse(
-                                point2D -> {
-                                    pointHovered = true;
-                                    popover.setText(String.format("(%.2f, %.2f)", point2D.getX(), point2D.getY()));
-                                    updatePopoverLocation(event);
-                                    popover.setVisible(true);
-                                    repaint();
-                                },
-                                () -> {
-                                    popover.setVisible(false);
-                                    popover.setText("");
-                                    if (pointHovered) repaint();
-                                    pointHovered = false;
-                                }
-                        );
+                Point2D closestPoint = null;
+                double minDistance = Double.POSITIVE_INFINITY;
+
+                for (final Point2D point2D : points.keySet()) {
+                    final double thisDistance = point2D.distance(revertedPosition);
+                    if (thisDistance < epsilonEnvironment && thisDistance < minDistance) {
+                        minDistance = thisDistance;
+                        closestPoint = point2D;
+                    }
+                }
+
+                if (closestPoint != null) {
+                    pointHovered = true;
+                    popover.setText(String.format("(%.2f, %.2f)", closestPoint.getX(), closestPoint.getY()));
+                    updatePopoverLocation(event);
+                    popover.setVisible(true);
+                    repaint();
+                } else {
+                    popover.setVisible(false);
+                    popover.setText("");
+                    if (pointHovered) repaint();
+                    pointHovered = false;
+                }
             }
 
 
@@ -344,15 +348,13 @@ public class Canvas extends JPanel {
      * @return maximal distance visible by canvas
      */
     public double getMaxDistanceVisible() {
-        return Stream.of(
-                new Point2D.Double(0, 0),
-                new Point2D.Double(getWidth(), 0),
-                new Point2D.Double(0, getHeight()),
-                new Point2D.Double(getWidth(), getHeight())
-        )
-                .mapToDouble(point -> point.distance(transformation.getOffset()))
-                .max()
-                .orElse(0) / transformation.getScale();
+        final Point2D offset = transformation.getOffset();
+        return Collections.max(List.of(
+                offset.distance(0, 0),
+                offset.distance(getWidth(), 0),
+                offset.distance(0, getHeight()),
+                offset.distance(getWidth(), getHeight())
+        ));
     }
 
 }

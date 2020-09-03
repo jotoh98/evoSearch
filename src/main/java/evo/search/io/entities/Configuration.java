@@ -26,11 +26,7 @@ import org.dom4j.tree.DefaultElement;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * Environment configuration for the evolution.
@@ -351,6 +347,11 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
         return DocumentHelper.createDocument(root);
     }
 
+    /**
+     * Shuffle a new chromosome with {@link DiscreteGene}s from the distance list.
+     *
+     * @return shuffled chromosome from distance list
+     */
     public Chromosome<DiscreteGene> shuffle() {
         final List<Double> shuffled;
         if (!chooseWithoutPermutation) {
@@ -361,30 +362,27 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
             for (int i = 0; i < distances.size(); i++)
                 shuffled.add(ListUtils.chooseRandom(distances));
         }
-        return new DiscreteChromosome(
-                distances.stream()
-                        .map(distance -> new DiscreteGene(positions, RandomRegistry.random().nextInt(positions), distance))
-                        .toArray(DiscreteGene[]::new)
-        );
+
+        final DiscreteGene[] genes = new DiscreteGene[distances.size()];
+        for (int i = 0; i < distances.size(); i++)
+            genes[i] = new DiscreteGene(positions, RandomRegistry.random().nextInt(positions), distances.get(i));
+
+        return new DiscreteChromosome(genes);
     }
 
-    public DiscreteGene geneSupplier() {
-        final Double distance = ListUtils.chooseRandom(distances);
-        return DiscreteGene.shuffle(positions, distance - distanceMutationDelta, distance + distanceMutationDelta);
-    }
-
-    public boolean geneValidator(final DiscreteGene gene) {
-        return gene.getPositions() == positions && gene.isValid();
-    }
-
+    /**
+     * Validator for a sequence of {@link DiscreteGene}s.
+     *
+     * @param geneSequence sequence of genes to validate
+     * @return whether the gene sequence is valid or not
+     */
     public boolean geneSequenceValidator(final ISeq<DiscreteGene> geneSequence) {
         if (chooseWithoutPermutation || (alterers.stream().anyMatch(alterer -> alterer instanceof DistanceMutator) && distanceMutationDelta > 0))
             return true;
 
-        return geneSequence
-                .stream()
-                .map(DiscreteGene::getDistance)
-                .collect(Collectors.toSet())
-                .containsAll(distances);
+        final Set<Double> distanceSet = new HashSet<>();
+        for (final DiscreteGene gene : geneSequence)
+            distanceSet.add(gene.getDistance());
+        return distanceSet.containsAll(distances);
     }
 }

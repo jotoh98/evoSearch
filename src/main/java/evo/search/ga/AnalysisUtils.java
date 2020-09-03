@@ -96,11 +96,8 @@ public class AnalysisUtils {
      * @return trace length of the path of points
      */
     public static double traceLength(final List<DiscreteGene> points) {
-        return ListUtils
-                .consecMap(points, DiscreteGene::distance)
-                .stream()
-                .reduce(Double::sum)
-                .orElse(0d);
+        final List<Double> distances = ListUtils.consecMap(points, DiscreteGene::distance);
+        return ListUtils.sum(distances);
     }
 
     /**

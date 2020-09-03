@@ -20,12 +20,11 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * The form holding all the configuration panels and a selection list with their names.
@@ -152,9 +151,7 @@ public class ConfigurationDialog extends JDialog {
     public ConfigurationDialog(final List<Configuration> configurations) {
         customUISetup();
 
-        configurations.stream()
-                .map(Configuration::clone)
-                .forEach(this::createConfigPanel);
+        configurations.forEach(configuration -> createConfigPanel(configuration.clone()));
 
         setupChooserList();
 
@@ -390,10 +387,9 @@ public class ConfigurationDialog extends JDialog {
      * Save the configurations and trigger an {@link EventService#CONFIGS_CHANGED} event.
      */
     private void saveConfigurations() {
-        final List<Configuration> configurations = IntStream.range(0, configListModel.size())
-                .mapToObj(configListModel::getElementAt)
-                .map(ConfigPanel::getConfiguration)
-                .collect(Collectors.toList());
+        final List<Configuration> configurations = new ArrayList<>();
+        for (int i = 0; i < configListModel.size(); i++)
+            configurations.add(configListModel.getElementAt(i).getConfiguration());
 
         final Project currentProject = ProjectService.getCurrentProject();
         if (currentProject == null) {

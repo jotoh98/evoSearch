@@ -1,8 +1,5 @@
 package evo.search.ga;
 
-import evo.search.io.entities.Configuration;
-import io.jenetics.Chromosome;
-import io.jenetics.util.ISeq;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -14,27 +11,21 @@ import java.util.List;
 class AnalysisUtilsTest {
 
     /**
-     * Test for the {@link AnalysisUtils#fill(Chromosome)} method.
+     * Test for the {@link AnalysisUtils#fill(List)} method.
      */
     @Test
     void fillsChromosome() {
-
-        final Configuration config = Configuration.builder()
-                .positions(8)
-                .build();
-
-        final List<DiscreteGene> filled = AnalysisUtils.fill(new DiscreteChromosome(config, ISeq.of(
+        final List<DiscreteGene> filled = AnalysisUtils.fill(List.of(
                 new DiscreteGene(8, 0, 1),
                 new DiscreteGene(8, 2, 1),
                 new DiscreteGene(8, 4, 1),
                 new DiscreteGene(8, 6, 1)
-        )));
+        ));
 
         Assertions.assertEquals(filled.size(), 7);
 
-        for (int i = 0; i < filled.size(); i++) {
+        for (int i = 0; i < filled.size(); i++)
             Assertions.assertEquals(filled.get(i).getPosition(), i);
-        }
     }
 
     /**

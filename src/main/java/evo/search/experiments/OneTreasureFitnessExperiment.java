@@ -2,7 +2,6 @@ package evo.search.experiments;
 
 import com.opencsv.CSVWriter;
 import evo.search.Evolution;
-import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.mutators.DistanceMutator;
 import evo.search.ga.mutators.PositionMutator;
@@ -12,6 +11,7 @@ import evo.search.io.entities.Configuration;
 import evo.search.io.service.FileService;
 import evo.search.util.ListUtils;
 import evo.search.util.RandomUtils;
+import io.jenetics.Chromosome;
 import io.jenetics.util.RandomRegistry;
 
 import java.io.IOException;
@@ -65,7 +65,7 @@ public class OneTreasureFitnessExperiment extends Experiment {
 
             final AtomicInteger progress = new AtomicInteger();
 
-            final List<CompletableFuture<DiscreteChromosome>> futures = IntStream
+            final List<CompletableFuture<Chromosome<DiscreteGene>>> futures = IntStream
                     .range(0, 100)
                     .peek(value -> Collections.shuffle(distances))
                     .mapToObj(index -> CompletableFuture
@@ -89,7 +89,7 @@ public class OneTreasureFitnessExperiment extends Experiment {
                                     .build())
                             .thenApply(evolution -> {
                                 evolution.run();
-                                return (DiscreteChromosome) evolution.getResult().chromosome();
+                                return evolution.getResult().chromosome();
                             })
                     )
                     .peek(future -> System.out.println("Thread started"))
@@ -103,7 +103,6 @@ public class OneTreasureFitnessExperiment extends Experiment {
 
                     final List<List<String>> collected = futures.stream()
                             .map(CompletableFuture::join)
-                            .map(genes -> genes.toSeq().asList())
                             .map(genes -> genes.stream()
                                     .map(discreteGene -> Double.toString(discreteGene.getDistance()))
                                     .collect(Collectors.toList())

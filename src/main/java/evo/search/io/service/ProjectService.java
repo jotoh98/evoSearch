@@ -2,7 +2,6 @@ package evo.search.io.service;
 
 import evo.search.Evolution;
 import evo.search.Main;
-import evo.search.ga.DiscreteChromosome;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.IndexEntry;
 import evo.search.io.entities.Project;
@@ -360,7 +359,6 @@ public class ProjectService {
         try (final ObjectInputStream objectInputStream = new ObjectInputStream(Files.newInputStream(evolutionFile))) {
             final Evolution evolution = (Evolution) objectInputStream.readObject();
             evolution.setConfiguration(configuration);
-            evolution.getHistory().forEach(result -> result.population().forEach(phenotype -> ((DiscreteChromosome) phenotype.genotype().chromosome()).setConfiguration(configuration)));
             return evolution;
         } catch (final IOException | ClassNotFoundException e) {
             EventService.LOG.trigger("Could not load evolution " + evolutionFile.toString() + ": " + e.getMessage());

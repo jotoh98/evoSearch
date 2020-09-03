@@ -3,7 +3,6 @@ package evo.search.view;
 import com.github.weisj.darklaf.ui.list.DarkDefaultListCellRenderer;
 import evo.search.Evolution;
 import evo.search.Main;
-import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
@@ -13,6 +12,7 @@ import evo.search.io.service.MenuService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.model.ConfigComboModel;
 import evo.search.view.part.Canvas;
+import io.jenetics.Chromosome;
 import io.jenetics.engine.EvolutionResult;
 import lombok.Getter;
 import lombok.Setter;
@@ -132,10 +132,6 @@ public class MainForm extends JFrame {
      */
     private final DefaultListModel<Path> savedEvolutionsModel = new DefaultListModel<>();
     /**
-     * History of best individuals.
-     */
-    private List<DiscreteChromosome> history;
-    /**
      * Instantiated evolution generating the history.
      */
     private Evolution evolution;
@@ -243,9 +239,10 @@ public class MainForm extends JFrame {
                         }
                         EventService.LOG_LABEL.trigger("Evolution loaded.");
                         this.evolution = evolution;
-                        this.history = evolution.getHistoryOfBestPhenotype();
                         this.evolution.getHistory().forEach(this::showResultInHistoryTable);
-                        EventService.REPAINT_CANVAS.trigger(this.history.get(this.history.size() - 1));
+                        final int lastIndex = this.evolution.getHistory().size() - 1;
+                        final Chromosome<DiscreteGene> chromosome = this.evolution.getHistory().get(lastIndex).bestPhenotype().genotype().chromosome();
+                        EventService.REPAINT_CANVAS.trigger(chromosome);
                     });
         });
         CompletableFuture
@@ -347,12 +344,14 @@ public class MainForm extends JFrame {
                         MenuService.menu(LangService.get("export"),
                                 MenuService.item(LangService.get("selected"),
                                         event -> SwingUtilities.invokeLater(() -> {
-                                            final DiscreteChromosome selectedChromosome = getSelectedChromosome();
-                                            if (selectedChromosome != null)
-                                                ExportDialog.showDialog(List.of(selectedChromosome));
+                                            final int selectedIndex = getSelectedIndex();
+                                            if (selectedIndex < 0) return;
+                                            final Evolution clone = evolution.clone();
+                                            clone.setHistory(evolution.getHistory().subList(selectedIndex, selectedIndex + 1));
+                                            ExportDialog.showDialog(clone);
                                         })
                                 ),
-                                MenuService.item("All", event -> SwingUtilities.invokeLater(() -> ExportDialog.showDialog(history)))
+                                MenuService.item("All", event -> SwingUtilities.invokeLater(() -> ExportDialog.showDialog(evolution)))
                         )
                 ),
                 MenuService.menu(
@@ -394,7 +393,9 @@ public class MainForm extends JFrame {
         );
         EventService.REPAINT_CANVAS.addListener(chromosome -> {
             canvas.clear();
+            canvas.setRays(evolution.getConfiguration().getPositions());
             canvas.render(chromosome);
+            canvas.renderTreasures(evolution.getConfiguration().getTreasures());
         });
     }
 
@@ -416,7 +417,7 @@ public class MainForm extends JFrame {
         };
 
         historyTable.getSelectionModel().addListSelectionListener(e -> {
-            final DiscreteChromosome chromosome = getSelectedChromosome();
+            final Chromosome<DiscreteGene> chromosome = getSelectedChromosome();
             if (chromosome != null)
                 EventService.REPAINT_CANVAS.trigger(chromosome);
         });
@@ -445,13 +446,33 @@ public class MainForm extends JFrame {
      *
      * @return selected chromosome from {@link #historyTable}
      */
-    private DiscreteChromosome getSelectedChromosome() {
+    private Chromosome<DiscreteGene> getSelectedChromosome() {
+        final int selectedIndex = getSelectedIndex();
+        return selectedIndex < 0 ? null : getBestIndividual(selectedIndex);
+    }
+
+    /**
+     * Get the selected index in the {@link #historyTable}.
+     *
+     * @return selected index from {@link #historyTable}
+     */
+    private int getSelectedIndex() {
         final int selectedRow = historyTable.getSelectedRow();
-        if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return null;
+        if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return -1;
 
         final int index = historyTable.convertRowIndexToModel(selectedRow);
-        if (index < 0 || index >= history.size()) return null;
-        return history.get(index);
+        if (index < 0 || index >= evolution.getHistory().size()) return -1;
+        return index;
+    }
+
+    /**
+     * Get the best phenotypes chromosome of the given generation.
+     *
+     * @param generation generation index
+     * @return best phenotypes chromosome of the generation
+     */
+    private Chromosome<DiscreteGene> getBestIndividual(final int generation) {
+        return evolution.getHistory().get(generation).bestPhenotype().genotype().chromosome();
     }
 
     /**
@@ -479,7 +500,7 @@ public class MainForm extends JFrame {
 
         final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
         final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
-            EventService.REPAINT_CANVAS.trigger((DiscreteChromosome) result.bestPhenotype().genotype().chromosome());
+            EventService.REPAINT_CANVAS.trigger(result.bestPhenotype().genotype().chromosome());
             showResultInHistoryTable(result);
         };
 
@@ -493,9 +514,7 @@ public class MainForm extends JFrame {
 
                     evolution.run();
 
-                    history = evolution.getHistoryOfBestPhenotype();
-
-                    return (DiscreteChromosome) evolution.getResult().chromosome();
+                    return evolution.getResult().chromosome();
                 })
                 .thenAccept(chromosome -> {
                     if (chromosome != null) {

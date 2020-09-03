@@ -98,13 +98,13 @@ public class MultiTreasureFitnessExperiment extends Experiment {
 
         final List<DiscreteGene> treasures = ListUtils.generate(15, () -> RandomUtils.generatePoint(6, 10, 50));
 
-        for (int treasureAmount = 2; treasureAmount <= treasures.size(); treasureAmount++) {
+        for (int treasureAmount = 2; treasureAmount <= treasures.size(); treasureAmount += 2) {
             final int amount = treasureAmount;
             final List<List<DiscreteGene>> results = new ArrayList<>();
             final AtomicInteger runIndex = new AtomicInteger();
 
             final List<CompletableFuture<Void>> futures = IntStream
-                    .range(0, 100)
+                    .range(0, 20)
                     .mapToObj(iteration -> treasures.subList(0, amount))
                     .map(treasureSublist -> {
                         final Configuration clone = baseConfiguration.clone();
@@ -117,6 +117,8 @@ public class MultiTreasureFitnessExperiment extends Experiment {
                             .runAsync(evolution)
                             .thenRun(() -> {
                                 System.out.printf("Run %d:%d finished\n", evolution.getConfiguration().getTreasures().size(), runIndex.getAndIncrement());
+
+
                                 final List<DiscreteGene> result = bestPhenotype(evolution);
                                 results.add(result);
 
@@ -222,11 +224,11 @@ public class MultiTreasureFitnessExperiment extends Experiment {
                                 .collect(Collectors.toList())
                 )
                 .fitness(Evolution.Fitness.MULTI)
-                .limit(1000)
-                .population(50)
+                .limit(500)
                 .positions(6)
-                .offspring(15)
-                .survivors(20)
+                .population(20)
+                .offspring(7)
+                .survivors(7)
                 .build();
     }
 }

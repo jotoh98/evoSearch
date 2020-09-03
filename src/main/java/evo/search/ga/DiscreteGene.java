@@ -4,11 +4,13 @@ import evo.search.io.entities.Configuration;
 import evo.search.util.MathUtils;
 import evo.search.util.RandomUtils;
 import io.jenetics.Gene;
+import io.jenetics.util.RandomRegistry;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.awt.geom.Point2D;
 import java.io.Serializable;
+import java.util.Random;
 
 /**
  * Discrete genome carrying a {@link Point2D} allele.
@@ -67,14 +69,20 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
     }
 
     /**
-     * Checks, if a gene is valid. That means, that the allele's distance is
-     * one of these in the {@link Configuration} and smaller than the positions property.
+     * Returns a shuffled {@link DiscreteGene}.
+     * The point's position is randomly selected in the range [0, {@code positions}) and the distance is chosen in the range [{@code minDistance}, {@code maxDistance}).
+     * Utilizes the {@link RandomRegistry} from jenetics for thread-safety.
      *
-     * @return whether the discrete gene is valid
+     * @param positions   upper boundary for the points position
+     * @param minDistance Minimal distance for the point (inclusive).
+     * @param maxDistance Maximal distance for the point (exclusive).
+     * @return shuffled discrete point
+     * @see Random#nextDouble()
      */
-    @Override
-    public boolean isValid() {
-        return distance > 0 && position >= 0 && position < positions;
+    public static DiscreteGene shuffle(final int positions, final double minDistance, final double maxDistance) {
+        final int p = RandomRegistry.random().nextInt(positions);
+        final double d = RandomUtils.inRange(minDistance, maxDistance);
+        return new DiscreteGene(positions, p, d);
     }
 
     @Override
@@ -131,5 +139,16 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
      */
     public String printSmall() {
         return String.format("(%s, %s)", position, distance);
+    }
+
+    /**
+     * Checks, if a gene is valid. That means, that the allele's distance is
+     * one of these in the {@link Configuration} and smaller than the positions property.
+     *
+     * @return whether the discrete gene is valid
+     */
+    @Override
+    public boolean isValid() {
+        return distance > 0 && position >= 0 && position < positions && distance >= 0;
     }
 }

@@ -1,8 +1,6 @@
 package evo.search.ga;
 
-import evo.search.io.entities.Configuration;
 import evo.search.util.ListUtils;
-import io.jenetics.Chromosome;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -24,23 +22,22 @@ public class AnalysisUtils {
      * and counter-clockwise counting the individual distances. Finally, the inverse of the minimal
      * clockwise and counter-clockwise likenesses is returned.
      *
+     * @param distances  distances of the evolutions environment
      * @param chromosome the individual measured
      * @return Spiral likeness between 0.0 and 1.0. 1.0 means full spiral. 0.0 means empty individual.
      */
-    public static double spiralLikeness(final DiscreteChromosome chromosome) {
+    public static double spiralLikeness(final List<Double> distances, final List<DiscreteGene> chromosome) {
 
-
-        final Configuration configuration = chromosome.getConfiguration();
-        final List<Double> distances = configuration.getDistances();
-        final int positions = configuration.getPositions();
-
-        if (chromosome.toSeq().size() == 0) {
+        if (chromosome.size() == 0) {
             return 0;
         }
 
+        final int positions = chromosome.get(0).getPositions();
+
+
         distances.sort(Double::compareTo);
-        int spiralPositionCounter = chromosome.getGene(0).getPosition();
-        int spiralPositionClock = chromosome.getGene(0).getPosition();
+        int spiralPositionCounter = chromosome.get(0).getPosition();
+        int spiralPositionClock = chromosome.get(0).getPosition();
 
         double spiralCounterLikeness = 0;
         double spiralClockLikeness = 0;
@@ -72,14 +69,14 @@ public class AnalysisUtils {
     }
 
     /**
-     * Computes the trace length necessary for the {@link DiscreteChromosome}
-     * necessary to find the given treasure {@link DiscreteGene}.
+     * Computes the trace length necessary for the {@link DiscreteGene} chromosome
+     * to find the given treasure {@link DiscreteGene}.
      *
      * @param chromosome chromosome to evaluate the trace length on
      * @param treasure   treasure point to be found
      * @return trace length necessary for the individual to find the treasure
      */
-    public static double traceLength(final Chromosome<DiscreteGene> chromosome, final DiscreteGene treasure) {
+    public static double traceLength(final List<DiscreteGene> chromosome, final DiscreteGene treasure) {
         double trace = 0d;
 
         DiscreteGene previous = new DiscreteGene(1, 0, 0d);
@@ -132,12 +129,12 @@ public class AnalysisUtils {
      * @param chromosome chromosome with jumping genes
      * @return list of visited points with consecutive position indices
      */
-    public static List<DiscreteGene> fill(final Chromosome<DiscreteGene> chromosome) {
+    public static List<DiscreteGene> fill(final List<DiscreteGene> chromosome) {
         final ArrayList<DiscreteGene> discreteGenes = new ArrayList<>();
 
         int i = 0;
 
-        for (; i < chromosome.length() - 1; i++) {
+        for (; i < chromosome.size() - 1; i++) {
             final DiscreteGene pointA = chromosome.get(i);
             final DiscreteGene pointB = chromosome.get(i + 1);
             discreteGenes.add(pointA);

@@ -186,4 +186,18 @@ public class ListUtils {
         return distinct;
     }
 
+    /**
+     * Deep clone a list of items.
+     *
+     * @param items  items to clone
+     * @param cloner cloning method
+     * @param <T>    type of items
+     * @return list of deeply cloned items
+     */
+    public static <T> List<T> deepClone(final List<T> items, final UnaryOperator<T> cloner) {
+        final List<T> clone = new ArrayList<>();
+        for (final T item : items) clone.add(cloner.apply(item));
+        return clone;
+    }
+
 }

@@ -1,13 +1,13 @@
 package evo.search.view.part;
 
-import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
-import evo.search.io.entities.Configuration;
 import evo.search.view.render.Ray2D;
 import evo.search.view.render.StringShape;
 import evo.search.view.render.Style;
 import evo.search.view.render.Transformation;
+import io.jenetics.Chromosome;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,6 +57,12 @@ public class Canvas extends JPanel {
      */
     @Getter
     final private JLabel popover = new JLabel();
+
+    /**
+     * Amount of rays to display.
+     */
+    @Setter
+    private int rays = 3;
 
     /**
      * Canvas constructor. Sets initial scale and the offset to the center of the canvas.
@@ -234,14 +240,9 @@ public class Canvas extends JPanel {
      *
      * @param chromosome chromosome to render
      */
-    public void render(final DiscreteChromosome chromosome) {
-        final Configuration configuration = chromosome.getConfiguration();
+    public void render(final Chromosome<DiscreteGene> chromosome) {
 
-        if (configuration == null) return;
-
-        final int availablePosition = configuration.getPositions();
-
-        renderRays(availablePosition);
+        renderRays(rays);
 
         final AtomicInteger index = new AtomicInteger();
         chromosome.forEach(gene -> {
@@ -251,7 +252,7 @@ public class Canvas extends JPanel {
             index.getAndIncrement();
         });
 
-        if (availablePosition > 2) {
+        if (rays > 2) {
             Point2D previous = new Point2D.Double();
             for (final DiscreteGene discreteGene : chromosome) {
                 final Point2D current = discreteGene.getAllele();
@@ -262,8 +263,6 @@ public class Canvas extends JPanel {
                 previous = current;
             }
         }
-
-        renderTreasures(configuration.getTreasures());
     }
 
     /**

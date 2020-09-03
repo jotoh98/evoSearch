@@ -5,10 +5,15 @@ import evo.search.Main;
 import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
 import evo.search.ga.mutators.DiscreteAlterer;
+import evo.search.ga.mutators.DistanceMutator;
 import evo.search.ga.mutators.SwapGeneMutator;
 import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.service.XmlService;
+import evo.search.util.ListUtils;
 import io.jenetics.AbstractAlterer;
+import io.jenetics.Chromosome;
+import io.jenetics.util.ISeq;
+import io.jenetics.util.RandomRegistry;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,7 +28,9 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Environment configuration for the evolution.
@@ -58,7 +65,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
     private int positions = 3;
     /**
      * Input distances to choose a permutation from.
-     * Forms single {@link DiscreteChromosome}s.
+     * Forms single {@link DiscreteGene} chromosomes.
      */
     @Builder.Default
     private List<Double> distances = new ArrayList<>();
@@ -344,4 +351,40 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
         return DocumentHelper.createDocument(root);
     }
 
+    public Chromosome<DiscreteGene> shuffle() {
+        final List<Double> shuffled;
+        if (!chooseWithoutPermutation) {
+            shuffled = ListUtils.deepClone(this.distances, Double::doubleValue);
+            Collections.shuffle(shuffled);
+        } else {
+            shuffled = new ArrayList<>();
+            for (int i = 0; i < distances.size(); i++)
+                shuffled.add(ListUtils.chooseRandom(distances));
+        }
+        return new DiscreteChromosome(
+                distances.stream()
+                        .map(distance -> new DiscreteGene(positions, RandomRegistry.random().nextInt(positions), distance))
+                        .toArray(DiscreteGene[]::new)
+        );
+    }
+
+    public DiscreteGene geneSupplier() {
+        final Double distance = ListUtils.chooseRandom(distances);
+        return DiscreteGene.shuffle(positions, distance - distanceMutationDelta, distance + distanceMutationDelta);
+    }
+
+    public boolean geneValidator(final DiscreteGene gene) {
+        return gene.getPositions() == positions && gene.isValid();
+    }
+
+    public boolean geneSequenceValidator(final ISeq<DiscreteGene> geneSequence) {
+        if (chooseWithoutPermutation || (alterers.stream().anyMatch(alterer -> alterer instanceof DistanceMutator) && distanceMutationDelta > 0))
+            return true;
+
+        return geneSequence
+                .stream()
+                .map(DiscreteGene::getDistance)
+                .collect(Collectors.toSet())
+                .containsAll(distances);
+    }
 }

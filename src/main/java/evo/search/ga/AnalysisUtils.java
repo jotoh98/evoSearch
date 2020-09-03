@@ -28,12 +28,9 @@ public class AnalysisUtils {
      */
     public static double spiralLikeness(final List<Double> distances, final List<DiscreteGene> chromosome) {
 
-        if (chromosome.size() == 0) {
-            return 0;
-        }
+        if (chromosome.size() == 0) return 0;
 
         final int positions = chromosome.get(0).getPositions();
-
 
         distances.sort(Double::compareTo);
         int spiralPositionCounter = chromosome.get(0).getPosition();

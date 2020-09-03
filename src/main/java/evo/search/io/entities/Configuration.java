@@ -276,9 +276,9 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
         if (treasuresElement != null) {
             final ArrayList<DiscreteGene> treasures = new ArrayList<>();
             XmlService.forEach("treasure", treasuresElement, element -> {
-                final DiscreteGene DiscreteGene = parseTreasure(element);
-                if (DiscreteGene != null)
-                    treasures.add(DiscreteGene);
+                final DiscreteGene gene = parseTreasure(element);
+                if (gene != null)
+                    treasures.add(gene);
             });
             setTreasures(treasures);
         }

@@ -12,6 +12,7 @@ import io.jenetics.Chromosome;
 import io.jenetics.engine.EvolutionResult;
 import io.jenetics.util.ISeq;
 import io.jenetics.util.RandomRegistry;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.geom.Point2D;
@@ -20,7 +21,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
  *
  * @author jotoh
  */
+@Slf4j
 public class MultiTreasureFitnessExperiment extends Experiment {
 
     /**
@@ -80,10 +81,10 @@ public class MultiTreasureFitnessExperiment extends Experiment {
                 iterativeTreasureTest(writer);
 
             } catch (final IOException e) {
-                e.printStackTrace();
+                log.error("Could not open the csv writer.", e);
             }
         } catch (final IOException e) {
-            e.printStackTrace();
+            log.error("Could not open the csv file stream.", e);
         }
 
     }
@@ -99,78 +100,101 @@ public class MultiTreasureFitnessExperiment extends Experiment {
         final List<DiscreteGene> treasures = ListUtils.generate(15, () -> RandomUtils.generatePoint(6, 10, 50));
 
         for (int treasureAmount = 2; treasureAmount <= treasures.size(); treasureAmount += 2) {
-            final int amount = treasureAmount;
-            final List<List<DiscreteGene>> results = new ArrayList<>();
-            final AtomicInteger runIndex = new AtomicInteger();
+            final List<DiscreteGene> treasureSublist = treasures.subList(0, treasureAmount);
 
-            final List<DiscreteGene> treasureSublist = treasures.subList(0, amount);
-            final CompletableFuture<?>[] futures = new CompletableFuture[20];
-            for (int iteration = 0; iteration < futures.length; iteration++) {
-                final Configuration clone = baseConfiguration.clone();
-                clone.setTreasures(treasureSublist);
-                Collections.shuffle(clone.getDistances());
-                final Evolution evolution = Evolution.builder().configuration(clone).build();
+            final List<List<DiscreteGene>> results = getResultMatrix(writer, baseConfiguration, treasureSublist);
 
-                futures[iteration] = CompletableFuture
-                        .runAsync(evolution)
-                        .thenRun(() -> {
-                            System.out.printf("Run %d:%d finished\n", evolution.getConfiguration().getTreasures().size(), runIndex.getAndIncrement());
+            final List<List<DiscreteGene>> transposed = ListUtils.transpose(results);
+            final List<List<Point2D>> comparedPoints = ListUtils.map(transposed, row -> ListUtils.map(row, DiscreteGene::getAllele));
 
-
-                            final List<DiscreteGene> result = bestPhenotype(evolution);
-                            results.add(result);
-
-                            final List<String> distances = result.stream().map(DiscreteGene::getDistance).map(d -> Double.toString(d)).collect(Collectors.toList());
-                            final List<String> positions = result.stream().map(DiscreteGene::getPosition).map(d -> Integer.toString(d)).collect(Collectors.toList());
-
-                            distances.addAll(0, List.of(
-                                    Integer.toString(amount),
-                                    Integer.toString(runIndex.get()),
-                                    "Distances"
-
-                            ));
-                            positions.addAll(0, List.of(
-                                    Integer.toString(amount),
-                                    Integer.toString(runIndex.get()),
-                                    "Positions"
-                            ));
-
-                            synchronized (writer) {
-                                writer.writeNext(distances.toArray(String[]::new));
-                                writer.writeNext(positions.toArray(String[]::new));
-                            }
-                        });
-            }
-
-            CompletableFuture.allOf(futures).join();
-
-            final List<List<Point2D>> comparedPoints = new ArrayList<>();
-            for (final List<DiscreteGene> geneList : ListUtils.transpose(results)) {
-                final List<Point2D> pointList = new ArrayList<>();
-                for (final DiscreteGene gene : geneList)
-                    pointList.add(gene.getAllele());
-                comparedPoints.add(pointList);
-            }
-
-            final List<String> deviationX = computePointMatrixDeviation(comparedPoints, Point2D::getX);
-
-            deviationX.addAll(0, List.of(
-                    Integer.toString(amount),
-                    "",
-                    "Deviation x"
-            ));
-
-            final List<String> deviationY = computePointMatrixDeviation(comparedPoints, Point2D::getY);
-
-            deviationY.addAll(0, List.of(
-                    Integer.toString(amount),
-                    "",
-                    "Deviation y"
-            ));
-
-            writer.writeNext(deviationX.toArray(String[]::new));
-            writer.writeNext(deviationY.toArray(String[]::new));
+            writeDeviations(writer, treasureAmount, comparedPoints);
         }
+    }
+
+    /**
+     * Writes the standard deviations for the x- and y-coordinates of
+     * the points in a row of the supplied point matrix.
+     *
+     * @param writer         csv writer to output the deviations
+     * @param treasureAmount amount of treasures
+     * @param pointMatrix    matrix of points
+     */
+    private void writeDeviations(final CSVWriter writer, final int treasureAmount, final List<List<Point2D>> pointMatrix) {
+        final List<String> deviationX = computePointMatrixDeviation(pointMatrix, Point2D::getX);
+
+        deviationX.addAll(0, List.of(
+                Integer.toString(treasureAmount),
+                "",
+                "Deviation x"
+        ));
+
+        final List<String> deviationY = computePointMatrixDeviation(pointMatrix, Point2D::getY);
+
+        deviationY.addAll(0, List.of(
+                Integer.toString(treasureAmount),
+                "",
+                "Deviation y"
+        ));
+
+        writer.writeNext(deviationX.toArray(String[]::new));
+        writer.writeNext(deviationY.toArray(String[]::new));
+    }
+
+    /**
+     * Complete an amount of evolutions and return a matrix of the best phenotypes points.
+     * One row of the matrix corresponds to one individual.
+     *
+     * @param writer        csv writer to output the matrix
+     * @param configuration configuration to use for each evolution
+     * @param treasures     treasures to use in the configuration
+     * @return matrix of individual phenotype points
+     */
+    @NotNull
+    private List<List<DiscreteGene>> getResultMatrix(final CSVWriter writer, final Configuration configuration, final List<DiscreteGene> treasures) {
+        final int amount = treasures.size();
+        final List<List<DiscreteGene>> results = new ArrayList<>();
+        final CompletableFuture<?>[] futures = new CompletableFuture[20];
+        for (int iteration = 0; iteration < 20; iteration++) {
+            final int runIndex = iteration;
+            final Configuration clone = configuration.clone();
+            clone.setTreasures(treasures);
+            Collections.shuffle(clone.getDistances());
+            final Evolution evolution = Evolution.builder().configuration(clone).build();
+
+            final CompletableFuture<Void> future = CompletableFuture
+                    .runAsync(evolution)
+                    .thenRun(() -> {
+                        System.out.printf("Run %d:%d finished\n", evolution.getConfiguration().getTreasures().size(), runIndex);
+
+
+                        final List<DiscreteGene> result = bestPhenotype(evolution);
+                        results.add(result);
+
+                        final List<String> distances = result.stream().map(DiscreteGene::getDistance).map(d -> Double.toString(d)).collect(Collectors.toList());
+                        final List<String> positions = result.stream().map(DiscreteGene::getPosition).map(d -> Integer.toString(d)).collect(Collectors.toList());
+
+                        distances.addAll(0, List.of(
+                                Integer.toString(amount),
+                                Integer.toString(runIndex),
+                                "Distances"
+
+                        ));
+                        positions.addAll(0, List.of(
+                                Integer.toString(amount),
+                                Integer.toString(runIndex),
+                                "Positions"
+                        ));
+
+                        synchronized (writer) {
+                            writer.writeNext(distances.toArray(String[]::new));
+                            writer.writeNext(positions.toArray(String[]::new));
+                        }
+                    });
+            futures[iteration] = future;
+        }
+
+        CompletableFuture.allOf(futures).join();
+        return results;
     }
 
     /**

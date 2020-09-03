@@ -338,7 +338,7 @@ public class ProjectService {
             EventService.LOG.trigger("Evolution was saved to file " + filename);
             return evolutionPath;
         } catch (final IOException e) {
-            e.printStackTrace();
+            log.error("Could not open the evolution file.", e);
         }
         return null;
     }
@@ -401,7 +401,7 @@ public class ProjectService {
                     })
                     .collect(Collectors.toList());
         } catch (final IOException e) {
-            e.printStackTrace();
+            log.error("Could not scan the projects directory.", e);
         }
         return Collections.emptyList();
     }

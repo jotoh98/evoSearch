@@ -18,6 +18,8 @@ import io.jenetics.engine.Problem;
 import io.jenetics.util.ISeq;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -89,16 +91,51 @@ public class Evolution implements Runnable, Serializable, Cloneable {
 
         history = new ArrayList<>();
 
+        final Problem<List<DiscreteGene>, DiscreteGene, Double> problem = constructProblem();
+
+        final Engine<DiscreteGene, Double> engine = buildEngine(problem);
+        if (engine == null) return;
+
+        EventService.LOG_LABEL.trigger(LangService.get("environment.evolving"));
+        final AtomicInteger progressCounter = new AtomicInteger();
+        result = engine
+                .stream()
+                .limit(discreteGeneDoubleEvolutionResult -> !aborted)
+                .limit(configuration.getLimit())
+                .peek(historyConsumer)
+                .peek(result -> {
+                    history.add(result);
+                    progressConsumer.accept(progressCounter.incrementAndGet());
+                })
+                .collect(EvolutionResult.toBestGenotype());
+    }
+
+    /**
+     * Create the problem this evolution is trying to solve.
+     *
+     * @return evolution problem
+     */
+    @NotNull
+    private Problem<List<DiscreteGene>, DiscreteGene, Double> constructProblem() {
         final BiFunction<Evolution, List<DiscreteGene>, Double> fitnessMethod = configuration.getFitness().getMethod();
 
-        final Problem<List<DiscreteGene>, DiscreteGene, Double> problem = Problem.of(
+        return Problem.of(
                 list -> fitnessMethod.apply(this, list),
                 Codec.of(
                         Genotype.of(configuration::shuffle, configuration.getPopulation()),
                         g -> ISeq.of(g.chromosome()).asList()
                 )
         );
+    }
 
+    /**
+     * Build evolution engine.
+     *
+     * @param problem problem to solve
+     * @return evolution engine
+     */
+    @Nullable
+    private Engine<DiscreteGene, Double> buildEngine(final Problem<List<DiscreteGene>, DiscreteGene, Double> problem) {
         final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine
                 .builder(problem)
                 .selector(new StochasticUniversalSelector<>())
@@ -123,21 +160,10 @@ public class Evolution implements Runnable, Serializable, Cloneable {
                     .populationSize(configuration.getPopulation());
         } catch (final IllegalArgumentException e) {
             EventService.LOG_LABEL.trigger("Configuration was incorrect: " + e.getMessage());
-            return;
+            return null;
         }
-
-        EventService.LOG_LABEL.trigger(LangService.get("environment.evolving"));
-        final AtomicInteger progressCounter = new AtomicInteger();
-        result = evolutionBuilder.build()
-                .stream()
-                .limit(discreteGeneDoubleEvolutionResult -> !aborted)
-                .limit(configuration.getLimit())
-                .peek(historyConsumer)
-                .peek(result -> {
-                    history.add(result);
-                    progressConsumer.accept(progressCounter.incrementAndGet());
-                })
-                .collect(EvolutionResult.toBestGenotype());
+        final Engine<DiscreteGene, Double> engine = evolutionBuilder.build();
+        return engine;
     }
 
     /**

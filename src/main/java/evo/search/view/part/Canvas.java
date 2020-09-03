@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
@@ -122,19 +123,7 @@ public class Canvas extends JPanel {
              */
             @Override
             public void mouseMoved(final MouseEvent event) {
-                final Point2D revertedPosition = transformation.revert(event.getPoint());
-                final double epsilonEnvironment = 10 / transformation.getScale();
-
-                Point2D closestPoint = null;
-                double minDistance = Double.POSITIVE_INFINITY;
-
-                for (final Point2D point2D : points.keySet()) {
-                    final double thisDistance = point2D.distance(revertedPosition);
-                    if (thisDistance < epsilonEnvironment && thisDistance < minDistance) {
-                        minDistance = thisDistance;
-                        closestPoint = point2D;
-                    }
-                }
+                final Point2D closestPoint = getClosestPoint(event);
 
                 if (closestPoint != null) {
                     pointHovered = true;
@@ -148,6 +137,30 @@ public class Canvas extends JPanel {
                     if (pointHovered) repaint();
                     pointHovered = false;
                 }
+            }
+
+            /**
+             * Determine the closest point to the mouse position.
+             *
+             * @param event
+             * @return
+             */
+            @Nullable
+            private Point2D getClosestPoint(final MouseEvent event) {
+                final Point2D revertedPosition = transformation.revert(event.getPoint());
+                final double epsilonEnvironment = 10 / transformation.getScale();
+
+                Point2D closestPoint = null;
+                double minDistance = Double.POSITIVE_INFINITY;
+
+                for (final Point2D point2D : points.keySet()) {
+                    final double thisDistance = point2D.distance(revertedPosition);
+                    if (thisDistance < epsilonEnvironment && thisDistance < minDistance) {
+                        minDistance = thisDistance;
+                        closestPoint = point2D;
+                    }
+                }
+                return closestPoint;
             }
 
 

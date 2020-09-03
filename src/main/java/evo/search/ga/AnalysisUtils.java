@@ -1,6 +1,7 @@
 package evo.search.ga;
 
 import evo.search.util.ListUtils;
+import evo.search.util.MathUtils;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -208,25 +209,15 @@ public class AnalysisUtils {
         if (points.size() < 2)
             return 0;
 
-        final double[] areasCovered = new double[points.get(0).getPositions()];
+        final double sectorAngle = (2 * Math.PI) / points.get(0).getPositions();
 
-        ListUtils.consec(points, (pointA, pointB) -> {
-            int index = Math.min(pointA.getPosition(), pointB.getPosition());
+        final List<Double> areas = ListUtils.consecMap(points, (pointA, pointB) -> {
             final int delta = Math.abs(pointA.getPosition() - pointB.getPosition());
-
-            if (index == 0 && delta > 1)
-                index = delta;
-
-            if (delta == 0 || delta == pointA.getPositions() / 2d)
-                return;
-
-            final double areaInSector = areaInSector(pointA.getDistance(), pointB.getDistance(), pointA.getPositions());
-            areasCovered[index] = Math.max(areaInSector, areasCovered[index]);
+            final double area = MathUtils.areaInTriangle(sectorAngle * delta, pointA.getDistance(), pointB.getDistance());
+            return Math.max(area, 0d);
         });
-        return Arrays
-                .stream(areasCovered)
-                .reduce(Double::sum)
-                .orElse(0d);
+
+        return ListUtils.sum(areas);
     }
 
     /**

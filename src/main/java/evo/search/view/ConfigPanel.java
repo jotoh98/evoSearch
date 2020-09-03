@@ -1,7 +1,7 @@
 package evo.search.view;
 
 import evo.search.Evolution;
-import evo.search.ga.DiscretePoint;
+import evo.search.ga.DiscreteGene;
 import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.io.entities.Configuration;
 import evo.search.util.ListUtils;
@@ -15,14 +15,14 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * This panel manages all the inputs to change the configurations properties.
@@ -170,7 +170,7 @@ public class ConfigPanel extends JDialog {
         permutateTreasuresButton.setEnabled(false);
 
         shuffleTreasuresButton.addActionListener(e -> {
-            final ShuffleDialog<DiscretePoint> shuffleDialog = new ShuffleDialog<>();
+            final ShuffleDialog<DiscreteGene> shuffleDialog = new ShuffleDialog<>();
             shuffleDialog.setRandomSupplier(shuffleDialog::shuffleTreasures);
             shuffleDialog.setLocationRelativeTo(this);
 
@@ -297,10 +297,10 @@ public class ConfigPanel extends JDialog {
      *
      * @param treasures list of discrete points
      */
-    private void printTreasures(final List<DiscretePoint> treasures) {
+    private void printTreasures(final List<DiscreteGene> treasures) {
         treasuresTextArea.setText(ListUtils.printConsecutive(
                 treasures,
-                discretePoint -> String.format("(%s, %s)", discretePoint.getPosition(), discretePoint.getDistance()),
+                DiscreteGene::printSmall,
                 ", "
         ));
     }
@@ -313,12 +313,12 @@ public class ConfigPanel extends JDialog {
         final Pattern pattern = Pattern.compile("\\((\\d+)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\)");
         final Matcher matcher = pattern.matcher(text);
 
-        final ArrayList<DiscretePoint> treasures = new ArrayList<>();
+        final ArrayList<DiscreteGene> treasures = new ArrayList<>();
         while (matcher.find()) {
             try {
                 final int position = Integer.parseInt(matcher.group(1));
                 final double distance = Double.parseDouble(matcher.group(2));
-                treasures.add(new DiscretePoint(configuration.getPositions(), position, distance));
+                treasures.add(new DiscreteGene(configuration.getPositions(), position, distance));
             } catch (final NumberFormatException ignored) {
             }
         }
@@ -331,28 +331,25 @@ public class ConfigPanel extends JDialog {
      * @return list of selected discrete alterers
      */
     private List<DiscreteAlterer> getSelectedAlterers() {
-        return IntStream.of(mutatorTable.getSelectionModel().getSelectedIndices())
-                .mapToObj(row -> {
-                    final String simpleName = (String) mutatorTable.getValueAt(row, 0);
-                    final Class<? extends DiscreteAlterer> altererClass = DiscreteAlterer.getSubclasses().stream()
-                            .filter(aClass -> aClass.getSimpleName().equals(simpleName))
-                            .findFirst()
-                            .orElse(null);
-
-                    if (altererClass == null) return null;
-
+        final List<DiscreteAlterer> alterers = new ArrayList<>();
+        final List<Class<? extends DiscreteAlterer>> altererClasses = DiscreteAlterer.getSubclasses();
+        for (final int row : mutatorTable.getSelectionModel().getSelectedIndices()) {
+            final String simpleName = (String) mutatorTable.getValueAt(row, 0);
+            for (final Class<? extends DiscreteAlterer> altererClass : altererClasses) {
+                if (altererClass == null || !altererClass.getSimpleName().equals(simpleName))
+                    continue;
+                try {
                     final double probability = (double) mutatorTable.getValueAt(row, 1);
+                    final DiscreteAlterer alterer = altererClass.getDeclaredConstructor(double.class)
+                            .newInstance(probability);
+                    alterers.add(alterer);
+                } catch (final Exception e) {
+                    log.error("Could not instantiate mutator.", e);
+                }
+            }
 
-                    try {
-                        return altererClass.getDeclaredConstructor(double.class)
-                                .newInstance(probability);
-                    } catch (final Exception e) {
-                        log.error("Could not instantiate mutator.", e);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        }
+        return alterers;
     }
 
     /**
@@ -403,16 +400,12 @@ public class ConfigPanel extends JDialog {
             parent.triggerChange();
             final String input = distancesTextArea.getText();
 
-            final List<Double> distances = Arrays.stream(input.split("\\s*,\\s*"))
-                    .map(string -> {
-                        try {
-                            return Double.parseDouble(string);
-                        } catch (final Exception ignored) {
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+            final List<Double> distances = new ArrayList<>();
+            for (final String string : input.split("\\s*,\\s*")) {
+                try {
+                    distances.add(Double.parseDouble(string));
+                } catch (final Exception ignored) {}
+            }
 
             configuration.setDistances(distances);
         });

@@ -1,6 +1,7 @@
 package evo.search.io.entities;
 
-import evo.search.ga.DiscreteChromosome;
+import evo.search.ga.DiscreteGene;
+import io.jenetics.Chromosome;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -22,7 +23,7 @@ public class Experiment {
     /**
      * Results of the simulation.
      */
-    private final List<DiscreteChromosome> individuals;
+    private final List<Chromosome<DiscreteGene>> individuals;
 
     /**
      * Initialize an empty experiment with a configuration.

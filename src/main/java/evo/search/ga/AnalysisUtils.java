@@ -1,11 +1,12 @@
 package evo.search.ga;
 
-import evo.search.io.entities.Configuration;
 import evo.search.util.ListUtils;
-import io.jenetics.Chromosome;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.IntStream;
 
 /**
@@ -21,32 +22,28 @@ public class AnalysisUtils {
      * and counter-clockwise counting the individual distances. Finally, the inverse of the minimal
      * clockwise and counter-clockwise likenesses is returned.
      *
+     * @param distances  distances of the evolutions environment
      * @param chromosome the individual measured
      * @return Spiral likeness between 0.0 and 1.0. 1.0 means full spiral. 0.0 means empty individual.
      */
-    public static double spiralLikeness(final DiscreteChromosome chromosome) {
+    public static double spiralLikeness(final List<Double> distances, final List<DiscreteGene> chromosome) {
 
+        if (chromosome.size() == 0) return 0;
 
-        final Configuration configuration = chromosome.getConfiguration();
-        final List<Double> distances = configuration.getDistances();
-        final int positions = configuration.getPositions();
-
-        if (chromosome.toSeq().size() == 0) {
-            return 0;
-        }
+        final int positions = chromosome.get(0).getPositions();
 
         distances.sort(Double::compareTo);
-        int spiralPositionCounter = chromosome.getGene(0).getAllele().getPosition();
-        int spiralPositionClock = chromosome.getGene(0).getAllele().getPosition();
+        int spiralPositionCounter = chromosome.get(0).getPosition();
+        int spiralPositionClock = chromosome.get(0).getPosition();
 
         double spiralCounterLikeness = 0;
         double spiralClockLikeness = 0;
 
         int index = 0;
         for (final DiscreteGene gene : chromosome) {
-            final DiscretePoint actualPoint = gene.getAllele();
-            final DiscretePoint spiralPointCounter = new DiscretePoint(positions, spiralPositionCounter, distances.get(index));
-            final DiscretePoint spiralPointClock = new DiscretePoint(positions, spiralPositionClock, distances.get(index++));
+            final Point2D actualPoint = gene.getAllele();
+            final DiscreteGene spiralPointCounter = new DiscreteGene(positions, spiralPositionCounter, distances.get(index));
+            final DiscreteGene spiralPointClock = new DiscreteGene(positions, spiralPositionClock, distances.get(index++));
 
             spiralPositionCounter++;
             spiralPositionCounter %= positions;
@@ -57,8 +54,8 @@ public class AnalysisUtils {
             }
 
 
-            spiralCounterLikeness += actualPoint.distance(spiralPointCounter);
-            spiralClockLikeness += actualPoint.distance(spiralPointClock);
+            spiralCounterLikeness += actualPoint.distance(spiralPointCounter.getAllele());
+            spiralClockLikeness += actualPoint.distance(spiralPointClock.getAllele());
         }
 
         if (spiralCounterLikeness == 0 || spiralClockLikeness == 0) {
@@ -69,41 +66,24 @@ public class AnalysisUtils {
     }
 
     /**
-     * Computes the trace length necessary for the {@link DiscreteChromosome}
-     * necessary to find the given treasure {@link DiscretePoint}.
+     * Computes the trace length necessary for the {@link DiscreteGene} chromosome
+     * to find the given treasure {@link DiscreteGene}.
      *
      * @param chromosome chromosome to evaluate the trace length on
      * @param treasure   treasure point to be found
      * @return trace length necessary for the individual to find the treasure
      */
-    public static double traceLength(final Chromosome<DiscreteGene> chromosome, final DiscretePoint treasure) {
+    public static double traceLength(final List<DiscreteGene> chromosome, final DiscreteGene treasure) {
         double trace = 0d;
 
-        DiscretePoint previous = new DiscretePoint(1, 0, 0d);
+        DiscreteGene previous = new DiscreteGene(1, 0, 0d);
         for (final DiscreteGene gene : chromosome) {
-            if (finds(previous, treasure)) {
-                break;
-            }
-            final DiscretePoint current = gene.getAllele();
-            trace += previous.distance(current);
-            previous = current;
+            if (finds(previous, treasure)) break;
+            trace += previous.distance(gene);
+            previous = gene;
         }
 
         return trace;
-    }
-
-    /**
-     * Calculates the trace length of a path supplied by the chromosome.
-     *
-     * @param chromosome chromosome with genes supplying the points
-     * @return trace length of the chromosome
-     */
-    public static double traceLength(final Chromosome<DiscreteGene> chromosome) {
-        final List<DiscretePoint> points = ListUtils.from(chromosome.iterator())
-                .stream()
-                .map(DiscreteGene::getAllele)
-                .collect(Collectors.toList());
-        return traceLength(points);
     }
 
     /**
@@ -112,16 +92,13 @@ public class AnalysisUtils {
      * @param points points forming a trace
      * @return trace length of the path of points
      */
-    public static double traceLength(final List<DiscretePoint> points) {
-        return ListUtils
-                .consecMap(points, DiscretePoint::distance)
-                .stream()
-                .reduce(Double::sum)
-                .orElse(0d);
+    public static double traceLength(final List<DiscreteGene> points) {
+        final List<Double> distances = ListUtils.consecMap(points, DiscreteGene::distance);
+        return ListUtils.sum(distances);
     }
 
     /**
-     * Compute for two {@link DiscretePoint}s, whether the first
+     * Compute for two {@link DiscreteGene}s, whether the first
      * point {@code point} finds the second point {@code treasure}.
      * <p>
      * That equals the following statement:
@@ -131,7 +108,7 @@ public class AnalysisUtils {
      * @param treasure point to be found
      * @return whether the first point finds the second point
      */
-    public static boolean finds(final DiscretePoint point, final DiscretePoint treasure) {
+    public static boolean finds(final DiscreteGene point, final DiscreteGene treasure) {
         final boolean distanceEqualOrGreater = point.getDistance() >= treasure.getDistance();
         final boolean positionEquals = point.getPosition() == treasure.getPosition();
         return positionEquals && distanceEqualOrGreater;
@@ -146,22 +123,22 @@ public class AnalysisUtils {
      * @param chromosome chromosome with jumping genes
      * @return list of visited points with consecutive position indices
      */
-    public static List<DiscretePoint> fill(final Chromosome<DiscreteGene> chromosome) {
-        final ArrayList<DiscretePoint> discretePoints = new ArrayList<>();
+    public static List<DiscreteGene> fill(final List<DiscreteGene> chromosome) {
+        final ArrayList<DiscreteGene> discreteGenes = new ArrayList<>();
 
         int i = 0;
 
-        for (; i < chromosome.length() - 1; i++) {
-            final DiscretePoint pointA = chromosome.get(i).getAllele();
-            final DiscretePoint pointB = chromosome.get(i + 1).getAllele();
-            discretePoints.add(pointA);
-            if (Math.abs(pointA.position - pointB.position) > 1)
-                discretePoints.addAll(inBetween(pointA, pointB));
+        for (; i < chromosome.size() - 1; i++) {
+            final DiscreteGene pointA = chromosome.get(i);
+            final DiscreteGene pointB = chromosome.get(i + 1);
+            discreteGenes.add(pointA);
+            if (Math.abs(pointA.getPosition() - pointB.getPosition()) > 1)
+                discreteGenes.addAll(inBetween(pointA, pointB));
         }
 
-        discretePoints.add(chromosome.get(i).getAllele());
+        discreteGenes.add(chromosome.get(i));
 
-        return discretePoints;
+        return discreteGenes;
     }
 
     /**
@@ -172,29 +149,29 @@ public class AnalysisUtils {
      * @param b point b for the line
      * @return list of intersections between the line ab and the rays between a and b
      */
-    public static List<DiscretePoint> inBetween(final DiscretePoint a, final DiscretePoint b) {
-        final int difference = Math.abs(a.position - b.position);
-        if (((double) difference) == a.positions / 2d || difference == 0)
+    public static List<DiscreteGene> inBetween(final DiscreteGene a, final DiscreteGene b) {
+        final int difference = Math.abs(a.getPosition() - b.getPosition());
+        if (((double) difference) == a.getPositions() / 2d || difference == 0)
             return Collections.emptyList();
 
-        final double anglePart = 1 / (double) a.positions * 2 * Math.PI;
+        final double anglePart = 1 / (double) a.getPositions() * 2 * Math.PI;
 
         final double fullAngle = difference * anglePart;
-        final double pointsDistance = Math.sqrt(a.getDistanceSquared() + b.getDistanceSquared() - 2 * a.distance * b.distance * Math.cos(fullAngle));
+        final double pointsDistance = Math.sqrt(a.getDistanceSquared() + b.getDistanceSquared() - 2 * a.getDistance() * b.getDistance() * Math.cos(fullAngle));
 
-        final double openAngle = Math.asin(b.distance * Math.sin(fullAngle) / pointsDistance);
+        final double openAngle = Math.asin(b.getDistance() * Math.sin(fullAngle) / pointsDistance);
 
-        final ArrayList<DiscretePoint> points = new ArrayList<>();
+        final ArrayList<DiscreteGene> points = new ArrayList<>();
 
-        final int startPosition = Math.min(a.position, b.position);
+        final int startPosition = Math.min(a.getPosition(), b.getPosition());
         for (int currentAngleIndex = 1; currentAngleIndex < difference; currentAngleIndex++) {
 
             final double currentAngle = currentAngleIndex * anglePart;
             final double closingAngle = Math.PI - openAngle - currentAngle;
 
-            final double newDistance = Math.sin(openAngle) / Math.sin(closingAngle) * a.distance;
+            final double newDistance = Math.sin(openAngle) / Math.sin(closingAngle) * a.getDistance();
 
-            points.add(new DiscretePoint(a.positions, startPosition + currentAngleIndex, newDistance));
+            points.add(new DiscreteGene(a.getPositions(), startPosition + currentAngleIndex, newDistance));
         }
 
         return points;
@@ -204,7 +181,7 @@ public class AnalysisUtils {
      * Calculates the triangle area in a sector between two rays given
      * the two distances of the outer edges and the amount of all rays.
      * The points have to lay on consecutive rays hence the need for a fix
-     * through {@link #inBetween(DiscretePoint, DiscretePoint)} before invoking
+     * through {@link #inBetween(DiscreteGene, DiscreteGene)} before invoking
      * this method.
      *
      * @param distanceA first outer edge distance
@@ -227,7 +204,7 @@ public class AnalysisUtils {
      * @param points list of points distributed on consecutive rays
      * @return maximised area covered by the points
      */
-    public static double areaCovered(final List<DiscretePoint> points) {
+    public static double areaCovered(final List<DiscreteGene> points) {
         if (points.size() < 2)
             return 0;
 
@@ -260,11 +237,11 @@ public class AnalysisUtils {
      * @param epsilon distance the treasure is missed by
      * @return worst case scenario fitness
      */
-    public static double worstCase(final List<DiscretePoint> points, final int epsilon) {
+    public static double worstCase(final List<DiscreteGene> points, final int epsilon) {
         return IntStream
                 .range(0, points.size()).mapToObj(k -> {
-                    final List<DiscretePoint> list = points.subList(k, points.size() - 1);
-                    final DiscretePoint worstCase = points.get(k).clone();
+                    final List<DiscreteGene> list = points.subList(k, points.size() - 1);
+                    final DiscreteGene worstCase = points.get(k).clone();
                     worstCase.setDistance(worstCase.getDistance() + epsilon);
                     list.add(worstCase);
                     double distance = points.get(k).getDistance();
@@ -272,7 +249,7 @@ public class AnalysisUtils {
                     if (distance == 0)
                         distance = 1;
 
-                    return ListUtils.consecMap(list, DiscretePoint::distance).stream().reduce(Double::sum).orElse(0d) / distance;
+                    return ListUtils.consecMap(list, DiscreteGene::distance).stream().reduce(Double::sum).orElse(0d) / distance;
                 })
                 .max(Comparator.comparingDouble(Double::doubleValue))
                 .orElse(Double.POSITIVE_INFINITY);

@@ -1,101 +1,51 @@
 package evo.search.ga;
 
 import evo.search.io.entities.Configuration;
+import io.jenetics.AbstractChromosome;
 import io.jenetics.Chromosome;
 import io.jenetics.util.ISeq;
-import lombok.Value;
-
-import java.util.stream.Stream;
 
 /**
  * Chromosome consisting of a permutations of the distances
  * from the {@link Configuration} in an evolved order
  * associated with valid positional indices.
  */
-@Value
-public class DiscreteChromosome implements Chromosome<DiscreteGene> {
+public class DiscreteChromosome extends AbstractChromosome<DiscreteGene> {
+
 
     /**
-     * Configuration providing context about the chromosome.
-     */
-    Configuration configuration;
-
-    /**
-     * Sequence of {@link DiscreteGene}s forming the chromosome.
-     */
-    ISeq<DiscreteGene> genes;
-
-    /**
-     * Generate a new {@link DiscreteChromosome} from the given sequence of genes.
+     * Create a new {@code DiscreteChromosome} from the given {@code genes}
+     * array.
      *
-     * @param configuration configuration for context actions
-     * @param genes         sequence of genes to copy into the new instance
-     * @return a chromosome with the given sequence of genes
+     * @param genes the genes that form the chromosome.
+     * @throws NullPointerException     if the given gene array is {@code null}.
+     * @throws IllegalArgumentException if the length of the gene sequence is
+     *                                  empty.
      */
-    public static DiscreteChromosome of(final Configuration configuration, final ISeq<DiscreteGene> genes) {
-        return new DiscreteChromosome(configuration, genes.copy().toISeq());
+    public DiscreteChromosome(final ISeq<? extends DiscreteGene> genes) {
+        super(genes);
     }
 
     /**
-     * {@inheritDoc}
+     * Create a new {@code DiscreteChromosome} from the given {@code genes}
+     * array.
+     *
+     * @param genes the genes that form the chromosome.
+     * @throws NullPointerException     if the given gene array is {@code null}.
+     * @throws IllegalArgumentException if the length of the gene sequence is
+     *                                  empty.
      */
-    @Override
-    public DiscreteGene getGene(final int index) {
-        return genes.get(index);
+    public DiscreteChromosome(final DiscreteGene... genes) {
+        this(ISeq.of(genes));
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ISeq<DiscreteGene> toSeq() {
-        return genes;
-    }
-
-    /**
-     * {@inheritDoc}
-     * Has to be equal to the size of the {@link Configuration}'s distances list.
-     */
-    @Override
-    public int length() {
-        return genes.length();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Chromosome<DiscreteGene> newInstance() {
-        return newInstance(genes);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Chromosome<DiscreteGene> newInstance(final ISeq<DiscreteGene> genes) {
-        return new DiscreteChromosome(configuration, genes.copy().toISeq());
+        return new DiscreteChromosome(genes.copy().toISeq());
     }
 
-    /**
-     * {@inheritDoc}
-     * That means, that all distances are distinct (if configured this way) and all positions are greater than or equal to zero.
-     */
     @Override
-    public boolean isValid() {
-        final boolean noPermutation = configuration.isChooseWithoutPermutation();
-        final boolean distinct = noPermutation ||
-                Stream.of(genes.toArray(DiscreteGene[]::new))
-                        .map(DiscreteGene::getAllele)
-                        .map(DiscretePoint::getDistance)
-                        .distinct().count() == genes.size();
-
-
-        final boolean positionsValid = Stream.of(genes.toArray(DiscreteGene[]::new))
-                .mapToInt(discreteGene -> discreteGene.getAllele().getPosition())
-                .allMatch(position -> position >= 0 && position < configuration.getPositions());
-
-        return distinct && positionsValid;
+    public Chromosome<DiscreteGene> newInstance() {
+        return new DiscreteChromosome(_genes.map(DiscreteGene::newInstance));
     }
-
 }

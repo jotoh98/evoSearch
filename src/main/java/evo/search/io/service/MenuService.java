@@ -11,6 +11,11 @@ import java.awt.event.KeyEvent;
 public class MenuService {
 
     /**
+     * Const to add a separator to a menu.
+     */
+    public static final int SEPARATOR = 1;
+
+    /**
      * Construct a menu bar with some menus.
      *
      * @param menus menus to add to the menu bar
@@ -38,6 +43,8 @@ public class MenuService {
                 menu.add((MenuItem) child);
             } else if (child instanceof String) {
                 menu.add((String) child);
+            } else if (child instanceof Integer && ((int) child) == SEPARATOR) {
+                menu.addSeparator();
             }
         }
         return menu;

@@ -135,7 +135,7 @@ public class ChooserForm extends JFrame {
         }
 
         final Project untitledProject = new Project();
-        untitledProject.setPath(directory.toString());
+        untitledProject.setPath(directory);
         untitledProject.setName("Untitled");
         untitledProject.setVersion(Main.VERSION);
         ProjectService.setupNewProject(directory, untitledProject);
@@ -199,7 +199,7 @@ public class ChooserForm extends JFrame {
 
             listItem.bindSelectionEvent(selectedProject -> {
                 final Project projectFromDir = ProjectService
-                        .loadProjectFromDirectory(Path.of(selectedProject.getPath()));
+                        .loadProjectFromDirectory(selectedProject.getPath());
 
                 if (projectFromDir == null) {
                     final int deleteOption = JOptionPane.showConfirmDialog(this, LangService.get("project.want.delete"), LangService.get("project.does.not.exist"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);

@@ -34,8 +34,8 @@ public class PositionMutator extends Mutator<DiscreteGene, Double> implements Di
      */
     @Override
     protected DiscreteGene mutate(final DiscreteGene gene, final Random random) {
-        final int newPosition = RandomUtils.inRange(0, gene.getConfiguration().getPositions());
-        return new DiscreteGene(gene.getConfiguration(), newPosition, gene.getDistance());
+        final int newPosition = RandomUtils.inRange(0, gene.getPositions());
+        return new DiscreteGene(gene.getPositions(), newPosition, gene.getDistance());
     }
 
 }

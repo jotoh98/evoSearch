@@ -58,9 +58,9 @@ public class ProjectListItem extends JPanel {
         entry = indexEntry;
         nameLabel.setText(entry.getName());
         versionLabel.setText(entry.getVersion());
-        pathLabel.setText(entry.getPath());
+        pathLabel.setText(entry.getPath().toString());
 
-        final boolean exists = Files.exists(Path.of(indexEntry.getPath()));
+        final boolean exists = Files.exists(indexEntry.getPath());
 
         deleteButton.setIcon(UIManager.getIcon("TextField.search.clear.icon"));
         deleteButton.setVisible(false);
@@ -106,7 +106,7 @@ public class ProjectListItem extends JPanel {
      */
     public static void main(final String[] args) {
         Main.setupEnvironment();
-        final ProjectListItem projectListItem = new ProjectListItem(new IndexEntry("0.0.1", "/jotoh/usr/lol", "Untitled Project 1", LocalDateTime.now()));
+        final ProjectListItem projectListItem = new ProjectListItem(new IndexEntry(Path.of("/jotoh/usr/lol"), "Untitled Project 1", "0.0.1", LocalDateTime.now()));
         final JFrame jFrame = new JFrame();
         jFrame.add(projectListItem);
         jFrame.setSize(300, 80);

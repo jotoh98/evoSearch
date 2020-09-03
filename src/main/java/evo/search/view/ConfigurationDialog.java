@@ -3,7 +3,7 @@ package evo.search.view;
 import com.github.weisj.darklaf.ui.list.DarkDefaultListCellRenderer;
 import evo.search.Evolution;
 import evo.search.Main;
-import evo.search.ga.DiscretePoint;
+import evo.search.ga.DiscreteGene;
 import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
@@ -20,13 +20,11 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * The form holding all the configuration panels and a selection list with their names.
@@ -123,7 +121,7 @@ public class ConfigurationDialog extends JDialog {
                         .limit(1000)
                         .positions(2)
                         .distances(Arrays.asList(10d, 20d))
-                        .treasures(Collections.singletonList(new DiscretePoint(2, 0, 10)))
+                        .treasures(Collections.singletonList(new DiscreteGene(2, 0, 10)))
                         .alterers(Collections.singletonList(new SwapPositionsMutator(0.7)))
                         .build(),
                 Configuration.builder()
@@ -132,7 +130,7 @@ public class ConfigurationDialog extends JDialog {
                         .limit(100)
                         .positions(3)
                         .distances(Arrays.asList(15d, 25d, 35d))
-                        .treasures(Arrays.asList(new DiscretePoint(3, 0, 10), new DiscretePoint(3, 2, 20)))
+                        .treasures(Arrays.asList(new DiscreteGene(3, 0, 10), new DiscreteGene(3, 2, 20)))
                         .fitness(Evolution.Fitness.SINGULAR)
                         .build()
         );
@@ -153,9 +151,7 @@ public class ConfigurationDialog extends JDialog {
     public ConfigurationDialog(final List<Configuration> configurations) {
         customUISetup();
 
-        configurations.stream()
-                .map(Configuration::clone)
-                .forEach(this::createConfigPanel);
+        configurations.forEach(configuration -> createConfigPanel(configuration.clone()));
 
         setupChooserList();
 
@@ -391,17 +387,16 @@ public class ConfigurationDialog extends JDialog {
      * Save the configurations and trigger an {@link EventService#CONFIGS_CHANGED} event.
      */
     private void saveConfigurations() {
-        final List<Configuration> configurations = IntStream.range(0, configListModel.size())
-                .mapToObj(configListModel::getElementAt)
-                .map(ConfigPanel::getConfiguration)
-                .collect(Collectors.toList());
+        final List<Configuration> configurations = new ArrayList<>();
+        for (int i = 0; i < configListModel.size(); i++)
+            configurations.add(configListModel.getElementAt(i).getConfiguration());
 
         final Project currentProject = ProjectService.getCurrentProject();
         if (currentProject == null) {
             EventService.LOG.trigger("Could not save configurations: No project selected.");
             return;
         }
-        ProjectService.saveConfigurations(new File(currentProject.getPath()), configurations);
+        ProjectService.saveConfigurations(currentProject.getPath(), configurations);
         currentProject.setConfigurations(configurations);
         EventService.CONFIGS_CHANGED.trigger(configurations);
     }

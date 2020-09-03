@@ -8,6 +8,7 @@ import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
 import org.dom4j.tree.DefaultElement;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +29,7 @@ public class Project implements XmlEntity<Project> {
     /**
      * Projects file system path.
      */
-    String path;
+    Path path;
 
     /**
      * Projects name.
@@ -46,7 +47,7 @@ public class Project implements XmlEntity<Project> {
         Arrays.asList(
                 XmlService.writeProperty("name", name),
                 XmlService.writeProperty("version", version),
-                XmlService.writeProperty("path", path)
+                XmlService.writeProperty("path", path.toString())
         ).forEach(projectElement::add);
         return DocumentHelper.createDocument(projectElement);
     }
@@ -62,7 +63,7 @@ public class Project implements XmlEntity<Project> {
                     setVersion(value);
                     break;
                 case "path":
-                    setPath(value);
+                    setPath(Path.of(value));
             }
         });
         return this;

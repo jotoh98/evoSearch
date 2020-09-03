@@ -1,15 +1,16 @@
 package evo.search.view.part;
 
-import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
-import evo.search.ga.DiscretePoint;
 import evo.search.view.render.Ray2D;
 import evo.search.view.render.StringShape;
 import evo.search.view.render.Style;
 import evo.search.view.render.Transformation;
+import io.jenetics.Chromosome;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,11 +18,10 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseMotionListener;
 import java.awt.geom.*;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 /**
  * Canvas to be painted on.
@@ -57,6 +57,12 @@ public class Canvas extends JPanel {
      */
     @Getter
     final private JLabel popover = new JLabel();
+
+    /**
+     * Amount of rays to display.
+     */
+    @Setter
+    private int rays = 3;
 
     /**
      * Canvas constructor. Sets initial scale and the offset to the center of the canvas.
@@ -117,27 +123,44 @@ public class Canvas extends JPanel {
              */
             @Override
             public void mouseMoved(final MouseEvent event) {
+                final Point2D closestPoint = getClosestPoint(event);
+
+                if (closestPoint != null) {
+                    pointHovered = true;
+                    popover.setText(String.format("(%.2f, %.2f)", closestPoint.getX(), closestPoint.getY()));
+                    updatePopoverLocation(event);
+                    popover.setVisible(true);
+                    repaint();
+                } else {
+                    popover.setVisible(false);
+                    popover.setText("");
+                    if (pointHovered) repaint();
+                    pointHovered = false;
+                }
+            }
+
+            /**
+             * Determine the closest point to the mouse position.
+             *
+             * @param event
+             * @return
+             */
+            @Nullable
+            private Point2D getClosestPoint(final MouseEvent event) {
                 final Point2D revertedPosition = transformation.revert(event.getPoint());
                 final double epsilonEnvironment = 10 / transformation.getScale();
 
-                points.keySet().stream()
-                        .filter(point2D -> point2D.distance(revertedPosition) < epsilonEnvironment)
-                        .min(Comparator.comparingDouble(point -> point.distance(revertedPosition)))
-                        .ifPresentOrElse(
-                                point2D -> {
-                                    pointHovered = true;
-                                    popover.setText(String.format("(%.2f, %.2f)", point2D.getX(), point2D.getY()));
-                                    updatePopoverLocation(event);
-                                    popover.setVisible(true);
-                                    repaint();
-                                },
-                                () -> {
-                                    popover.setVisible(false);
-                                    popover.setText("");
-                                    if (pointHovered) repaint();
-                                    pointHovered = false;
-                                }
-                        );
+                Point2D closestPoint = null;
+                double minDistance = Double.POSITIVE_INFINITY;
+
+                for (final Point2D point2D : points.keySet()) {
+                    final double thisDistance = point2D.distance(revertedPosition);
+                    if (thisDistance < epsilonEnvironment && thisDistance < minDistance) {
+                        minDistance = thisDistance;
+                        closestPoint = point2D;
+                    }
+                }
+                return closestPoint;
             }
 
 
@@ -234,23 +257,22 @@ public class Canvas extends JPanel {
      *
      * @param chromosome chromosome to render
      */
-    public void render(final DiscreteChromosome chromosome) {
-        final int availablePosition = chromosome.getConfiguration().getPositions();
+    public void render(final Chromosome<DiscreteGene> chromosome) {
 
-        renderRays(availablePosition);
+        renderRays(rays);
 
         final AtomicInteger index = new AtomicInteger();
         chromosome.forEach(gene -> {
-            final Point2D point = gene.getAllele().toPoint2D();
+            final Point2D point = gene.getAllele();
             enqueue(String.valueOf(index.get() + 1), point, Style.builder().color(Color.WHITE).build());
             enqueue(point, Style.builder().color(Color.GREEN).build());
             index.getAndIncrement();
         });
 
-        if (availablePosition > 2) {
+        if (rays > 2) {
             Point2D previous = new Point2D.Double();
             for (final DiscreteGene discreteGene : chromosome) {
-                final Point2D current = discreteGene.getAllele().toPoint2D();
+                final Point2D current = discreteGene.getAllele();
                 enqueue(
                         new Line2D.Double(previous, current),
                         Style.builder().color(Color.WHITE).build()
@@ -258,8 +280,6 @@ public class Canvas extends JPanel {
                 previous = current;
             }
         }
-
-        renderTreasures(chromosome.getConfiguration().getTreasures());
     }
 
     /**
@@ -286,9 +306,9 @@ public class Canvas extends JPanel {
      *
      * @param treasures list of treasure points
      */
-    public void renderTreasures(final List<DiscretePoint> treasures) {
+    public void renderTreasures(final List<DiscreteGene> treasures) {
         treasures.forEach(treasure -> enqueue(
-                treasure.toPoint2D(),
+                treasure.getAllele(),
                 Style.builder().color(Color.RED).shape(Style.Shape.CROSS).build()
         ));
     }
@@ -341,15 +361,13 @@ public class Canvas extends JPanel {
      * @return maximal distance visible by canvas
      */
     public double getMaxDistanceVisible() {
-        return Stream.of(
-                new Point2D.Double(0, 0),
-                new Point2D.Double(getWidth(), 0),
-                new Point2D.Double(0, getHeight()),
-                new Point2D.Double(getWidth(), getHeight())
-        )
-                .mapToDouble(point -> point.distance(transformation.getOffset()))
-                .max()
-                .orElse(0) / transformation.getScale();
+        final Point2D offset = transformation.getOffset();
+        return Collections.max(List.of(
+                offset.distance(0, 0),
+                offset.distance(getWidth(), 0),
+                offset.distance(0, getHeight()),
+                offset.distance(getWidth(), getHeight())
+        ));
     }
 
 }

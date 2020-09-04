@@ -6,11 +6,9 @@ import evo.search.util.MathUtils;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
 
 /**
  * This class provides several analysis metrics to evaluate individuals upon
@@ -162,7 +160,6 @@ public class AnalysisUtils {
         final double distanceToPointA = a.getDistance();
         final double angleAtPointA = Math.asin(Math.sin(anglePart * (shortestPath - 1)) * b.getDistance() / a.distance(b));
 
-
         final int increase = (a.getPosition() + shortestPath) % positions == b.getPosition() ? 1 : -1;
 
         final List<DiscreteGene> fill = new ArrayList<>();
@@ -170,6 +167,7 @@ public class AnalysisUtils {
             final double y = distanceToPointA * Math.sin(angleAtPointA) / Math.sin(angleAtPointA + (anglePart * i));
             fill.add(new DiscreteGene(positions, (a.getPosition() + positions + increase * i) % positions, y));
         }
+
         return fill;
     }
 
@@ -257,29 +255,31 @@ public class AnalysisUtils {
      * @return worst case scenario fitness
      */
     public static double worstCase(final List<DiscreteGene> points, final int epsilon) {
-        return IntStream
-                .range(0, points.size()).mapToObj(k -> {
-                    final List<DiscreteGene> list = points.subList(k, points.size() - 1);
-                    final DiscreteGene worstCase = points.get(k).clone();
-                    worstCase.setDistance(worstCase.getDistance() + epsilon);
+        double sum = 0;
+        for (int k = 0; k < points.size(); k++) {
+            final List<DiscreteGene> list = points.subList(k, points.size());
+            final DiscreteGene worstCase = points.get(k).clone();
+            worstCase.setDistance(worstCase.getDistance() + epsilon);
 
-                    double distance = points.get(k).getDistance();
+            double distance = points.get(k).getDistance();
 
-                    if (distance == 0)
-                        distance = 1;
+            if (distance == 0)
+                distance = 1;
 
-                    final double arc = arcDistance(points.get(points.size() - 1), worstCase);
+            final List<Double> distances = ListUtils.consecMap(list, DiscreteGene::distance);
+            double pathLength = ListUtils.sum(distances);
 
-                    final double path = ListUtils
-                            .consecMap(list, DiscreteGene::distance)
-                            .stream()
-                            .reduce(Double::sum)
-                            .orElse(0d);
+            boolean found = false;
+            for (final DiscreteGene discreteGene : list)
+                if (finds(discreteGene, worstCase)) found = true;
 
-                    return (path + arc) / distance;
-                })
-                .max(Comparator.comparingDouble(Double::doubleValue))
-                .orElse(Double.POSITIVE_INFINITY);
+            if (!found)
+                pathLength += arcDistance(points.get(points.size() - 1), worstCase);
+
+            sum += pathLength / distance;
+        }
+        assert sum >= 0;
+        return sum;
     }
 
     /**
@@ -292,24 +292,24 @@ public class AnalysisUtils {
      * @param worstCase worst case location
      * @return length of arc between last chromosome point and the worst-case location
      */
-    private static double arcDistance(final DiscretePoint start, final DiscretePoint worstCase) {
-        if (Math.abs(start.position - worstCase.position) < 2)
+    private static double arcDistance(final DiscreteGene start, final DiscreteGene worstCase) {
+        if (Math.abs(start.getPosition() - worstCase.getPosition()) < 2)
             return start.distance(worstCase);
 
-        final int distancePositions = Math.abs(start.position - worstCase.position);
-        final int steps = Math.min(distancePositions, start.positions - distancePositions);
-        if (start.distance >= worstCase.distance) {
-            return steps * 2 * start.distance * Math.sin(Math.PI / start.positions);
+        final int distancePositions = Math.abs(start.getPosition() - worstCase.getPosition());
+        final int steps = Math.min(distancePositions, start.getPositions() - distancePositions);
+        if (start.getDistance() >= worstCase.getDistance()) {
+            return steps * 2 * start.getDistance() * Math.sin(Math.PI / start.getPositions());
         } else {
-            final double distanceDelta = (worstCase.distance - start.distance) / steps;
-            final double angle = 2 * Math.PI / start.positions;
+            final double distanceDelta = (worstCase.getDistance() - start.getDistance()) / steps;
+            final double angle = 2 * Math.PI / start.getPositions();
             double sum = 0;
             for (int i = 0; i < steps; i++)
                 sum += MathUtils.polarDistance(
                         angle,
-                        worstCase.distance + distanceDelta * i,
+                        worstCase.getDistance() + distanceDelta * i,
                         0,
-                        worstCase.distance + distanceDelta * (i + 1)
+                        worstCase.getDistance() + distanceDelta * (i + 1)
                 );
             return sum;
         }

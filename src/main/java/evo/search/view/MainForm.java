@@ -499,11 +499,11 @@ public class MainForm extends JFrame {
             stopButton.setEnabled(true);
             startButton.setEnabled(false);
 
-        final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
-        final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
-            EventService.REPAINT_CANVAS.trigger(result.bestPhenotype().genotype().chromosome());
-            showResultInHistoryTable(result);
-        };
+            final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
+            final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
+                EventService.REPAINT_CANVAS.trigger(result.bestPhenotype().genotype().chromosome());
+                showResultInHistoryTable(result);
+            };
 
             CompletableFuture
                     .supplyAsync(() -> {
@@ -515,20 +515,21 @@ public class MainForm extends JFrame {
 
                         evolution.run();
 
-                    return evolution.getResult().chromosome();
-                })
-                .thenAccept(chromosome -> {
-                    if (chromosome != null) {
-                        EventService.LOG_LABEL.trigger(LangService.get("environment.finished"));
-                        EventService.REPAINT_CANVAS.trigger(chromosome);
-                    }
-                })
-                .thenRun(() -> {
-                    getProgressBar().setVisible(false);
-                    historyTable.setRowSelectionInterval(historyTable.getRowCount() - 1, historyTable.getRowCount() - 1);
-                    stopButton.setEnabled(false);
-                    startButton.setEnabled(true);
-                });
+                        return evolution.getResult().chromosome();
+                    })
+                    .thenAccept(chromosome -> {
+                        if (chromosome != null) {
+                            EventService.LOG_LABEL.trigger(LangService.get("environment.finished"));
+                            EventService.REPAINT_CANVAS.trigger(chromosome);
+                        }
+                    })
+                    .thenRun(() -> {
+                        getProgressBar().setVisible(false);
+                        historyTable.setRowSelectionInterval(historyTable.getRowCount() - 1, historyTable.getRowCount() - 1);
+                        stopButton.setEnabled(false);
+                        startButton.setEnabled(true);
+                    });
+        });
     }
 
     /**

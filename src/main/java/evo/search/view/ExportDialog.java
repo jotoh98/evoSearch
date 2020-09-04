@@ -1,10 +1,8 @@
 package evo.search.view;
 
+import evo.search.Evolution;
 import evo.search.Main;
-import evo.search.ga.DiscreteChromosome;
 import evo.search.ga.DiscreteGene;
-import evo.search.ga.DiscretePoint;
-import evo.search.io.entities.Configuration;
 import evo.search.io.service.FileService;
 import evo.search.util.ListUtils;
 import io.jenetics.util.ISeq;
@@ -16,14 +14,12 @@ import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
- * Export Dialog managing the export of {@link DiscreteChromosome}s.
+ * Export Dialog managing the export of {@link Evolution}s.
  */
 public class ExportDialog extends JDialog {
     /**
@@ -62,11 +58,15 @@ public class ExportDialog extends JDialog {
      * Button to save exported contents to a file.
      */
     private JButton saveButton;
+    /**
+     * Checkbox to determine whether to export non-repeating lists.
+     */
+    private JCheckBox distinct;
 
     /**
-     * List of {@link DiscreteChromosome}s to export.
+     * Evolution with data to export.
      */
-    private List<DiscreteChromosome> chromosomeList = new ArrayList<>();
+    private Evolution evolution = null;
 
     /**
      * Default constructor. Binds component behaviour.
@@ -86,41 +86,21 @@ public class ExportDialog extends JDialog {
     /**
      * Chromosome list constructor.
      *
-     * @param chromosomes list of chromosomes to export
+     * @param evolution evolution to export
      */
-    public ExportDialog(final List<DiscreteChromosome> chromosomes) {
+    public ExportDialog(final Evolution evolution) {
         this();
-        this.chromosomeList = chromosomes;
+        this.evolution = evolution;
     }
 
     /**
-     * Serialize a discrete gene to the format (1, 1.4563).
+     * Static method to initialize and show the {@link ExportDialog} with a evolution to export.
      *
-     * @param gene gene to serialize
-     * @return serialized gene
+     * @param evolution evolution to export
      */
-    private static String format(final DiscreteGene gene) {
-        return String.format("(%s, %s)", gene.getPosition(), gene.getDistance());
-    }
-
-    /**
-     * Serialize a discrete point to the format (1, 1.4563).
-     *
-     * @param point point to serialize
-     * @return serialized point
-     */
-    private static String format(final DiscretePoint point) {
-        return String.format("(%s, %s)", point.getPosition(), point.getDistance());
-    }
-
-    /**
-     * Static method to initialize and show the {@link ExportDialog} with a list of chromosomes.
-     *
-     * @param chromosomes chromosomes to export
-     */
-    public static void showDialog(final List<DiscreteChromosome> chromosomes) {
+    public static void showDialog(final Evolution evolution) {
         Main.setupEnvironment();
-        final ExportDialog exportDialog = new ExportDialog(chromosomes);
+        final ExportDialog exportDialog = new ExportDialog(evolution);
         exportDialog.setPreferredSize(new Dimension(500, 600));
         exportDialog.setLocationRelativeTo(null);
         exportDialog.pack();
@@ -144,33 +124,6 @@ public class ExportDialog extends JDialog {
     }
 
     /**
-     * Test entry point for dialog evaluation.
-     *
-     * @param ignored ignored cli args
-     */
-    public static void main(final String[] ignored) {
-        final Configuration build = Configuration
-                .builder()
-                .positions(6)
-                .treasures(List.of(
-                        new DiscretePoint(6, 3, 1),
-                        new DiscretePoint(6, 6, 14),
-                        new DiscretePoint(6, 9, 4),
-                        new DiscretePoint(6, 1, 7)
-                ))
-                .build();
-        ExportDialog.showDialog(List.of(
-                new DiscreteChromosome(build, List.of(
-                        new DiscreteGene(build, 1, 10),
-                        new DiscreteGene(build, 5, 2),
-                        new DiscreteGene(build, 3, 7),
-                        new DiscreteGene(build, 0, 3)
-                ).stream().collect(ISeq.toISeq()))
-        ));
-        System.exit(0);
-    }
-
-    /**
      * Copy button behaviour.
      * Copies export string to clipboard.
      */
@@ -187,6 +140,8 @@ public class ExportDialog extends JDialog {
      * @return exported data string
      */
     private String export() {
+        if (evolution == null)
+            return "Experiment empty";
         switch (strategyTabs.getSelectedIndex()) {
             case 0:
                 return exportLatex();
@@ -197,7 +152,7 @@ public class ExportDialog extends JDialog {
     }
 
     /**
-     * Export the {@link DiscreteChromosome}s to csv.
+     * Export the {@link DiscreteGene} chromosomes to csv.
      *
      * @return csv string
      */
@@ -206,25 +161,21 @@ public class ExportDialog extends JDialog {
         final int separatorIndex = csvSeparator.getSelectedIndex();
         final String separator = separatorIndex == 0 ? ", " : "; ";
 
-        String output = chromosomeList
-                .stream()
-                .map(chromosome -> printRowSeparated(
-                        chromosome
-                                .stream()
-                                .collect(Collectors.toList()),
-                        DiscreteGene::getPosition,
-                        DiscreteGene::getDistance,
-                        separator
-                ))
-                .reduce(ListUtils.separator("\n"))
-                .orElse("");
+        List<String> lines = ListUtils.map(evolution.getHistoryOfBestPhenotype(), chromosome -> printRowSeparated(
+                ISeq.of(chromosome).asList(),
+                DiscreteGene::getPosition,
+                DiscreteGene::getDistance,
+                separator
+        ));
 
-        if (exportTreasure.isSelected() && chromosomeList.size() > 0) {
-            final List<DiscretePoint> treasures = chromosomeList
-                    .get(0)
-                    .getConfiguration()
-                    .getTreasures();
-            output += "\n" + printRowSeparated(treasures, DiscretePoint::getPosition, DiscretePoint::getDistance, separator);
+        if (distinct.isSelected() && lines.size() > 1)
+            lines = ListUtils.removeRepeating(lines);
+
+        String output = ListUtils.reduce(lines, ListUtils.separator("\n"), "");
+
+        if (exportTreasure.isSelected() && evolution.getHistory().size() > 0) {
+            final List<DiscreteGene> treasures = evolution.getConfiguration().getTreasures();
+            output += "\n" + printRowSeparated(treasures, DiscreteGene::getPosition, DiscreteGene::getDistance, separator);
         }
 
         return output;
@@ -241,64 +192,48 @@ public class ExportDialog extends JDialog {
      * @return row separated csv string of integers and doubles
      */
     private <T> String printRowSeparated(final List<T> items, final Function<T, Integer> position, final Function<T, Double> distance, final String separator) {
-        final String positionStrings = items
-                .stream()
-                .map(position)
-                .map(p -> Integer.toString(p))
-                .reduce(ListUtils.separator(separator))
-                .orElse("");
-
-        final String distanceStrings = items
-                .stream()
-                .map(distance)
-                .map(d -> Double.toString(d))
-                .reduce(ListUtils.separator(separator))
-                .orElse("");
-
-        return positionStrings + "\n" + distanceStrings;
+        final BinaryOperator<String> accumulator = ListUtils.separator(separator);
+        final List<String> positionStrings = ListUtils.map(items, position.andThen(p -> Integer.toString(p)));
+        final List<String> distanceStrings = ListUtils.map(items, distance.andThen(d -> Double.toString(d)));
+        return ListUtils.reduce(positionStrings, accumulator, "") + "\n" + ListUtils.reduce(distanceStrings, accumulator, "");
     }
 
     /**
-     * Export the {@link DiscreteChromosome}s to latex.
+     * Export the {@link DiscreteGene} chromosomes to latex.
      *
      * @return latex string
      */
     private String exportLatex() {
-        Stream<String> chromosomeStrings = chromosomeList.stream().map(chromosome -> chromosome
-                .stream()
-                .map(ExportDialog::format)
-                .reduce(ListUtils.REDUCE_WITH_SPACE)
-                .orElse("")
-        );
+
+        List<String> individualStrings = ListUtils
+                .map(evolution.getHistoryOfBestPhenotype(), chromosome -> {
+                    final StringBuilder chromosomeString = new StringBuilder();
+                    chromosome.forEach(gene -> chromosomeString.append(gene.printSmall()));
+                    return chromosomeString.toString();
+                });
+
+        if (distinct.isSelected() && individualStrings.size() > 1)
+            individualStrings = ListUtils
+                    .removeRepeating(individualStrings);
 
         if (latexUseMakros.isSelected())
-            chromosomeStrings = chromosomeStrings.map(s -> "\\individual{" + s + "}");
-
-        final List<String> individualStrings = chromosomeStrings.collect(Collectors.toList());
+            individualStrings = ListUtils.map(individualStrings, s -> "\\individual{" + s + "}");
 
         final String separator = latexUseMakros.isSelected() ? "\n\t" : "\n";
-        String reducedString = individualStrings
-                .stream()
-                .reduce(ListUtils.separator(separator))
-                .orElse("");
+        String reducedString = ListUtils.reduce(individualStrings, ListUtils.separator(separator), "");
 
-        if (exportTreasure.isSelected() && chromosomeList.size() > 0 && chromosomeList.get(0).getConfiguration().getTreasures().size() > 0) {
-            String treasures = chromosomeList
-                    .get(0)
-                    .getConfiguration()
-                    .getTreasures()
-                    .stream()
-                    .map(ExportDialog::format)
-                    .reduce(ListUtils.REDUCE_WITH_SPACE)
-                    .orElse("");
+        if (exportTreasure.isSelected() && evolution.getHistory().size() > 0 && evolution.getConfiguration().getTreasures().size() > 0) {
+
+            final List<String> smallPrints = ListUtils.map(evolution.getConfiguration().getTreasures(), DiscreteGene::printSmall);
+            String treasures = ListUtils.reduce(smallPrints, ListUtils.REDUCE_WITH_SPACE, "");
 
             if (latexUseMakros.isSelected())
                 treasures = "\\treasures{" + treasures + "}";
 
             reducedString = treasures + separator + reducedString;
         }
-        if (chromosomeList.size() > 0 && latexUseMakros.isSelected())
-            reducedString = "\\discretePlane{" + chromosomeList.get(0).getConfiguration().getPositions() + "}{\n\t" + reducedString + "\n}";
+        if (evolution.getHistory().size() > 0 && latexUseMakros.isSelected())
+            reducedString = "\\discretePlane{" + evolution.getConfiguration().getPositions() + "}{\n\t" + reducedString + "\n}";
         return reducedString;
     }
 

@@ -1,8 +1,5 @@
 package evo.search.ga;
 
-import evo.search.io.entities.Configuration;
-import io.jenetics.Chromosome;
-import io.jenetics.util.ISeq;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -14,27 +11,21 @@ import java.util.List;
 class AnalysisUtilsTest {
 
     /**
-     * Test for the {@link AnalysisUtils#fill(Chromosome)} method.
+     * Test for the {@link AnalysisUtils#fill(List)} method.
      */
     @Test
     void fillsChromosome() {
-
-        final Configuration config = Configuration.builder()
-                .positions(8)
-                .build();
-
-        final List<DiscretePoint> filled = AnalysisUtils.fill(new DiscreteChromosome(config, ISeq.of(
-                new DiscreteGene(config, 0, 1),
-                new DiscreteGene(config, 2, 1),
-                new DiscreteGene(config, 4, 1),
-                new DiscreteGene(config, 6, 1)
-        )));
+        final List<DiscreteGene> filled = AnalysisUtils.fill(List.of(
+                new DiscreteGene(8, 0, 1),
+                new DiscreteGene(8, 2, 1),
+                new DiscreteGene(8, 4, 1),
+                new DiscreteGene(8, 6, 1)
+        ));
 
         Assertions.assertEquals(filled.size(), 7);
 
-        for (int i = 0; i < filled.size(); i++) {
+        for (int i = 0; i < filled.size(); i++)
             Assertions.assertEquals(filled.get(i).getPosition(), i);
-        }
     }
 
     /**
@@ -58,39 +49,39 @@ class AnalysisUtilsTest {
     }
 
     /**
-     * Test for the {@link AnalysisUtils#inBetween(DiscretePoint, DiscretePoint)} method.
+     * Test for the {@link AnalysisUtils#inBetween(DiscreteGene, DiscreteGene)} method.
      * Tests if the list is empty, because the points are opposed.
      */
     @Test
     void emptyBetweenOpposing() {
         final int size = AnalysisUtils
-                .inBetween(new DiscretePoint(4, 0, 1), new DiscretePoint(4, 2, 1))
+                .inBetween(new DiscreteGene(4, 0, 1), new DiscreteGene(4, 2, 1))
                 .size();
         Assertions.assertEquals(size, 0);
     }
 
     /**
-     * Test for the {@link AnalysisUtils#inBetween(DiscretePoint, DiscretePoint)} method.
+     * Test for the {@link AnalysisUtils#inBetween(DiscreteGene, DiscreteGene)} method.
      * Tests if the list is empty, because the points are opposed, although they're neighbours.
      */
     @Test
     void emptyBetweenNeighbors() {
         final int size = AnalysisUtils
-                .inBetween(new DiscretePoint(2, 0, 1), new DiscretePoint(2, 1, 1))
+                .inBetween(new DiscreteGene(2, 0, 1), new DiscreteGene(2, 1, 1))
                 .size();
         Assertions.assertEquals(size, 0);
     }
 
     /**
-     * Test for the {@link AnalysisUtils#inBetween(DiscretePoint, DiscretePoint)} method.
+     * Test for the {@link AnalysisUtils#inBetween(DiscreteGene, DiscreteGene)} method.
      * Tests if a filled-in points is correct.
      */
     @Test
     void inBetweenDistanceCorrect() {
         final double distance = AnalysisUtils
-                .inBetween(new DiscretePoint(8, 0, 1), new DiscretePoint(8, 2, 1))
+                .inBetween(new DiscreteGene(8, 0, 1), new DiscreteGene(8, 2, 1))
                 .get(0)
-                .distance;
+                .getDistance();
         Assertions.assertEquals(distance, Math.sqrt(2) / 2);
     }
 
@@ -100,11 +91,11 @@ class AnalysisUtilsTest {
      */
     @Test
     void areaMaximised() {
-        final double quarter = AnalysisUtils.areaCovered(List.of(new DiscretePoint(4, 0, 1), new DiscretePoint(4, 1, 1)));
+        final double quarter = AnalysisUtils.areaCovered(List.of(new DiscreteGene(4, 0, 1), new DiscreteGene(4, 1, 1)));
 
-        final double maximisedQuarter = AnalysisUtils.areaCovered(List.of(new DiscretePoint(4, 0, 1), new DiscretePoint(4, 1, 1), new DiscretePoint(4, 1, 2), new DiscretePoint(4, 0, 2)));
+        final double maximisedQuarter = AnalysisUtils.areaCovered(List.of(new DiscreteGene(4, 0, 1), new DiscreteGene(4, 1, 1), new DiscreteGene(4, 1, 2), new DiscreteGene(4, 0, 2)));
 
-        final double better = AnalysisUtils.areaCovered(List.of(new DiscretePoint(4, 0, 1), new DiscretePoint(4, 1, 1), new DiscretePoint(4, 1, 2), new DiscretePoint(4, 2, 2)));
+        final double better = AnalysisUtils.areaCovered(List.of(new DiscreteGene(4, 0, 1), new DiscreteGene(4, 1, 1), new DiscreteGene(4, 1, 2), new DiscreteGene(4, 2, 2)));
 
 
         Assertions.assertEquals(quarter, .5);

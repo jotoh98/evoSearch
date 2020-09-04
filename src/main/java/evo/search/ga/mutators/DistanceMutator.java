@@ -1,7 +1,9 @@
 package evo.search.ga.mutators;
 
 import evo.search.ga.DiscreteGene;
+import evo.search.io.entities.Configuration;
 import io.jenetics.Mutator;
+import lombok.Setter;
 
 import java.util.Random;
 
@@ -12,6 +14,12 @@ import java.util.Random;
  * @author jotoh
  */
 public class DistanceMutator extends Mutator<DiscreteGene, Double> implements DiscreteAlterer {
+
+    /**
+     * Configuration for the alterers to work with.
+     */
+    @Setter
+    Configuration configuration;
 
     /**
      * Standard probability constructor.
@@ -33,9 +41,9 @@ public class DistanceMutator extends Mutator<DiscreteGene, Double> implements Di
      */
     @Override
     protected DiscreteGene mutate(final DiscreteGene gene, final Random random) {
-        final double delta = gene.getConfiguration().getDistanceMutationDelta();
+        final double delta = configuration == null ? 1d : configuration.getDistanceMutationDelta();
         final double newDistance = gene.getDistance() + (random.nextDouble() * 2 - 1) * delta;
-        return new DiscreteGene(gene.getConfiguration(), gene.getPosition(), Math.max(0, newDistance));
+        return new DiscreteGene(gene.getPositions(), gene.getPosition(), Math.max(0, newDistance));
     }
 
 }

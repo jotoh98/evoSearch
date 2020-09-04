@@ -1,6 +1,6 @@
 package evo.search.util;
 
-import evo.search.ga.DiscretePoint;
+import evo.search.ga.DiscreteGene;
 import io.jenetics.util.RandomRegistry;
 
 import java.util.Random;
@@ -35,7 +35,7 @@ public class RandomUtils {
     }
 
     /**
-     * Returns a shuffled {@link DiscretePoint}.
+     * Returns a shuffled {@link DiscreteGene}.
      * The point's position is randomly selected in the range [0, {@code positions}] and the distance is chosen in the range [{@code minDistance}, {@code maxDistance}).
      * Utilizes the {@link RandomRegistry} from jenetics for thread-safety.
      *
@@ -45,8 +45,8 @@ public class RandomUtils {
      * @return shuffled discrete point
      * @see Random#nextDouble()
      */
-    public static DiscretePoint generatePoint(final int positions, final double minDistance, final double maxDistance) {
-        return new DiscretePoint(positions, RandomRegistry.random().nextInt(positions), inRange(minDistance, maxDistance));
+    public static DiscreteGene generatePoint(final int positions, final double minDistance, final double maxDistance) {
+        return new DiscreteGene(positions, RandomRegistry.random().nextInt(positions), inRange(minDistance, maxDistance));
     }
 
 }

@@ -169,8 +169,8 @@ public class FileService {
      * @return amount of files matching the pattern
      */
     public static int counter(final Path path, final String prefix, final String suffix) {
-        Path candidate = path.resolve(prefix + suffix);
         int count = 0;
+        Path candidate = path.resolve(prefix + count + suffix);
         while (Files.exists(candidate))
             candidate = path.resolve(String.format("%s%d%s", prefix, ++count, suffix));
         return count;

@@ -49,7 +49,8 @@ public class Main {
      * @param args cli and application arguments
      */
     public static void main(final String[] args) {
-        System.out.println("Starting " + APP_TITLE + "...");
+        if (log.isInfoEnabled())
+            log.info("Starting " + APP_TITLE + "...");
         if (args.length > 0 && args[0].equals("experiment")) {
             if (args.length < 2) {
                 System.err.println("No experiment chosen.");

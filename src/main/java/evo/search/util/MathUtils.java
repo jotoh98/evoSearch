@@ -1,8 +1,5 @@
 package evo.search.util;
 
-import java.awt.geom.Line2D;
-import java.awt.geom.Point2D;
-
 /**
  * Math utility function library.
  */
@@ -33,48 +30,6 @@ public class MathUtils {
      */
     public static double distance(final double x1, final double y1, final double x2, final double y2) {
         return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-    }
-
-    /**
-     * Compute the intersection point between the two infinite lines A and B.
-     *
-     * @param lineA infinite line A
-     * @param lineB infinite line B
-     * @return if A and B intersect, the intersection point, null otherwise
-     */
-    public static Point2D intersection(final Line2D lineA, final Line2D lineB) {
-
-        final Point2D p1 = lineA.getP1();
-        final Point2D p2 = lineA.getP2();
-        final Point2D p3 = lineB.getP1();
-        final Point2D p4 = lineB.getP2();
-
-        final double x1 = p1.getX();
-        final double y1 = p1.getY();
-        final double x2 = p2.getX();
-        final double y2 = p2.getY();
-        final double x3 = p3.getX();
-        final double y3 = p3.getY();
-        final double x4 = p4.getX();
-        final double y4 = p4.getY();
-
-        if (p1.equals(p3) || p1.equals(p4))
-            return p1;
-        if (p2.equals(p3) || p2.equals(p4))
-            return p2;
-
-        final double a = x1 * y2 - y1 * x2;
-        final double b = x3 * y4 - y3 * x4;
-
-        final double div = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-
-        if (div == 0)
-            return null;
-
-        return new Point2D.Double(
-                (a * (x3 - x4) - (x1 - x2) * b) / div,
-                (a * (y3 - y4) - (y1 - y2) * b) / div
-        );
     }
 
     /**

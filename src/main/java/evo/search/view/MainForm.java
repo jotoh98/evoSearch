@@ -479,55 +479,57 @@ public class MainForm extends JFrame {
      * Start an evolution run.
      */
     private void onRun() {
-        final Configuration selectedConfiguration;
-        try {
-            selectedConfiguration = (Configuration) configComboModel.getSelectedItem();
-            if (selectedConfiguration == null) {
-                throw new NullPointerException();
+        SwingUtilities.invokeLater(() -> {
+            final Configuration selectedConfiguration;
+            try {
+                selectedConfiguration = (Configuration) configComboModel.getSelectedItem();
+                if (selectedConfiguration == null) {
+                    throw new NullPointerException();
+                }
+            } catch (final ClassCastException | NullPointerException ignored) {
+                EventService.LOG_LABEL.trigger(LangService.get("evolution.init.error"));
+                EventService.LOG.trigger(LangService.get("evolution.init.error") + ": " + LangService.get("configuration.selected.not.valid"));
+                return;
             }
-        } catch (final ClassCastException | NullPointerException ignored) {
-            EventService.LOG_LABEL.trigger(LangService.get("evolution.init.error"));
-            EventService.LOG.trigger(LangService.get("evolution.init.error") + ": " + LangService.get("configuration.selected.not.valid"));
-            return;
-        }
 
-        clearHistory();
+            clearHistory();
 
-        progressBar.setMaximum(selectedConfiguration.getLimit());
-        progressBar.setVisible(true);
-        stopButton.setEnabled(true);
-        startButton.setEnabled(false);
+            progressBar.setMaximum(selectedConfiguration.getLimit());
+            progressBar.setVisible(true);
+            stopButton.setEnabled(true);
+            startButton.setEnabled(false);
 
-        final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
-        final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
-            EventService.REPAINT_CANVAS.trigger(result.bestPhenotype().genotype().chromosome());
-            showResultInHistoryTable(result);
-        };
+            final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
+            final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
+                EventService.REPAINT_CANVAS.trigger(result.bestPhenotype().genotype().chromosome());
+                showResultInHistoryTable(result);
+            };
 
-        CompletableFuture
-                .supplyAsync(() -> {
-                    evolution = Evolution.builder()
-                            .configuration(selectedConfiguration)
-                            .progressConsumer(progressConsumer)
-                            .historyConsumer(resultConsumer)
-                            .build();
+            CompletableFuture
+                    .supplyAsync(() -> {
+                        evolution = Evolution.builder()
+                                .configuration(selectedConfiguration)
+                                .progressConsumer(progressConsumer)
+                                .historyConsumer(resultConsumer)
+                                .build();
 
-                    evolution.run();
+                        evolution.run();
 
-                    return evolution.getResult().chromosome();
-                })
-                .thenAccept(chromosome -> {
-                    if (chromosome != null) {
-                        EventService.LOG_LABEL.trigger(LangService.get("environment.finished"));
-                        EventService.REPAINT_CANVAS.trigger(chromosome);
-                    }
-                })
-                .thenRun(() -> {
-                    getProgressBar().setVisible(false);
-                    historyTable.setRowSelectionInterval(historyTable.getRowCount() - 1, historyTable.getRowCount() - 1);
-                    stopButton.setEnabled(false);
-                    startButton.setEnabled(true);
-                });
+                        return evolution.getResult().chromosome();
+                    })
+                    .thenAccept(chromosome -> {
+                        if (chromosome != null) {
+                            EventService.LOG_LABEL.trigger(LangService.get("environment.finished"));
+                            EventService.REPAINT_CANVAS.trigger(chromosome);
+                        }
+                    })
+                    .thenRun(() -> {
+                        getProgressBar().setVisible(false);
+                        historyTable.setRowSelectionInterval(historyTable.getRowCount() - 1, historyTable.getRowCount() - 1);
+                        stopButton.setEnabled(false);
+                        startButton.setEnabled(true);
+                    });
+        });
     }
 
     /**
@@ -543,8 +545,10 @@ public class MainForm extends JFrame {
      * Abort evolution run.
      */
     private void onAbort() {
-        if (evolution != null)
-            evolution.setAborted(true);
+        SwingUtilities.invokeLater(() -> {
+            if (evolution != null)
+                evolution.setAborted(true);
+        });
     }
 
     /**

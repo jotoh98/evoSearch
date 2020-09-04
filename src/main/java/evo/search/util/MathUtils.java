@@ -77,4 +77,17 @@ public class MathUtils {
         );
     }
 
+    /**
+     * Calculate the area covered by a triangle defined by an edge's angle and
+     * the lengths of the two sides connected to the edge.
+     *
+     * @param angle   angle
+     * @param lengthA one side's length
+     * @param lengthB other side's length
+     * @return area covered by triangle
+     */
+    public static double areaInTriangle(final double angle, final double lengthA, final double lengthB) {
+        return lengthA * lengthB * Math.sin(angle) / 2;
+    }
+
 }

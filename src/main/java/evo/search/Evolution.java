@@ -219,11 +219,25 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      * @see AnalysisUtils#areaCovered(List)
      */
     public double fitnessMaximisingArea(final List<DiscreteGene> chromosome) {
-        final List<DiscreteGene> points = AnalysisUtils.fill(chromosome);
-        final double area = AnalysisUtils.areaCovered(points);
+        final double area = AnalysisUtils.areaCovered(chromosome);
         if (area <= 0)
             return Double.POSITIVE_INFINITY;
-        return AnalysisUtils.traceLength(points) / area;
+        return AnalysisUtils.traceLength(chromosome) / area;
+    }
+
+    /**
+     * Computes the fitness of a {@link DiscreteGene} chromosome based on the maximised
+     * area explored in each section between two rays.
+     *
+     * @param chromosome chromosome to evaluate
+     * @return chromosome fitness based on maximised area explored
+     * @see AnalysisUtils#areaCovered(List)
+     */
+    public double fitnessMaximisingCoveredArea(final List<DiscreteGene> chromosome) {
+        final double area = AnalysisUtils.newAreaCovered(chromosome);
+        if (area <= 0)
+            return Double.POSITIVE_INFINITY;
+        return AnalysisUtils.traceLength(chromosome) / area;
     }
 
     /**
@@ -297,7 +311,12 @@ public class Evolution implements Runnable, Serializable, Cloneable {
          *
          * @see #fitnessMaximisingArea(List)
          */
-        MAX_AREA(Evolution::fitnessMaximisingArea);
+        MAX_AREA(Evolution::fitnessMaximisingArea),
+        /**
+         * This fitness method computes the quotient between the trace length
+         * and the sum of explored areas.
+         */
+        COVERED_AREA(Evolution::fitnessMaximisingCoveredArea);
 
         /**
          * Fitness method used in the evolution stream.

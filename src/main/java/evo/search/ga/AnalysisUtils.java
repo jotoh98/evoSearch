@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 /**
@@ -127,17 +129,13 @@ public class AnalysisUtils {
     public static List<DiscreteGene> fill(final List<DiscreteGene> chromosome) {
         final ArrayList<DiscreteGene> discreteGenes = new ArrayList<>();
 
-        int i = 0;
-
-        for (; i < chromosome.size() - 1; i++) {
-            final DiscreteGene pointA = chromosome.get(i);
-            final DiscreteGene pointB = chromosome.get(i + 1);
+        ListUtils.consec(chromosome, (pointA, pointB) -> {
             discreteGenes.add(pointA);
             if (Math.abs(pointA.getPosition() - pointB.getPosition()) > 1)
                 discreteGenes.addAll(inBetween(pointA, pointB));
-        }
+        });
 
-        discreteGenes.add(chromosome.get(i));
+        discreteGenes.add(chromosome.get(chromosome.size() - 1));
 
         return discreteGenes;
     }
@@ -151,31 +149,28 @@ public class AnalysisUtils {
      * @return list of intersections between the line ab and the rays between a and b
      */
     public static List<DiscreteGene> inBetween(final DiscreteGene a, final DiscreteGene b) {
+        final int positions = a.getPositions();
+
         final int difference = Math.abs(a.getPosition() - b.getPosition());
-        if (((double) difference) == a.getPositions() / 2d || difference == 0)
+        final int shortestPath = Math.min(positions - difference, difference);
+
+        if (((double) difference) == positions / 2d || difference == 0)
             return Collections.emptyList();
 
-        final double anglePart = 1 / (double) a.getPositions() * 2 * Math.PI;
+        final double anglePart = 2 * Math.PI / (double) positions;
 
-        final double fullAngle = difference * anglePart;
-        final double pointsDistance = Math.sqrt(a.getDistanceSquared() + b.getDistanceSquared() - 2 * a.getDistance() * b.getDistance() * Math.cos(fullAngle));
+        final double distanceToPointA = a.getDistance();
+        final double angleAtPointA = Math.asin(Math.sin(anglePart * (shortestPath - 1)) * b.getDistance() / a.distance(b));
 
-        final double openAngle = Math.asin(b.getDistance() * Math.sin(fullAngle) / pointsDistance);
 
-        final ArrayList<DiscreteGene> points = new ArrayList<>();
+        final int increase = (a.getPosition() + shortestPath) % positions == b.getPosition() ? 1 : -1;
 
-        final int startPosition = Math.min(a.getPosition(), b.getPosition());
-        for (int currentAngleIndex = 1; currentAngleIndex < difference; currentAngleIndex++) {
-
-            final double currentAngle = currentAngleIndex * anglePart;
-            final double closingAngle = Math.PI - openAngle - currentAngle;
-
-            final double newDistance = Math.sin(openAngle) / Math.sin(closingAngle) * a.getDistance();
-
-            points.add(new DiscreteGene(a.getPositions(), startPosition + currentAngleIndex, newDistance));
+        final List<DiscreteGene> fill = new ArrayList<>();
+        for (int i = 1; i < shortestPath; i++) {
+            final double y = distanceToPointA * Math.sin(angleAtPointA) / Math.sin(angleAtPointA + (anglePart * i));
+            fill.add(new DiscreteGene(positions, (a.getPosition() + positions + increase * i) % positions, y));
         }
-
-        return points;
+        return fill;
     }
 
     /**
@@ -191,7 +186,7 @@ public class AnalysisUtils {
      * @return triangle area in a sector given two point distances
      */
     public static double areaInSector(final double distanceA, final double distanceB, final int rayCount) {
-        return 0.5 * distanceA * distanceB * Math.sin((2 * Math.PI) / (double) rayCount);
+        return MathUtils.areaInTriangle((2 * Math.PI) / (double) rayCount, distanceA, distanceB);
     }
 
     /**
@@ -211,13 +206,46 @@ public class AnalysisUtils {
 
         final double sectorAngle = (2 * Math.PI) / points.get(0).getPositions();
 
+        final AtomicReference<Double> areaCovered = new AtomicReference<>(0d);
+        final AtomicInteger amount = new AtomicInteger(1);
         final List<Double> areas = ListUtils.consecMap(points, (pointA, pointB) -> {
             final int delta = Math.abs(pointA.getPosition() - pointB.getPosition());
             final double area = MathUtils.areaInTriangle(sectorAngle * delta, pointA.getDistance(), pointB.getDistance());
-            return Math.max(area, 0d);
+            areaCovered.set(areaCovered.get() + area);
+            return Math.max(areaCovered.get() / amount.getAndIncrement(), 0d);
         });
 
         return ListUtils.sum(areas);
+    }
+
+    /**
+     * Computes the sum of newly covered area per step of the chromosome.
+     *
+     * @param points path of the chromosome
+     * @return sum of the newly covered area per step
+     */
+    public static double newAreaCovered(final List<DiscreteGene> points) {
+        if (points.size() < 2)
+            return 0;
+
+        final List<DiscreteGene> filledIn = fill(points);
+
+        final int positions = points.get(0).getPositions();
+        final double[] areasCovered = new double[positions];
+        final List<Double> areasPerStep = ListUtils.consecMap(filledIn, (pointA, pointB) -> {
+            int index = Math.min(pointA.getPosition(), pointB.getPosition());
+            final int delta = Math.abs(pointA.getPosition() - pointB.getPosition());
+            if (index == 0 && delta > 1)
+                index = delta;
+
+            final double areaCoveredInSector = areaInSector(pointA.getDistance(), pointB.getDistance(), positions);
+            final double newAreaCovered = areaCoveredInSector - areasCovered[index];
+            areasCovered[index] = Math.max(areasCovered[index], areaCoveredInSector);
+
+            return Math.max(newAreaCovered, 0d);
+        });
+
+        return ListUtils.sum(areasPerStep);
     }
 
     /**

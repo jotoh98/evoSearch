@@ -87,7 +87,7 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
 
     @Override
     public String toString() {
-        return String.format("DiscreteGene{ pos=%d, dist=%s}", position, distance);
+        return String.format("DiscreteGene(%d, %d, %s)", positions, position, distance);
     }
 
     /**

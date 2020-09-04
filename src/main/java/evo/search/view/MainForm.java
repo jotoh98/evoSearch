@@ -391,12 +391,12 @@ public class MainForm extends JFrame {
         EventService.LOG.addListener(
                 message -> logTextPane.append(message + "\n")
         );
-        EventService.REPAINT_CANVAS.addListener(chromosome -> {
+        EventService.REPAINT_CANVAS.addListener(chromosome -> SwingUtilities.invokeLater(() -> {
             canvas.clear();
             canvas.setRays(evolution.getConfiguration().getPositions());
             canvas.render(chromosome);
             canvas.renderTreasures(evolution.getConfiguration().getTreasures());
-        });
+        }));
     }
 
     /**

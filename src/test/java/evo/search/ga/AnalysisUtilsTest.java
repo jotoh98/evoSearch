@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests for the {@link AnalysisUtils} utilities.
@@ -83,6 +84,23 @@ class AnalysisUtilsTest {
                 .get(0)
                 .getDistance();
         Assertions.assertEquals(distance, Math.sqrt(2) / 2);
+    }
+
+    @Test
+    void inBetweenCorrect() {
+        final List<DiscreteGene> genes = AnalysisUtils.fill(List.of(
+                new DiscreteGene(50, 0, 1),
+                new DiscreteGene(50, 10, 1),
+                new DiscreteGene(50, 20, 1)
+        ));
+
+        final AtomicInteger atomicInteger = new AtomicInteger(0);
+        Assertions.assertTrue(
+                genes
+                        .stream()
+                        .map(DiscreteGene::getPosition)
+                        .allMatch(p -> p == atomicInteger.getAndIncrement())
+        );
     }
 
     /**

@@ -84,6 +84,19 @@ public class ListUtils {
     }
 
     /**
+     * Look at a list of consecutive items in pairs of two.
+     *
+     * @param list     list of consecutive items
+     * @param consumer consumer working with two consecutive items
+     * @param <T>      list item type
+     */
+    public static <T> void consec(final List<T> list, final BiConsumer<T, T> consumer) {
+        for (int index = 0; index < list.size() - 1; index++) {
+            consumer.accept(list.get(index), list.get(index + 1));
+        }
+    }
+
+    /**
      * Generate a list from an iterator.
      *
      * @param iterator iterator supplying elements

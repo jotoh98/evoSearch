@@ -545,10 +545,8 @@ public class MainForm extends JFrame {
      * Abort evolution run.
      */
     private void onAbort() {
-        SwingUtilities.invokeLater(() -> {
-            if (evolution != null)
-                evolution.setAborted(true);
-        });
+        if (evolution != null)
+            evolution.setAborted(true);
     }
 
     /**

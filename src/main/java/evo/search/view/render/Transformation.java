@@ -96,6 +96,11 @@ public class Transformation {
                 pressOffset = e.getPoint();
                 offsetBackup.setLocation(offset.getX(), offset.getY());
             }
+
+            @Override
+            public void mouseReleased(final MouseEvent e) {
+                pressOffset = null;
+            }
         };
     }
 
@@ -109,6 +114,7 @@ public class Transformation {
         return new MouseMotionAdapter() {
             @Override
             public void mouseDragged(final MouseEvent e) {
+                if (pressOffset == null) return;
                 offset.setLocation(
                         offsetBackup.getX() + e.getX() - pressOffset.getX(),
                         offsetBackup.getY() + e.getY() - pressOffset.getY()
@@ -128,6 +134,7 @@ public class Transformation {
         return new MouseAdapter() {
             @Override
             public void mouseWheelMoved(final MouseWheelEvent e) {
+                if (pressOffset != null) return;
                 final double amount = Math.pow(1.05, e.getScrollAmount());
                 final double dirX = offset.getX() - e.getX();
                 final double dirY = offset.getY() - e.getY();

@@ -6,17 +6,19 @@ import evo.search.ga.mutators.DiscreteAlterer;
 import evo.search.ga.mutators.DistanceMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.io.service.EventService;
-import evo.search.util.ListUtils;
 import evo.search.view.LangService;
 import io.jenetics.Chromosome;
 import io.jenetics.Genotype;
-import io.jenetics.StochasticUniversalSelector;
+import io.jenetics.TournamentSelector;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
 import io.jenetics.engine.Problem;
 import io.jenetics.util.ISeq;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -56,19 +58,13 @@ public class Evolution implements Runnable, Serializable, Cloneable {
     @Getter
     @Setter
     private Configuration configuration;
-    /**
-     * Final evolution result.
-     */
-    @Getter
-    @Setter(AccessLevel.NONE)
-    private transient Genotype<DiscreteGene> result;
 
     /**
      * History of individuals with the best phenotype in each generation.
      */
     @Getter
     @Setter
-    private List<EvolutionResult<DiscreteGene, Double>> history = new ArrayList<>();
+    private List<EvolutionResult<DiscreteGene, Double>> history;
 
     /**
      * Evolution abort flag.
@@ -81,7 +77,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      * Works with the {@link Configuration} held by this instance.
      * Clears out the history and the last result.
      * <p>
-     * Stores the fittest resulting individual in the field {@link #result} and a history of the generations fittest in {@link #history}.
+     * Stores the history of the generations in {@link #history}.
      */
     @Override
     public void run() {
@@ -99,16 +95,15 @@ public class Evolution implements Runnable, Serializable, Cloneable {
 
         EventService.LOG_LABEL.trigger(LangService.get("environment.evolving"));
         final AtomicInteger progressCounter = new AtomicInteger();
-        result = engine
+        engine
                 .stream()
                 .limit(discreteGeneDoubleEvolutionResult -> !aborted)
                 .limit(configuration.getLimit())
                 .peek(historyConsumer)
-                .peek(result -> {
-                    history.add(result);
+                .peek(history::add)
+                .forEach(result -> {
                     progressConsumer.accept(progressCounter.incrementAndGet());
-                })
-                .collect(EvolutionResult.toBestGenotype());
+                });
     }
 
     /**
@@ -138,7 +133,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
     private Engine<DiscreteGene, Double> buildEngine(final Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> problem) {
         final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine
                 .builder(problem)
-                .selector(new StochasticUniversalSelector<>())
+                .selector(new TournamentSelector<>(configuration.getPopulation() / 4))
                 .minimizing();
 
         final List<? extends DiscreteAlterer> alterers = new ArrayList<>(configuration.getAlterers());
@@ -155,19 +150,8 @@ public class Evolution implements Runnable, Serializable, Cloneable {
 
         return evolutionBuilder
                 .offspringFraction(configuration.getOffspring() / (double) configuration.getPopulation())
-                .survivorsFraction(configuration.getSurvivors() / (double) configuration.getPopulation())
                 .populationSize(configuration.getPopulation())
                 .build();
-    }
-
-    /**
-     * Maps the list of {@link EvolutionResult} to a list of the best {@link io.jenetics.Phenotype}s of
-     * each generation.
-     *
-     * @return list of best phenotypes per generation
-     */
-    public List<Chromosome<DiscreteGene>> getHistoryOfBestPhenotype() {
-        return ListUtils.map(history, result -> result.bestPhenotype().genotype().chromosome());
     }
 
     /**
@@ -259,19 +243,8 @@ public class Evolution implements Runnable, Serializable, Cloneable {
         try {
             return (Evolution) super.clone();
         } catch (final CloneNotSupportedException e) {
-            return new Evolution(progressConsumer, historyConsumer, configuration, result, history, aborted);
+            return new Evolution(progressConsumer, historyConsumer, configuration, history, aborted);
         }
-    }
-
-    /**
-     * Resolve method for the {@link Serializable} functionality. Assigns the result
-     * from the serialized history during reading.
-     *
-     * @return the deserialized evolution
-     */
-    public Object readResolve() {
-        result = history.get(history.size() - 1).bestPhenotype().genotype();
-        return this;
     }
 
     /**

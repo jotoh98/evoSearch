@@ -16,7 +16,6 @@ import evo.search.view.part.Canvas;
 import io.jenetics.Chromosome;
 import io.jenetics.Phenotype;
 import io.jenetics.engine.EvolutionResult;
-import io.jenetics.util.ISeq;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -242,16 +241,18 @@ public class MainForm extends JFrame {
 
             EventService.LOG_LABEL.trigger("Loading Evolution...");
             CompletableFuture.supplyAsync(() -> ProjectService.readEvolution(selectedPath))
-                    .thenAccept(evolution -> {
+                    .thenAccept(loadedEvolution -> {
                         savedEvolutionsList.setEnabled(true);
-                        if (evolution == null) {
+                        if (loadedEvolution == null) {
                             EventService.LOG_LABEL.trigger("Loaded Evolution is empty.");
                             return;
                         }
                         EventService.LOG_LABEL.trigger("Evolution loaded.");
-                        this.evolution = evolution;
-                        final int lastIndex = this.evolution.getHistory().size() - 1;
-                        final Chromosome<DiscreteGene> chromosome = this.evolution.getHistory().get(lastIndex).bestPhenotype().genotype().chromosome();
+                        evolution = loadedEvolution;
+                        if (evolution.getHistory().size() == 0)
+                            return;
+                        final int lastIndex = evolution.getHistory().size() - 1;
+                        final Chromosome<DiscreteGene> chromosome = evolution.getHistory().get(lastIndex).bestPhenotype().genotype().chromosome();
                         EventService.REPAINT_CANVAS.trigger(chromosome);
                     });
         });
@@ -298,6 +299,7 @@ public class MainForm extends JFrame {
         setWindowListeners();
 
         setVisible(true);
+        canvas.centerOffset();
     }
 
     /**
@@ -425,7 +427,7 @@ public class MainForm extends JFrame {
             @Override
             public void stateChanged(final ChangeEvent l) {
                 if (widgetTabs.getSelectedIndex() == 2) {
-                    final int selectedIndex = MainForm.this.getSelectedGenerationIndex();
+                    final int selectedIndex = getSelectedGenerationIndex();
                     if (selectedIndex == generation)
                         return;
 
@@ -550,7 +552,6 @@ public class MainForm extends JFrame {
                 return;
             }
 
-            historyTableModel.setSelected(selectedConfiguration.getFitness());
             historyTableModel.clear();
 
             progressBar.setMaximum(selectedConfiguration.getLimit());
@@ -562,8 +563,8 @@ public class MainForm extends JFrame {
             final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
                 final Phenotype<DiscreteGene, Double> phenotype = result.bestPhenotype();
                 final Chromosome<DiscreteGene> chromosome = phenotype.genotype().chromosome();
+
                 EventService.REPAINT_CANVAS.trigger(chromosome);
-                final List<DiscreteGene> genes = ISeq.of(chromosome).asList();
                 historyTableModel.addResult(phenotype);
             };
 
@@ -577,7 +578,14 @@ public class MainForm extends JFrame {
 
                         evolution.run();
 
-                        return evolution.getResult().chromosome();
+                        if (evolution.getHistory().size() == 0)
+                            return null;
+                        return evolution
+                                .getHistory()
+                                .get(evolution.getHistory().size() - 1)
+                                .bestPhenotype()
+                                .genotype()
+                                .chromosome();
                     })
                     .thenAccept(chromosome -> {
                         if (chromosome != null) {

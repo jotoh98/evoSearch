@@ -380,6 +380,7 @@ public class ConfigurationDialog extends JDialog {
         setMinimumSize(new Dimension(768, 300));
         setTitle(LangService.get("run.configurations"));
         pack();
+        setLocationRelativeTo(null);
         setVisible(true);
     }
 

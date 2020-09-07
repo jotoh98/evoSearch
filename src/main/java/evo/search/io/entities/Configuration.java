@@ -98,13 +98,6 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
     private int offspring = 15;
 
     /**
-     * Amount of surviving individuals.
-     * Has to be less or equal than {@link #population}.
-     */
-    @Builder.Default
-    private int survivors = 10;
-
-    /**
      * Population size.
      */
     @Builder.Default
@@ -247,9 +240,6 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
                 case "offspring":
                     setOffspring(Integer.parseInt(value));
                     break;
-                case "survivors":
-                    setSurvivors(Integer.parseInt(value));
-                    break;
                 case "population":
                     setPopulation(Integer.parseInt(value));
                     break;
@@ -326,7 +316,6 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
                 XmlService.writeProperty("limit", getLimit()),
                 XmlService.writeProperty("positions", getPositions()),
                 XmlService.writeProperty("offspring", getOffspring()),
-                XmlService.writeProperty("survivors", getSurvivors()),
                 XmlService.writeProperty("population", getPopulation()),
                 XmlService.writeProperty("fitness", getFitness().name()),
                 XmlService.writeProperty("noPermutation", isChooseWithoutPermutation()),

@@ -251,7 +251,6 @@ public class ConfigPanel extends JDialog {
         bindMutators();
         bindPopulation();
         bindOffspring();
-        bindSurvivors();
         bindPermutationOnly();
         bindDistanceMutationDelta();
     }
@@ -520,8 +519,7 @@ public class ConfigPanel extends JDialog {
 
     /**
      * Print the given offspring to the spinner and bind the value to the limit in the {@link Configuration}.
-     * The offset has to be greater than 0, {@link Configuration#getOffspring()} and
-     * {@link Configuration#getSurvivors()} ()}. If it gets smaller than the last two, the two decrease.
+     * The offset has to be greater than 0, {@link Configuration#getOffspring()}. If it gets smaller than the offspring, both decrease.
      */
     private void bindPopulation() {
         bindSpinner(populationSpinner, configuration.getPopulation(), configuration::setPopulation, () -> {
@@ -535,23 +533,6 @@ public class ConfigPanel extends JDialog {
             }
             if (populationInput < (int) survivorsSpinner.getValue()) {
                 survivorsSpinner.setValue(populationInput);
-            }
-        });
-    }
-
-    /**
-     * Print the given survivors to the spinner and bind the value to the survivors in the {@link Configuration}.
-     * The offset has to be in the interval [0, {@link Configuration#getPopulation()}]. If it gets bigger, the
-     * {@link #populationSpinner}s value increases.
-     */
-    private void bindSurvivors() {
-        bindSpinner(survivorsSpinner, configuration.getSurvivors(), configuration::setSurvivors, () -> {
-            final int survivors = (int) survivorsSpinner.getValue();
-            if (survivors < 0) {
-                survivorsSpinner.setValue(0);
-            }
-            if (survivors > (int) populationSpinner.getValue()) {
-                populationSpinner.setValue(survivors);
             }
         });
     }

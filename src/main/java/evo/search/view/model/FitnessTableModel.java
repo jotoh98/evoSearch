@@ -1,6 +1,5 @@
 package evo.search.view.model;
 
-import evo.search.Evolution;
 import io.jenetics.Phenotype;
 import lombok.Setter;
 
@@ -16,13 +15,7 @@ public class FitnessTableModel extends AbstractTableModel {
     /**
      * Evolution fitness values to display.
      */
-    @Setter
     List<Double> fitness = new ArrayList<>();
-
-    /**
-     * Selected fitness method.
-     */
-    Evolution.Fitness selected;
 
     /**
      * Name of the first column.
@@ -31,13 +24,14 @@ public class FitnessTableModel extends AbstractTableModel {
     String firstColumnName = "Generation";
 
     /**
-     * Setter for the selected fitness method.
+     * Setter for the tables fitness values.
+     * Fires {@link javax.swing.event.TableModelEvent} for change.
      *
-     * @param selected selected fitness method
+     * @param fitness fitness value to display
      */
-    public void setSelected(final Evolution.Fitness selected) {
-        this.selected = selected;
-        fireTableStructureChanged();
+    public void setFitness(final List<Double> fitness) {
+        this.fitness = fitness;
+        fireTableDataChanged();
     }
 
     @Override

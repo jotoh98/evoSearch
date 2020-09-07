@@ -247,7 +247,6 @@ public class MultiTreasureFitnessExperiment extends Experiment {
                 .positions(6)
                 .population(20)
                 .offspring(7)
-                .survivors(7)
                 .build();
     }
 }

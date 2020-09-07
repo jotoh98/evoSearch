@@ -71,12 +71,15 @@ public class Canvas extends JPanel {
         add(popover);
         popover.setVisible(false);
         transformation.setScale(10);
-        transformation.getOffset().setLocation(getHeight() / 2d, getWidth() / 2d);
         addMouseListener(transformation.getMouseListener());
         addMouseMotionListener(transformation.getMouseMotionListener(this));
         addMouseMotionListener(getHoverListener());
         addMouseWheelListener(transformation.getMouseWheelListener(this));
         addComponentListener(transformation.getComponentListener(this));
+    }
+
+    public void centerOffset() {
+        transformation.getOffset().setLocation(getWidth() / 2f, getHeight() / 2f);
     }
 
     /**
@@ -142,8 +145,8 @@ public class Canvas extends JPanel {
             /**
              * Determine the closest point to the mouse position.
              *
-             * @param event
-             * @return
+             * @param event mouse hover event
+             * @return closest drawn point to mouse cursor
              */
             @Nullable
             private Point2D getClosestPoint(final MouseEvent event) {
@@ -260,6 +263,8 @@ public class Canvas extends JPanel {
     public void render(final Chromosome<DiscreteGene> chromosome) {
 
         renderRays(rays);
+
+        if (chromosome == null) return;
 
         final AtomicInteger index = new AtomicInteger();
         chromosome.forEach(gene -> {

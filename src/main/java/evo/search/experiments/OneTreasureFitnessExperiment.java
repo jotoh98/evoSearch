@@ -141,7 +141,7 @@ public class OneTreasureFitnessExperiment extends Experiment {
                             .build())
                     .thenAccept(evolution -> {
                         evolution.run();
-                        chromosomes.add(evolution.getResult().chromosome());
+                        chromosomes.add(evolution.getHistory().get(evolution.getHistory().size() - 1).bestPhenotype().genotype().chromosome());
                     });
             System.out.println("Thread " + iteration + " started");
         }

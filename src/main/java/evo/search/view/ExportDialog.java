@@ -62,6 +62,10 @@ public class ExportDialog extends JDialog {
      * Checkbox to determine whether to export non-repeating lists.
      */
     private JCheckBox distinct;
+    /**
+     * Checkbox to determine whether to export fitness values.
+     */
+    private JCheckBox fitnessInfo;
 
     /**
      * Evolution with data to export.
@@ -142,7 +146,8 @@ public class ExportDialog extends JDialog {
     private String export() {
         if (evolution == null)
             return "Experiment empty";
-        switch (strategyTabs.getSelectedIndex()) {
+        final int strategy = strategyTabs.getSelectedIndex();
+        switch (strategy) {
             case 0:
                 return exportLatex();
             case 1:
@@ -161,12 +166,16 @@ public class ExportDialog extends JDialog {
         final int separatorIndex = csvSeparator.getSelectedIndex();
         final String separator = separatorIndex == 0 ? ", " : "; ";
 
-        List<String> lines = ListUtils.map(evolution.getHistoryOfBestPhenotype(), chromosome -> printRowSeparated(
-                ISeq.of(chromosome).asList(),
-                DiscreteGene::getPosition,
-                DiscreteGene::getDistance,
-                separator
-        ));
+        final boolean exportFitness = fitnessInfo.isSelected();
+        List<String> lines = ListUtils.map(evolution.getHistory(), result -> {
+            final String sep = exportFitness ? separator + result.bestFitness() : "";
+            return printRowSeparated(
+                    ISeq.of(result.bestPhenotype().genotype().chromosome()).asList(),
+                    DiscreteGene::getPosition,
+                    DiscreteGene::getDistance,
+                    separator
+            ) + sep;
+        });
 
         if (distinct.isSelected() && lines.size() > 1)
             lines = ListUtils.removeRepeating(lines);
@@ -205,10 +214,25 @@ public class ExportDialog extends JDialog {
      */
     private String exportLatex() {
 
+        final boolean makro = latexUseMakros.isSelected();
+        final boolean fitness = fitnessInfo.isSelected();
+
         List<String> individualStrings = ListUtils
-                .map(evolution.getHistoryOfBestPhenotype(), chromosome -> {
+                .map(evolution.getHistory(), result -> {
                     final StringBuilder chromosomeString = new StringBuilder();
-                    chromosome.forEach(gene -> chromosomeString.append(gene.printSmall()));
+                    if (makro)
+                        chromosomeString.append("\\individual{");
+                    result
+                            .bestPhenotype()
+                            .genotype()
+                            .chromosome()
+                            .forEach(gene -> chromosomeString.append(gene.printSmall()));
+                    if (makro)
+                        chromosomeString.append("}");
+                    if (fitness) {
+                        chromosomeString.append(" %");
+                        chromosomeString.append(result.bestFitness());
+                    }
                     return chromosomeString.toString();
                 });
 
@@ -216,10 +240,7 @@ public class ExportDialog extends JDialog {
             individualStrings = ListUtils
                     .removeRepeating(individualStrings);
 
-        if (latexUseMakros.isSelected())
-            individualStrings = ListUtils.map(individualStrings, s -> "\\individual{" + s + "}");
-
-        final String separator = latexUseMakros.isSelected() ? "\n\t" : "\n";
+        final String separator = makro ? "\n\t" : "\n";
         String reducedString = ListUtils.reduce(individualStrings, ListUtils.separator(separator), "");
 
         if (exportTreasure.isSelected() && evolution.getHistory().size() > 0 && evolution.getConfiguration().getTreasures().size() > 0) {
@@ -227,12 +248,12 @@ public class ExportDialog extends JDialog {
             final List<String> smallPrints = ListUtils.map(evolution.getConfiguration().getTreasures(), DiscreteGene::printSmall);
             String treasures = ListUtils.reduce(smallPrints, ListUtils.REDUCE_WITH_SPACE, "");
 
-            if (latexUseMakros.isSelected())
+            if (makro)
                 treasures = "\\treasures{" + treasures + "}";
 
             reducedString = treasures + separator + reducedString;
         }
-        if (evolution.getHistory().size() > 0 && latexUseMakros.isSelected())
+        if (evolution.getHistory().size() > 0 && makro)
             reducedString = "\\discretePlane{" + evolution.getConfiguration().getPositions() + "}{\n\t" + reducedString + "\n}";
         return reducedString;
     }

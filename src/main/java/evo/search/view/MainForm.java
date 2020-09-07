@@ -11,22 +11,25 @@ import evo.search.io.service.EventService;
 import evo.search.io.service.MenuService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.model.ConfigComboModel;
+import evo.search.view.model.FitnessTableModel;
 import evo.search.view.part.Canvas;
 import io.jenetics.Chromosome;
+import io.jenetics.Phenotype;
 import io.jenetics.engine.EvolutionResult;
+import io.jenetics.util.ISeq;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -102,7 +105,15 @@ public class MainForm extends JFrame {
     /**
      * Table model of the history table.
      */
-    private DefaultTableModel historyTableModel;
+    private FitnessTableModel historyTableModel;
+    /**
+     * Table to list all individuals of a generation.
+     */
+    private JTable populationTable;
+    /**
+     * Model of the generation table.
+     */
+    private FitnessTableModel populationTableModel;
     /**
      * The canvas displaying individuals.
      */
@@ -239,7 +250,6 @@ public class MainForm extends JFrame {
                         }
                         EventService.LOG_LABEL.trigger("Evolution loaded.");
                         this.evolution = evolution;
-                        this.evolution.getHistory().forEach(this::showResultInHistoryTable);
                         final int lastIndex = this.evolution.getHistory().size() - 1;
                         final Chromosome<DiscreteGene> chromosome = this.evolution.getHistory().get(lastIndex).bestPhenotype().genotype().chromosome();
                         EventService.REPAINT_CANVAS.trigger(chromosome);
@@ -344,7 +354,7 @@ public class MainForm extends JFrame {
                         MenuService.menu(LangService.get("export"),
                                 MenuService.item(LangService.get("selected"),
                                         event -> SwingUtilities.invokeLater(() -> {
-                                            final int selectedIndex = getSelectedIndex();
+                                            final int selectedIndex = getSelectedGenerationIndex();
                                             if (selectedIndex < 0) return;
                                             final Evolution clone = evolution.clone();
                                             clone.setHistory(evolution.getHistory().subList(selectedIndex, selectedIndex + 1));
@@ -403,7 +413,66 @@ public class MainForm extends JFrame {
      * Custom create the history table's component and bind its behaviours.
      */
     public void createUIComponents() {
+        createHistoryTable();
+        createPopulationTable();
+        widgetTabs = new JTabbedPane();
+        widgetTabs.addChangeListener(new ChangeListener() {
+            /**
+             * Index of the selected generation.
+             */
+            private int generation = -1;
 
+            @Override
+            public void stateChanged(final ChangeEvent l) {
+                if (widgetTabs.getSelectedIndex() == 2) {
+                    final int selectedIndex = MainForm.this.getSelectedGenerationIndex();
+                    if (selectedIndex == generation)
+                        return;
+
+                    generation = selectedIndex;
+
+                    final EvolutionResult<DiscreteGene, Double> result = evolution.getHistory().get(generation);
+
+                    if (result == null) return;
+
+                    final List<Double> doubles = result.population().map(Phenotype::fitness).asList();
+                    populationTableModel.setFitness(doubles);
+                }
+            }
+        });
+    }
+
+    /**
+     * Create the generation population table.
+     */
+    private void createPopulationTable() {
+        populationTableModel = new FitnessTableModel();
+        populationTableModel.setFirstColumnName("Individuum");
+        populationTable = new JTable(populationTableModel);
+        populationTable.setRowSorter(new TableRowSorter<>(populationTableModel));
+        populationTable.getSelectionModel().addListSelectionListener(l -> {
+            final int generation = getSelectedGenerationIndex();
+            final int selectedRow = populationTable.getSelectedRow();
+            if (selectedRow < 0 || selectedRow > populationTable.getRowCount() - 1)
+                return;
+            final int individual = populationTable.convertRowIndexToModel(selectedRow);
+            if (individual < 0)
+                return;
+            try {
+                final Phenotype<DiscreteGene, Double> phenotype = evolution
+                        .getHistory()
+                        .get(generation)
+                        .population()
+                        .get(individual);
+                EventService.REPAINT_CANVAS.trigger(phenotype.genotype().chromosome());
+            } catch (final IndexOutOfBoundsException ignored) {}
+        });
+    }
+
+    /**
+     * Create the history table and bind it's behaviours/listeners.
+     */
+    private void createHistoryTable() {
         historyTable = new JTable() {
             @Override
             public boolean isCellEditable(final int row, final int column) {
@@ -417,19 +486,18 @@ public class MainForm extends JFrame {
         };
 
         historyTable.getSelectionModel().addListSelectionListener(e -> {
-            final Chromosome<DiscreteGene> chromosome = getSelectedChromosome();
+            final int selectedIndex = getSelectedGenerationIndex();
+            if (selectedIndex < 0) return;
+            final Chromosome<DiscreteGene> chromosome = getBestIndividual(selectedIndex);
             if (chromosome != null)
                 EventService.REPAINT_CANVAS.trigger(chromosome);
         });
 
-        historyTable.setModel(new DefaultTableModel(new Object[]{"Generation", "Fitness"}, 0));
+        historyTableModel = new FitnessTableModel();
 
-        historyTableModel = (DefaultTableModel) historyTable.getModel();
+        historyTable.setModel(historyTableModel);
 
-        final TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(historyTableModel);
-        sorter.setComparator(0, Comparator.comparingInt(value -> (int) value));
-        sorter.setComparator(1, Comparator.comparingDouble(value -> (double) value));
-        historyTable.setRowSorter(sorter);
+        historyTable.setRowSorter(new TableRowSorter<>(historyTableModel));
 
         historyTableModel.addTableModelListener(e -> {
             try {
@@ -442,21 +510,11 @@ public class MainForm extends JFrame {
     }
 
     /**
-     * Get the chromosome selected in the {@link #historyTable}.
-     *
-     * @return selected chromosome from {@link #historyTable}
-     */
-    private Chromosome<DiscreteGene> getSelectedChromosome() {
-        final int selectedIndex = getSelectedIndex();
-        return selectedIndex < 0 ? null : getBestIndividual(selectedIndex);
-    }
-
-    /**
      * Get the selected index in the {@link #historyTable}.
      *
      * @return selected index from {@link #historyTable}
      */
-    private int getSelectedIndex() {
+    private int getSelectedGenerationIndex() {
         final int selectedRow = historyTable.getSelectedRow();
         if (selectedRow < 0 || selectedRow > historyTable.getRowCount()) return -1;
 
@@ -492,7 +550,8 @@ public class MainForm extends JFrame {
                 return;
             }
 
-            clearHistory();
+            historyTableModel.setSelected(selectedConfiguration.getFitness());
+            historyTableModel.clear();
 
             progressBar.setMaximum(selectedConfiguration.getLimit());
             progressBar.setVisible(true);
@@ -501,8 +560,11 @@ public class MainForm extends JFrame {
 
             final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
             final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
-                EventService.REPAINT_CANVAS.trigger(result.bestPhenotype().genotype().chromosome());
-                showResultInHistoryTable(result);
+                final Phenotype<DiscreteGene, Double> phenotype = result.bestPhenotype();
+                final Chromosome<DiscreteGene> chromosome = phenotype.genotype().chromosome();
+                EventService.REPAINT_CANVAS.trigger(chromosome);
+                final List<DiscreteGene> genes = ISeq.of(chromosome).asList();
+                historyTableModel.addResult(phenotype);
             };
 
             CompletableFuture
@@ -533,28 +595,11 @@ public class MainForm extends JFrame {
     }
 
     /**
-     * Add an evolution result to the history table.
-     *
-     * @param result result to display
-     */
-    private void showResultInHistoryTable(final EvolutionResult<DiscreteGene, Double> result) {
-        historyTableModel.addRow(new Object[]{(int) result.generation(), result.bestFitness()});
-    }
-
-    /**
      * Abort evolution run.
      */
     private void onAbort() {
         if (evolution != null)
             evolution.setAborted(true);
-    }
-
-    /**
-     * Removes all the entries from the history table.
-     */
-    private void clearHistory() {
-        while (historyTableModel.getRowCount() > 0)
-            historyTableModel.removeRow(0);
     }
 
 }

@@ -19,7 +19,6 @@ import io.jenetics.util.ISeq;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -69,7 +68,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      */
     @Getter
     @Setter
-    private List<EvolutionResult<DiscreteGene, Double>> history;
+    private List<EvolutionResult<DiscreteGene, Double>> history = new ArrayList<>();
 
     /**
      * Evolution abort flag.
@@ -89,12 +88,14 @@ public class Evolution implements Runnable, Serializable, Cloneable {
         if (configuration == null)
             return;
 
+        if (configuration.getPopulation() == 0)
+            configuration.setPopulation(1);
+
         history = new ArrayList<>();
 
-        final Problem<List<DiscreteGene>, DiscreteGene, Double> problem = constructProblem();
+        final Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> problem = constructProblem();
 
         final Engine<DiscreteGene, Double> engine = buildEngine(problem);
-        if (engine == null) return;
 
         EventService.LOG_LABEL.trigger(LangService.get("environment.evolving"));
         final AtomicInteger progressCounter = new AtomicInteger();
@@ -116,14 +117,14 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      * @return evolution problem
      */
     @NotNull
-    private Problem<List<DiscreteGene>, DiscreteGene, Double> constructProblem() {
+    private Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> constructProblem() {
         final BiFunction<Evolution, List<DiscreteGene>, Double> fitnessMethod = configuration.getFitness().getMethod();
 
         return Problem.of(
-                list -> fitnessMethod.apply(this, list),
+                list -> fitnessMethod.apply(this, ISeq.of(list).asList()),
                 Codec.of(
                         Genotype.of(configuration::shuffle, configuration.getPopulation()),
-                        g -> ISeq.of(g.chromosome()).asList()
+                        Genotype::chromosome
                 )
         );
     }
@@ -134,8 +135,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      * @param problem problem to solve
      * @return evolution engine
      */
-    @Nullable
-    private Engine<DiscreteGene, Double> buildEngine(final Problem<List<DiscreteGene>, DiscreteGene, Double> problem) {
+    private Engine<DiscreteGene, Double> buildEngine(final Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> problem) {
         final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine
                 .builder(problem)
                 .selector(new StochasticUniversalSelector<>())
@@ -153,17 +153,11 @@ public class Evolution implements Runnable, Serializable, Cloneable {
             evolutionBuilder.alterers(first, rest);
         }
 
-        try {
-            evolutionBuilder
-                    .offspringSize(configuration.getOffspring())
-                    .survivorsSize(configuration.getSurvivors())
-                    .populationSize(configuration.getPopulation());
-        } catch (final IllegalArgumentException e) {
-            EventService.LOG_LABEL.trigger("Configuration was incorrect: " + e.getMessage());
-            return null;
-        }
-        final Engine<DiscreteGene, Double> engine = evolutionBuilder.build();
-        return engine;
+        return evolutionBuilder
+                .offspringFraction(configuration.getOffspring() / (double) configuration.getPopulation())
+                .survivorsFraction(configuration.getSurvivors() / (double) configuration.getPopulation())
+                .populationSize(configuration.getPopulation())
+                .build();
     }
 
     /**
@@ -187,6 +181,8 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      * @see AnalysisUtils#traceLength(List, DiscreteGene)
      */
     public double fitnessSingular(final List<DiscreteGene> chromosome) {
+        if (configuration.getTreasures().size() == 0)
+            return 0;
         final DiscreteGene treasure = configuration.getTreasures().get(0);
         return AnalysisUtils.traceLength(chromosome, treasure);
     }
@@ -204,6 +200,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      */
     public double fitnessMulti(final List<DiscreteGene> chromosome) {
         final List<DiscreteGene> treasures = configuration.getTreasures();
+        if (treasures.size() == 0) return 0;
         double sum = 0;
         for (final DiscreteGene treasure : treasures)
             sum += AnalysisUtils.traceLength(chromosome, treasure);

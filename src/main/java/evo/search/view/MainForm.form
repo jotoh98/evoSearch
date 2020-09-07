@@ -184,7 +184,7 @@
                 </properties>
                 <border type="none"/>
                 <children>
-                  <tabbedpane id="31374" binding="widgetTabs">
+                  <tabbedpane id="31374" binding="widgetTabs" custom-create="true">
                     <constraints>
                       <splitpane position="left"/>
                     </constraints>
@@ -211,7 +211,9 @@
                             <children>
                               <component id="a324d" class="javax.swing.JTable" binding="historyTable" custom-create="true">
                                 <constraints/>
-                                <properties/>
+                                <properties>
+                                  <minimumSize width="200" height="32"/>
+                                </properties>
                               </component>
                             </children>
                           </scrollpane>
@@ -219,7 +221,7 @@
                       </grid>
                       <grid id="e5509" layout-manager="GridBagLayout">
                         <constraints>
-                          <tabbedpane title="Runs"/>
+                          <tabbedpane title-resource-bundle="lang" title-key="evolutions"/>
                         </constraints>
                         <properties/>
                         <border type="none"/>
@@ -235,6 +237,31 @@
                               <selectionMode value="0"/>
                             </properties>
                           </component>
+                        </children>
+                      </grid>
+                      <grid id="4a4e8" layout-manager="GridBagLayout">
+                        <constraints>
+                          <tabbedpane title-resource-bundle="lang" title-key="generation"/>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <scrollpane id="88ca0">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                              <gridbag weightx="1.0" weighty="1.0"/>
+                            </constraints>
+                            <properties/>
+                            <border type="none"/>
+                            <children>
+                              <component id="33c51" class="javax.swing.JTable" binding="populationTable" custom-create="true">
+                                <constraints/>
+                                <properties>
+                                  <minimumSize width="200" height="32"/>
+                                </properties>
+                              </component>
+                            </children>
+                          </scrollpane>
                         </children>
                       </grid>
                     </children>

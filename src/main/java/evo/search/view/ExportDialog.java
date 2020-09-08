@@ -171,8 +171,8 @@ public class ExportDialog extends JDialog {
             final String sep = exportFitness ? separator + result.bestFitness() : "";
             return printRowSeparated(
                     ISeq.of(result.bestPhenotype().genotype().chromosome()).asList(),
-                    DiscreteGene::getPosition,
-                    DiscreteGene::getDistance,
+                    gene -> (int) gene.getPosition(),
+                    gene -> (double) gene.getDistance(),
                     separator
             ) + sep;
         });
@@ -184,7 +184,12 @@ public class ExportDialog extends JDialog {
 
         if (exportTreasure.isSelected() && evolution.getHistory().size() > 0) {
             final List<DiscreteGene> treasures = evolution.getConfiguration().getTreasures();
-            output += "\n" + printRowSeparated(treasures, DiscreteGene::getPosition, DiscreteGene::getDistance, separator);
+            output += "\n" + printRowSeparated(
+                    treasures,
+                    gene -> (int) gene.getPosition(),
+                    gene -> (double) gene.getDistance(),
+                    separator
+            );
         }
 
         return output;

@@ -41,7 +41,7 @@ public class DiscreteChromosome extends AbstractChromosome<DiscreteGene> {
 
     @Override
     public Chromosome<DiscreteGene> newInstance(final ISeq<DiscreteGene> genes) {
-        return new DiscreteChromosome(genes.copy().toISeq());
+        return new DiscreteChromosome(genes.map(DiscreteGene::clone));
     }
 
     @Override

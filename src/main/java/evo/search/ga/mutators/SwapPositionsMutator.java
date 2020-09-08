@@ -28,7 +28,7 @@ public class SwapPositionsMutator extends SwapPropertyMutator<DiscreteGene, Doub
      */
     @Override
     protected void swapComponent(final MSeq<DiscreteGene> mSeq, final int a, final int b) {
-        final int temp = mSeq.get(a).getPosition();
+        final short temp = mSeq.get(a).getPosition();
         mSeq.get(a).setPosition(mSeq.get(b).getPosition());
         mSeq.get(b).setPosition(temp);
     }

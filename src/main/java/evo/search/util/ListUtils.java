@@ -97,6 +97,21 @@ public class ListUtils {
     }
 
     /**
+     * Consecutively compute a sum over each pair of the list.
+     *
+     * @param list   list to pair together
+     * @param mapper mapping to fuse two items into a double
+     * @param <T>    type of list items
+     * @return sum of the mapped doubles
+     */
+    public static <T> double consecSum(final List<T> list, final BiFunction<T, T, Double> mapper) {
+        double sum = 0;
+        for (int index = 0; index < list.size() - 1; index++)
+            sum += mapper.apply(list.get(index), list.get(index + 1));
+        return sum;
+    }
+
+    /**
      * Generate a list from an iterator.
      *
      * @param iterator iterator supplying elements

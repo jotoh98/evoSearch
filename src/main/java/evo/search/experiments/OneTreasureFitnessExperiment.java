@@ -128,8 +128,8 @@ public class OneTreasureFitnessExperiment extends Experiment {
                             .alterers(List.of(
                                     new SwapGeneMutator(0.02),
                                     new SwapPositionsMutator(0.02),
-                                    new DistanceMutator(0.01),
-                                    new PositionMutator(0.015)
+                                    new DistanceMutator(0.02),
+                                    new PositionMutator(0.02)
                             ))
                             .fitness(Evolution.Fitness.SINGULAR)
                             .treasures(List.of(treasure))

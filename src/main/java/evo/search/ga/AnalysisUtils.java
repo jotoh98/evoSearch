@@ -7,8 +7,6 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This class provides several analysis metrics to evaluate individuals upon
@@ -204,16 +202,10 @@ public class AnalysisUtils {
 
         final double sectorAngle = (2 * Math.PI) / points.get(0).getPositions();
 
-        final AtomicReference<Double> areaCovered = new AtomicReference<>(0d);
-        final AtomicInteger amount = new AtomicInteger(1);
-        final List<Double> areas = ListUtils.consecMap(points, (pointA, pointB) -> {
-            final int delta = Math.abs(pointA.getPosition() - pointB.getPosition());
-            final double area = MathUtils.areaInTriangle(sectorAngle * delta, pointA.getDistance(), pointB.getDistance());
-            areaCovered.set(areaCovered.get() + area);
-            return Math.max(areaCovered.get() / amount.getAndIncrement(), 0d);
+        return ListUtils.consecSum(points, (a, b) -> {
+            final int delta = Math.abs(a.getPosition() - b.getPosition());
+            return MathUtils.areaInTriangle(sectorAngle * delta, a.getDistance(), b.getDistance());
         });
-
-        return ListUtils.sum(areas);
     }
 
     /**
@@ -230,7 +222,8 @@ public class AnalysisUtils {
 
         final int positions = points.get(0).getPositions();
         final double[] areasCovered = new double[positions];
-        final List<Double> areasPerStep = ListUtils.consecMap(filledIn, (pointA, pointB) -> {
+
+        return ListUtils.consecSum(filledIn, (pointA, pointB) -> {
             int index = Math.min(pointA.getPosition(), pointB.getPosition());
             final int delta = Math.abs(pointA.getPosition() - pointB.getPosition());
             if (index == 0 && delta > 1)
@@ -242,8 +235,6 @@ public class AnalysisUtils {
 
             return Math.max(newAreaCovered, 0d);
         });
-
-        return ListUtils.sum(areasPerStep);
     }
 
     /**
@@ -254,31 +245,28 @@ public class AnalysisUtils {
      * @param epsilon distance the treasure is missed by
      * @return worst case scenario fitness
      */
-    public static double worstCase(final List<DiscreteGene> points, final int epsilon) {
+    public static double worstCase(final List<DiscreteGene> points, final float epsilon) {
+        final int length = points.size();
+
+        if (length < 1)
+            return Double.POSITIVE_INFINITY;
+
         double sum = 0;
-        for (int k = 0; k < points.size(); k++) {
-            final List<DiscreteGene> list = points.subList(k, points.size());
-            final DiscreteGene worstCase = points.get(k).clone();
-            worstCase.setDistance(worstCase.getDistance() + epsilon);
+        for (int k = 0; k < length; k++) {
+            final DiscreteGene current = points.get(k);
+            final DiscreteGene worstCase = new DiscreteGene(current.getPositions(), current.getPosition(), current.getDistance() + epsilon);
 
-            double distance = points.get(k).getDistance();
+            double pathLength = traceLength(points, worstCase);
 
-            if (distance == 0)
-                distance = 1;
+            for (int remain = k + 1; remain < length; remain++)
+                if (finds(points.get(remain), worstCase)) {
+                    pathLength += arcDistance(points.get(length - 1), worstCase);
+                    break;
+                }
 
-            final List<Double> distances = ListUtils.consecMap(list, DiscreteGene::distance);
-            double pathLength = ListUtils.sum(distances);
-
-            boolean found = false;
-            for (final DiscreteGene discreteGene : list)
-                if (finds(discreteGene, worstCase)) found = true;
-
-            if (!found)
-                pathLength += arcDistance(points.get(points.size() - 1), worstCase);
-
+            final double distance = current.getDistance() > 0 ? current.getDistance() : 1;
             sum += pathLength / distance;
         }
-        assert sum >= 0;
         return sum;
     }
 
@@ -298,6 +286,7 @@ public class AnalysisUtils {
 
         final int distancePositions = Math.abs(start.getPosition() - worstCase.getPosition());
         final int steps = Math.min(distancePositions, start.getPositions() - distancePositions);
+
         if (start.getDistance() >= worstCase.getDistance()) {
             return steps * 2 * start.getDistance() * Math.sin(Math.PI / start.getPositions());
         } else {

@@ -29,6 +29,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -150,6 +151,10 @@ public class MainForm extends JFrame {
      */
     @Setter
     private Workspace workspace = new Workspace();
+
+    CompletableFuture<Void> evolutionProcess;
+
+    Thread evolutionThread;
 
     /**
      * Construct the main form for the swing application.
@@ -295,6 +300,14 @@ public class MainForm extends JFrame {
         mainSplit.setDividerLocation(workspace.getMainDividerLocation());
         setContentPane(rootPanel);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(final WindowEvent e) {
+                if (evolution != null)
+                    evolution.setAborted(true);
+            }
+        });
 
         setWindowListeners();
 
@@ -552,12 +565,11 @@ public class MainForm extends JFrame {
                 return;
             }
 
+            populationTableModel.setFitness(Collections.emptyList());
             historyTableModel.clear();
 
             progressBar.setMaximum(selectedConfiguration.getLimit());
-            progressBar.setVisible(true);
-            stopButton.setEnabled(true);
-            startButton.setEnabled(false);
+            updateUIOnEvolution(true);
 
             final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
             final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
@@ -568,46 +580,41 @@ public class MainForm extends JFrame {
                 historyTableModel.addResult(phenotype);
             };
 
-            CompletableFuture
-                    .supplyAsync(() -> {
-                        evolution = Evolution.builder()
-                                .configuration(selectedConfiguration)
-                                .progressConsumer(progressConsumer)
-                                .historyConsumer(resultConsumer)
-                                .build();
+            evolution = Evolution.builder()
+                    .configuration(selectedConfiguration)
+                    .progressConsumer(progressConsumer)
+                    .historyConsumer(resultConsumer)
+                    .build();
 
-                        evolution.run();
+            evolutionThread = new Thread(() -> {
+                evolution.run();
+                EventService.LOG_LABEL.trigger(LangService.get("environment.finished"));
+                updateUIOnEvolution(false);
+            });
 
-                        if (evolution.getHistory().size() == 0)
-                            return null;
-                        return evolution
-                                .getHistory()
-                                .get(evolution.getHistory().size() - 1)
-                                .bestPhenotype()
-                                .genotype()
-                                .chromosome();
-                    })
-                    .thenAccept(chromosome -> {
-                        if (chromosome != null) {
-                            EventService.LOG_LABEL.trigger(LangService.get("environment.finished"));
-                            EventService.REPAINT_CANVAS.trigger(chromosome);
-                        }
-                    })
-                    .thenRun(() -> {
-                        getProgressBar().setVisible(false);
-                        historyTable.setRowSelectionInterval(historyTable.getRowCount() - 1, historyTable.getRowCount() - 1);
-                        stopButton.setEnabled(false);
-                        startButton.setEnabled(true);
-                    });
+            evolutionThread.start();
         });
+    }
+
+    /**
+     * Set the ui components according to the evolution running.
+     *
+     * @param evolutionRunning whether the evolution runs or not
+     */
+    private void updateUIOnEvolution(final boolean evolutionRunning) {
+        this.progressBar.setVisible(evolutionRunning);
+        stopButton.setEnabled(evolutionRunning);
+        startButton.setEnabled(!evolutionRunning);
     }
 
     /**
      * Abort evolution run.
      */
     private void onAbort() {
-        if (evolution != null)
+        if (evolution != null) {
             evolution.setAborted(true);
+            updateUIOnEvolution(false);
+        }
     }
 
 }

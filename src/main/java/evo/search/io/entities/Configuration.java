@@ -371,7 +371,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
 
         final Set<Double> distanceSet = new HashSet<>();
         for (final DiscreteGene gene : geneSequence)
-            distanceSet.add(gene.getDistance());
+            distanceSet.add((double) gene.getDistance());
         return distanceSet.containsAll(distances);
     }
 }

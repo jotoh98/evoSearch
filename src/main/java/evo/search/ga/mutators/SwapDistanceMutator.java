@@ -28,7 +28,7 @@ public class SwapDistanceMutator extends SwapPropertyMutator<DiscreteGene, Doubl
      */
     @Override
     protected void swapComponent(final MSeq<DiscreteGene> mSeq, final int a, final int b) {
-        final double temp = mSeq.get(a).getDistance();
+        final float temp = mSeq.get(a).getDistance();
         mSeq.get(a).setDistance(mSeq.get(b).getDistance());
         mSeq.get(b).setDistance(temp);
     }

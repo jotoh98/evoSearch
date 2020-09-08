@@ -25,7 +25,7 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
      * @see #getAllele()
      * @see DiscreteGene#positions
      */
-    private int positions;
+    private short positions;
 
     /**
      * The discrete genes position index. This is the index of the ray the gene's allele will be
@@ -33,14 +33,27 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
      *
      * @see DiscreteGene#position
      */
-    private int position;
+    private short position;
 
     /**
      * The genes distance corresponding the the alleles distance.
      *
      * @see DiscreteGene#distance
      */
-    private double distance;
+    private float distance;
+
+    /**
+     * Convenience constructor.
+     *
+     * @param positions amount of rays
+     * @param position  index of ray
+     * @param distance  distance from origin
+     */
+    public DiscreteGene(final int positions, final int position, final double distance) {
+        this.positions = (short) positions;
+        this.position = (short) position;
+        this.distance = (float) distance;
+    }
 
     /**
      * {@inheritDoc}
@@ -56,7 +69,7 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
      */
     @Override
     public DiscreteGene newInstance() {
-        return new DiscreteGene(positions, RandomUtils.inRange(0, positions), distance + RandomUtils.inRange(-.1, .1));
+        return new DiscreteGene(positions, (short) RandomUtils.inRange(0, positions), distance + RandomUtils.inRange(-.1, .1));
     }
 
     /**

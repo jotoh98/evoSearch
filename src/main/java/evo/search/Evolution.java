@@ -8,8 +8,8 @@ import evo.search.io.entities.Configuration;
 import evo.search.io.service.EventService;
 import evo.search.view.LangService;
 import io.jenetics.Chromosome;
+import io.jenetics.EliteSelector;
 import io.jenetics.Genotype;
-import io.jenetics.TournamentSelector;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.ToDoubleFunction;
 
 /**
  * This class holds a configuration and executes a corresponding evolution.
@@ -73,6 +74,38 @@ public class Evolution implements Runnable, Serializable, Cloneable {
     private transient boolean aborted;
 
     /**
+     * Wrapper function to generify area related fitness methods.
+     *
+     * @param chromosome      chromosome evaluated
+     * @param areaCalculation area function
+     * @return fitness as quotient between trace length and area
+     */
+    private static double areaFitness(final List<DiscreteGene> chromosome, final ToDoubleFunction<List<DiscreteGene>> areaCalculation) {
+        final double area = areaCalculation.applyAsDouble(chromosome);
+        if (area <= 0)
+            return Double.POSITIVE_INFINITY;
+        return AnalysisUtils.traceLength(chromosome) / area;
+    }
+
+    /**
+     * Create the problem this evolution is trying to solve.
+     *
+     * @return evolution problem
+     */
+    @NotNull
+    private Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> constructProblem() {
+        final BiFunction<Evolution, List<DiscreteGene>, Double> fitnessMethod = configuration.getFitness().getMethod();
+
+        return Problem.of(
+                list -> fitnessMethod.apply(this, ISeq.of(list).asList()),
+                Codec.of(
+                        Genotype.of(configuration::shuffle, configuration.getPopulation()),
+                        Genotype::chromosome
+                )
+        );
+    }
+
+    /**
      * Execute an evolution
      * Works with the {@link Configuration} held by this instance.
      * Clears out the history and the last result.
@@ -101,57 +134,9 @@ public class Evolution implements Runnable, Serializable, Cloneable {
                 .limit(configuration.getLimit())
                 .peek(historyConsumer)
                 .peek(history::add)
-                .forEach(result -> {
-                    progressConsumer.accept(progressCounter.incrementAndGet());
-                });
-    }
-
-    /**
-     * Create the problem this evolution is trying to solve.
-     *
-     * @return evolution problem
-     */
-    @NotNull
-    private Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> constructProblem() {
-        final BiFunction<Evolution, List<DiscreteGene>, Double> fitnessMethod = configuration.getFitness().getMethod();
-
-        return Problem.of(
-                list -> fitnessMethod.apply(this, ISeq.of(list).asList()),
-                Codec.of(
-                        Genotype.of(configuration::shuffle, configuration.getPopulation()),
-                        Genotype::chromosome
-                )
-        );
-    }
-
-    /**
-     * Build evolution engine.
-     *
-     * @param problem problem to solve
-     * @return evolution engine
-     */
-    private Engine<DiscreteGene, Double> buildEngine(final Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> problem) {
-        final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine
-                .builder(problem)
-                .selector(new TournamentSelector<>(configuration.getPopulation() / 4))
-                .minimizing();
-
-        final List<? extends DiscreteAlterer> alterers = new ArrayList<>(configuration.getAlterers());
-
-        if (alterers.size() > 0) {
-            alterers.forEach(alterer -> {
-                if (alterer instanceof DistanceMutator)
-                    ((DistanceMutator) alterer).setConfiguration(configuration);
-            });
-            final DiscreteAlterer first = alterers.remove(0);
-            final DiscreteAlterer[] rest = alterers.toArray(DiscreteAlterer[]::new);
-            evolutionBuilder.alterers(first, rest);
-        }
-
-        return evolutionBuilder
-                .offspringFraction(configuration.getOffspring() / (double) configuration.getPopulation())
-                .populationSize(configuration.getPopulation())
-                .build();
+                .forEach(
+                        result -> progressConsumer.accept(progressCounter.incrementAndGet())
+                );
     }
 
     /**
@@ -192,6 +177,36 @@ public class Evolution implements Runnable, Serializable, Cloneable {
     }
 
     /**
+     * Build evolution engine.
+     *
+     * @param problem problem to solve
+     * @return evolution engine
+     */
+    private Engine<DiscreteGene, Double> buildEngine(final Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> problem) {
+        final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine
+                .builder(problem)
+                .selector(new EliteSelector<>(configuration.getPopulation() / 5))
+                .minimizing();
+
+        final List<? extends DiscreteAlterer> alterers = new ArrayList<>(configuration.getAlterers());
+
+        if (alterers.size() > 0) {
+            alterers.forEach(alterer -> {
+                if (alterer instanceof DistanceMutator)
+                    ((DistanceMutator) alterer).setConfiguration(configuration);
+            });
+            final DiscreteAlterer first = alterers.remove(0);
+            final DiscreteAlterer[] rest = alterers.toArray(DiscreteAlterer[]::new);
+            evolutionBuilder.alterers(first, rest);
+        }
+
+        return evolutionBuilder
+                .offspringFraction(configuration.getOffspring() / (double) configuration.getPopulation())
+                .populationSize(configuration.getPopulation())
+                .build();
+    }
+
+    /**
      * Computes the fitness of a {@link DiscreteGene} chromosome based on the maximised
      * area explored in each section between two rays.
      *
@@ -200,10 +215,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      * @see AnalysisUtils#areaCovered(List)
      */
     public double fitnessMaximisingArea(final List<DiscreteGene> chromosome) {
-        final double area = AnalysisUtils.areaCovered(chromosome);
-        if (area <= 0)
-            return Double.POSITIVE_INFINITY;
-        return AnalysisUtils.traceLength(chromosome) / area;
+        return areaFitness(chromosome, AnalysisUtils::areaCovered);
     }
 
     /**
@@ -215,10 +227,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      * @see AnalysisUtils#areaCovered(List)
      */
     public double fitnessMaximisingCoveredArea(final List<DiscreteGene> chromosome) {
-        final double area = AnalysisUtils.newAreaCovered(chromosome);
-        if (area <= 0)
-            return Double.POSITIVE_INFINITY;
-        return AnalysisUtils.traceLength(chromosome) / area;
+        return areaFitness(chromosome, AnalysisUtils::newAreaCovered);
     }
 
     /**
@@ -226,11 +235,10 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      *
      * @param chromosome chromosome to evaluate
      * @return worst case fitness
-     * @see AnalysisUtils#worstCase(List, int)
+     * @see AnalysisUtils#worstCase(List, float)
      */
     public double fitnessWorstCase(final List<DiscreteGene> chromosome) {
-        final List<DiscreteGene> points = AnalysisUtils.fill(chromosome);
-        return AnalysisUtils.worstCase(points, 1);
+        return AnalysisUtils.worstCase(chromosome, 1f);
     }
 
     /**

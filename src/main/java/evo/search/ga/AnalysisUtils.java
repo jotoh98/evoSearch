@@ -200,12 +200,22 @@ public class AnalysisUtils {
         if (points.size() < 2)
             return 0;
 
-        final double sectorAngle = (2 * Math.PI) / points.get(0).getPositions();
+        final short positions = points.get(0).getPositions();
+        final double sectorAngle = (2 * Math.PI) / positions;
 
-        return ListUtils.consecSum(points, (a, b) -> {
-            final int delta = Math.abs(a.getPosition() - b.getPosition());
-            return MathUtils.areaInTriangle(sectorAngle * delta, a.getDistance(), b.getDistance());
-        });
+        final double[] maxDistance = new double[positions];
+
+        for (final DiscreteGene gene : points) {
+            final short position = gene.getPosition();
+            maxDistance[position] = Math.max(gene.getDistance(), maxDistance[position]);
+        }
+
+        double area = MathUtils.areaInTriangle(sectorAngle, maxDistance[0], maxDistance[maxDistance.length - 1]);
+
+        for (int i = 0; i < positions - 1; i++)
+            area = MathUtils.areaInTriangle(sectorAngle, maxDistance[i], maxDistance[i + 1]);
+
+        return area;
     }
 
     /**

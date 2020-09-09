@@ -84,7 +84,8 @@ public class Evolution implements Runnable, Serializable, Cloneable {
         final double area = areaCalculation.applyAsDouble(chromosome);
         if (area <= 0)
             return Double.POSITIVE_INFINITY;
-        return AnalysisUtils.traceLength(chromosome) / area;
+        final double length = AnalysisUtils.traceLength(chromosome);
+        return length * length / area;
     }
 
     /**

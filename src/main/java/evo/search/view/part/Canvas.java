@@ -372,7 +372,7 @@ public class Canvas extends JPanel {
                 offset.distance(getWidth(), 0),
                 offset.distance(0, getHeight()),
                 offset.distance(getWidth(), getHeight())
-        ));
+        )) / transformation.getScale();
     }
 
 }

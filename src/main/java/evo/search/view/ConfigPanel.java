@@ -82,10 +82,6 @@ public class ConfigPanel extends JDialog {
      */
     private JSpinner offspringSpinner;
     /**
-     * Spinner input for the amount of survivor individuals.
-     */
-    private JSpinner survivorsSpinner;
-    /**
      * Scroll pane wrapping the {@link #distancesTextArea}. Propagates the scroll to the {@link ConfigurationDialog} scroll pane.
      *
      * @see #propagateScroll(JScrollPane)
@@ -530,9 +526,6 @@ public class ConfigPanel extends JDialog {
             }
             if (populationInput < (int) offspringSpinner.getValue()) {
                 offspringSpinner.setValue(populationInput);
-            }
-            if (populationInput < (int) survivorsSpinner.getValue()) {
-                survivorsSpinner.setValue(populationInput);
             }
         });
     }

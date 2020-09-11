@@ -450,7 +450,10 @@ public class MainForm extends JFrame {
 
                     if (result == null) return;
 
-                    final List<Double> doubles = result.population().map(Phenotype::fitness).asList();
+                    final List<List<Double>> doubles = result
+                            .population()
+                            .map(FitnessTableModel::mapResult)
+                            .asList();
                     populationTableModel.setFitness(doubles);
                 }
             }
@@ -462,7 +465,7 @@ public class MainForm extends JFrame {
      */
     private void createPopulationTable() {
         populationTableModel = new FitnessTableModel();
-        populationTableModel.setFirstColumnName("Individuum");
+        populationTableModel.getColumnNames().set(0, "Individuum");
         populationTable = new JTable(populationTableModel);
         populationTable.setRowSorter(new TableRowSorter<>(populationTableModel));
         populationTable.getSelectionModel().addListSelectionListener(l -> {
@@ -517,7 +520,7 @@ public class MainForm extends JFrame {
         historyTableModel.addTableModelListener(e -> {
             try {
                 historyTable.scrollRectToVisible(
-                        historyTable.getCellRect(historyTable.getRowCount() - 1, 0, true)
+                        historyTable.getCellRect(historyTable.getRowCount(), 0, true)
                 );
             } catch (final IndexOutOfBoundsException | NullPointerException ignored) {
             }

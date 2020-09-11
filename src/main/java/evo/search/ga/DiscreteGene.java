@@ -10,7 +10,6 @@ import lombok.Data;
 
 import java.awt.geom.Point2D;
 import java.io.Serializable;
-import java.util.Random;
 
 /**
  * Discrete genome carrying a {@link Point2D} allele.
@@ -60,7 +59,7 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
      */
     @Override
     public Point2D getAllele() {
-        final double angle = getAngle();
+        final double angle = MathUtils.sectorAngle(positions) * position;
         return new Point2D.Double(distance * Math.cos(angle), distance * Math.sin(angle));
     }
 
@@ -69,7 +68,9 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
      */
     @Override
     public DiscreteGene newInstance() {
-        return new DiscreteGene(positions, (short) RandomUtils.inRange(0, positions), distance + RandomUtils.inRange(-.1, .1));
+        final int p = RandomRegistry.random().nextInt(positions);
+        final double d = RandomUtils.inRange(distance - .1, distance + .1);
+        return new DiscreteGene(positions, p, d);
     }
 
     /**
@@ -79,23 +80,6 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
     public DiscreteGene newInstance(final Point2D value) {
         final int position = (int) Math.round(Math.atan2(value.getY(), value.getX()) / (2 * Math.PI) * positions);
         return new DiscreteGene(positions, position, value.distance(0, 0));
-    }
-
-    /**
-     * Returns a shuffled {@link DiscreteGene}.
-     * The point's position is randomly selected in the range [0, {@code positions}) and the distance is chosen in the range [{@code minDistance}, {@code maxDistance}).
-     * Utilizes the {@link RandomRegistry} from jenetics for thread-safety.
-     *
-     * @param positions   upper boundary for the points position
-     * @param minDistance Minimal distance for the point (inclusive).
-     * @param maxDistance Maximal distance for the point (exclusive).
-     * @return shuffled discrete point
-     * @see Random#nextDouble()
-     */
-    public static DiscreteGene shuffle(final int positions, final double minDistance, final double maxDistance) {
-        final int p = RandomRegistry.random().nextInt(positions);
-        final double d = RandomUtils.inRange(minDistance, maxDistance);
-        return new DiscreteGene(positions, p, d);
     }
 
     @Override
@@ -110,25 +94,7 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
      * @return The euclidean distance to another {@link DiscreteGene}.
      */
     public double distance(final DiscreteGene other) {
-        return MathUtils.polarDistance(getAngle(), distance, other.getAngle(), other.distance);
-    }
-
-    /**
-     * Get the radian angle for the discretized angle.
-     *
-     * @return radian angle of the polar coordinate
-     */
-    public double getAngle() {
-        return position / ((double) positions) * 2 * Math.PI;
-    }
-
-    /**
-     * Get the polar coordinates distance squared.
-     *
-     * @return the polar coordinates distance squared
-     */
-    public double getDistanceSquared() {
-        return distance * distance;
+        return MathUtils.polarDistance(positions, position, distance, other.position, other.distance);
     }
 
     /**

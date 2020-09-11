@@ -3,7 +3,6 @@ package evo.search.ga;
 import evo.search.util.ListUtils;
 import evo.search.util.MathUtils;
 
-import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -18,50 +17,96 @@ public class AnalysisUtils {
      * and a spiral. This likeness is expressed as the summed up distances between where
      * a point should sit in a spiral and the actual placed point. Therefore, it starts
      * at the first position, that the individual visits. Then, it spirals out both clock-wise
-     * and counter-clockwise counting the individual distances. Finally, the inverse of the minimal
+     * and counter-clockwise counting the individual distances. Finally, the minimum of the
      * clockwise and counter-clockwise likenesses is returned.
      *
-     * @param distances  distances of the evolutions environment
      * @param chromosome the individual measured
-     * @return Spiral likeness between 0.0 and 1.0. 1.0 means full spiral. 0.0 means empty individual.
+     * @return Spiral likeness between 0.0 and infinity 0.0 means spiral
      */
-    public static double spiralLikeness(final List<Double> distances, final List<DiscreteGene> chromosome) {
+    public static double spiralLikeness(final List<DiscreteGene> chromosome) {
 
         if (chromosome.size() == 0) return 0;
 
-        final int positions = chromosome.get(0).getPositions();
+        final short positions = chromosome.get(0).getPositions();
 
-        distances.sort(Double::compareTo);
-        int spiralPositionCounter = chromosome.get(0).getPosition();
-        int spiralPositionClock = chromosome.get(0).getPosition();
+        final List<Float> distances = ListUtils.map(chromosome, DiscreteGene::getDistance);
+        distances.sort(Float::compareTo);
 
-        double spiralCounterLikeness = 0;
-        double spiralClockLikeness = 0;
+        double spiralCounterDistance = 0;
+        double spiralClockDistance = 0;
 
-        int index = 0;
-        for (final DiscreteGene gene : chromosome) {
-            final Point2D actualPoint = gene.getAllele();
-            final DiscreteGene spiralPointCounter = new DiscreteGene(positions, spiralPositionCounter, distances.get(index));
-            final DiscreteGene spiralPointClock = new DiscreteGene(positions, spiralPositionClock, distances.get(index++));
+        for (int index = 0; index < chromosome.size(); index++) {
+            final DiscreteGene actualPoint = chromosome.get(index);
 
-            spiralPositionCounter++;
-            spiralPositionCounter %= positions;
-
-            spiralPositionClock--;
-            if (spiralPositionClock < 0) {
-                spiralPositionClock = positions - 1;
-            }
-
-
-            spiralCounterLikeness += actualPoint.distance(spiralPointCounter.getAllele());
-            spiralClockLikeness += actualPoint.distance(spiralPointClock.getAllele());
+            spiralCounterDistance += MathUtils.polarDistance(
+                    positions,
+                    actualPoint.getPosition(),
+                    actualPoint.getDistance(),
+                    (short) (index % positions),
+                    distances.get(index)
+            );
+            spiralClockDistance += MathUtils.polarDistance(
+                    positions,
+                    actualPoint.getPosition(),
+                    actualPoint.getDistance(),
+                    (short) Math.floorMod(-index, positions),
+                    distances.get(index)
+            );
         }
 
-        if (spiralCounterLikeness == 0 || spiralClockLikeness == 0) {
+        if (spiralCounterDistance == 0 || spiralClockDistance == 0) return 1;
+
+        return Math.min(spiralCounterDistance, spiralClockDistance);
+    }
+
+    /**
+     * Measure for the spiral-likeness of the chromosome with rotation invariance.
+     * Analyses the likeness pairwise.
+     *
+     * @param chromosome chromosome to measure
+     * @return rotation independent spiral likeness
+     */
+    public static double spiralLikenessInvariant(final List<DiscreteGene> chromosome) {
+
+        if (chromosome.size() < 2)
             return 1;
+
+        final List<Float> distances = ListUtils.map(chromosome, DiscreteGene::getDistance);
+        distances.sort(Float::compareTo);
+
+        final short positions = chromosome.get(0).getPositions();
+
+        double sumCounter = 0;
+        double sumClock = 0;
+        for (int i = 0; i < chromosome.size() - 1; i++) {
+            final DiscreteGene current = chromosome.get(i);
+            final int index = distances.indexOf(current.getDistance());
+            if (index < 0 || index > distances.size() - 2)
+                continue;
+            final Float idealDistance = distances.get(index + 1);
+            final DiscreteGene actualGene = chromosome.get(i + 1);
+
+            sumCounter += MathUtils.polarDistance(
+                    positions,
+                    actualGene.getPosition(),
+                    actualGene.getDistance(),
+                    (short) ((current.getPosition() + 1) % positions),
+                    idealDistance
+            );
+            sumClock += MathUtils.polarDistance(
+                    positions,
+                    actualGene.getPosition(),
+                    actualGene.getDistance(),
+                    (short) Math.floorMod(current.getPosition() - 1, positions),
+                    idealDistance
+            );
+
         }
 
-        return 1 / Math.min(spiralCounterLikeness, spiralClockLikeness);
+        if (sumCounter == 0 || sumClock == 0)
+            return 1;
+
+        return Math.min(sumClock, sumCounter);
     }
 
     /**
@@ -256,28 +301,41 @@ public class AnalysisUtils {
      * @return worst case scenario fitness
      */
     public static double worstCase(final List<DiscreteGene> points, final float epsilon) {
-        final int length = points.size();
+        final int size = points.size();
 
-        if (length < 1)
+        if (size < 1)
             return Double.POSITIVE_INFINITY;
 
-        double sum = 0;
-        for (int k = 0; k < length; k++) {
-            final DiscreteGene current = points.get(k);
-            final DiscreteGene worstCase = new DiscreteGene(current.getPositions(), current.getPosition(), current.getDistance() + epsilon);
+        final short positions = points.get(0).getPositions();
+        double pathLength = points.get(0).getDistance();
 
-            double pathLength = traceLength(points, worstCase);
+        double worstCaseFactor = 0;
 
-            for (int remain = k + 1; remain < length; remain++)
-                if (finds(points.get(remain), worstCase)) {
-                    pathLength += arcDistance(points.get(length - 1), worstCase);
-                    break;
-                }
+        for (int i = 0; i < size; i++) {
+            final DiscreteGene point = points.get(i);
 
-            final double distance = current.getDistance() > 0 ? current.getDistance() : 1;
-            sum += pathLength / distance;
+            if (i > 0)
+                pathLength += point.distance(points.get(i - 1));
+
+            for (int position = 0; position < positions; position++) {
+                final DiscreteGene worstCase = new DiscreteGene(positions, position, point.getDistance() + epsilon);
+
+                boolean found = false;
+
+                for (int remain = i + 1; remain < size; remain++)
+                    if (finds(points.get(remain), worstCase)) {
+                        found = true;
+                        break;
+                    }
+
+                if (!found)
+                    pathLength += arcDistance(points.get(size - 1), worstCase);
+
+                worstCaseFactor = Math.max(worstCaseFactor, pathLength / point.getDistance());
+            }
         }
-        return sum;
+
+        return worstCaseFactor;
     }
 
     /**
@@ -291,23 +349,23 @@ public class AnalysisUtils {
      * @return length of arc between last chromosome point and the worst-case location
      */
     private static double arcDistance(final DiscreteGene start, final DiscreteGene worstCase) {
-        if (Math.abs(start.getPosition() - worstCase.getPosition()) < 2)
+        final int distancePositions = Math.abs(start.getPosition() - worstCase.getPosition());
+
+        if (distancePositions < 2)
             return start.distance(worstCase);
 
-        final int distancePositions = Math.abs(start.getPosition() - worstCase.getPosition());
         final int steps = Math.min(distancePositions, start.getPositions() - distancePositions);
+        final double angle = 2 * Math.PI / start.getPositions();
 
         if (start.getDistance() >= worstCase.getDistance()) {
             return steps * 2 * start.getDistance() * Math.sin(Math.PI / start.getPositions());
         } else {
             final double distanceDelta = (worstCase.getDistance() - start.getDistance()) / steps;
-            final double angle = 2 * Math.PI / start.getPositions();
             double sum = 0;
             for (int i = 0; i < steps; i++)
-                sum += MathUtils.polarDistance(
+                sum += MathUtils.lawOfCosine(
                         angle,
                         worstCase.getDistance() + distanceDelta * i,
-                        0,
                         worstCase.getDistance() + distanceDelta * (i + 1)
                 );
             return sum;

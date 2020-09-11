@@ -352,9 +352,9 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
                 shuffled.add(ListUtils.chooseRandom(distances));
         }
 
-        final DiscreteGene[] genes = new DiscreteGene[distances.size()];
-        for (int i = 0; i < distances.size(); i++)
-            genes[i] = new DiscreteGene(positions, RandomRegistry.random().nextInt(positions), distances.get(i));
+        final DiscreteGene[] genes = new DiscreteGene[shuffled.size()];
+        for (int i = 0; i < shuffled.size(); i++)
+            genes[i] = new DiscreteGene(positions, RandomRegistry.random().nextInt(positions), shuffled.get(i));
 
         return new DiscreteChromosome(genes);
     }

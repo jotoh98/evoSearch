@@ -1,7 +1,10 @@
 package evo.search.view.model;
 
+import evo.search.ga.AnalysisUtils;
+import evo.search.ga.DiscreteGene;
 import io.jenetics.Phenotype;
-import lombok.Setter;
+import io.jenetics.util.ISeq;
+import lombok.Getter;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
@@ -15,23 +18,32 @@ public class FitnessTableModel extends AbstractTableModel {
     /**
      * Evolution fitness values to display.
      */
-    List<Double> fitness = new ArrayList<>();
+    List<List<Double>> fitness = new ArrayList<>();
 
     /**
-     * Name of the first column.
+     * Column names.
      */
-    @Setter
-    String firstColumnName = "Generation";
+    @Getter
+    List<String> columnNames = new ArrayList<>(List.of(
+            "Generation",
+            "Fitness",
+            "Spiral likeness",
+            "Spiral invariant"
+    ));
 
     /**
-     * Setter for the tables fitness values.
-     * Fires {@link javax.swing.event.TableModelEvent} for change.
+     * Maps a evolution result to a output row for the table.
      *
-     * @param fitness fitness value to display
+     * @param phenotype evolution result to output
+     * @return evaluated fitness/measure list
      */
-    public void setFitness(final List<Double> fitness) {
-        this.fitness = fitness;
-        fireTableDataChanged();
+    public static List<Double> mapResult(final Phenotype<DiscreteGene, Double> phenotype) {
+        final List<DiscreteGene> genes = ISeq.of(phenotype.genotype().chromosome()).asList();
+        return List.of(
+                phenotype.fitness(),
+                AnalysisUtils.spiralLikeness(genes),
+                AnalysisUtils.spiralLikenessInvariant(genes)
+        );
     }
 
     @Override
@@ -40,9 +52,20 @@ public class FitnessTableModel extends AbstractTableModel {
         return fitness.size();
     }
 
+    /**
+     * Setter for the tables fitness values.
+     * Fires {@link javax.swing.event.TableModelEvent} for change.
+     *
+     * @param fitness fitness value to display
+     */
+    public void setFitness(final List<List<Double>> fitness) {
+        this.fitness = fitness;
+        fireTableDataChanged();
+    }
+
     @Override
     public int getColumnCount() {
-        return 2;
+        return columnNames.size();
     }
 
     @Override
@@ -50,16 +73,9 @@ public class FitnessTableModel extends AbstractTableModel {
         if (columnIndex == 0)
             return rowIndex + 1;
         try {
-            return fitness.get(rowIndex);
-        } catch (final IndexOutOfBoundsException ignored) {}
+            return fitness.get(rowIndex).get(columnIndex - 1);
+        } catch (final NullPointerException | IndexOutOfBoundsException ignored) {}
         return 0;
-    }
-
-    @Override
-    public String getColumnName(final int column) {
-        if (column == 0)
-            return firstColumnName;
-        return "Fitness";
     }
 
     @Override
@@ -67,13 +83,20 @@ public class FitnessTableModel extends AbstractTableModel {
         return columnIndex == 0 ? Integer.class : Double.class;
     }
 
+    @Override
+    public String getColumnName(final int column) {
+        if (column < columnNames.size())
+            return columnNames.get(column);
+        return "";
+    }
+
     /**
      * Add a result from an evolution to the table.
      *
      * @param phenotype evolution to compute the fitness
      */
-    public void addResult(final Phenotype<?, Double> phenotype) {
-        fitness.add(phenotype.fitness());
+    public void addResult(final Phenotype<DiscreteGene, Double> phenotype) {
+        fitness.add(mapResult(phenotype));
         fireTableDataChanged();
     }
 

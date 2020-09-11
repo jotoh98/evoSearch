@@ -15,12 +15,49 @@ public class MathUtils {
      * @return euclidean distance
      */
     public static double polarDistance(final double angleA, final double distanceA, final double angleB, final double distanceB) {
-        final double subtract = 2 * distanceA * distanceB * Math.cos(angleA - angleB);
+        return lawOfCosine(angleA - angleB, distanceA, distanceB);
+    }
+
+    /**
+     * Euclidean distance between two {@link evo.search.ga.DiscreteGene}s.
+     *
+     * @param positions amount of rays
+     * @param positionA first ray index
+     * @param distanceA first gene distance
+     * @param positionB second ray index
+     * @param distanceB second gene distance
+     * @return euclidean distance between two genes
+     */
+    public static double polarDistance(final short positions, final short positionA, final float distanceA, final short positionB, final float distanceB) {
+        return lawOfCosine(sectorAngle(positions) * (positionA - positionB), distanceA, distanceB);
+    }
+
+    /**
+     * Return the angle of one sector for a given amount of equally distanced rays.
+     *
+     * @param positions amount of rays
+     * @return angle between two rays
+     */
+    public static double sectorAngle(final short positions) {
+        return (2 * Math.PI) / positions;
+    }
+
+    /**
+     * Applies the law of cosines to a given {@code angle} between two line segments with
+     * respective lengths {@code distanceA} and {@code distanceB}.
+     *
+     * @param angle     angle between the two line segments
+     * @param distanceA length of one line segment
+     * @param distanceB length of other line segment
+     * @return length of the third side forming a triangle
+     */
+    public static double lawOfCosine(final double angle, final double distanceA, final double distanceB) {
+        final double subtract = 2 * distanceA * distanceB * Math.cos(angle);
         return Math.sqrt(distanceA * distanceA + distanceB * distanceB - subtract);
     }
 
     /**
-     * Calculate the euclidean distance between to points given through their coorindates.
+     * Calculate the euclidean distance between to points given through their coordinates.
      *
      * @param x1 x-coordinate of point one
      * @param y1 y-coordinate of point one

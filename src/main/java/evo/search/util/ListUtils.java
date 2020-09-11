@@ -99,9 +99,9 @@ public class ListUtils {
     /**
      * Consecutively compute a sum over each pair of the list.
      *
+     * @param <T>    type of list items
      * @param list   list to pair together
      * @param mapper mapping to fuse two items into a double
-     * @param <T>    type of list items
      * @return sum of the mapped doubles
      */
     public static <T> double consecSum(final List<T> list, final BiFunction<T, T, Double> mapper) {

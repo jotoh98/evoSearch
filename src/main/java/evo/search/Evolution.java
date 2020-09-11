@@ -8,7 +8,6 @@ import evo.search.io.entities.Configuration;
 import evo.search.io.service.EventService;
 import evo.search.view.LangService;
 import io.jenetics.Chromosome;
-import io.jenetics.EliteSelector;
 import io.jenetics.Genotype;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
@@ -72,21 +71,6 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      */
     @Setter
     private transient boolean aborted;
-
-    /**
-     * Wrapper function to generify area related fitness methods.
-     *
-     * @param chromosome      chromosome evaluated
-     * @param areaCalculation area function
-     * @return fitness as quotient between trace length and area
-     */
-    private static double areaFitness(final List<DiscreteGene> chromosome, final ToDoubleFunction<List<DiscreteGene>> areaCalculation) {
-        final double area = areaCalculation.applyAsDouble(chromosome);
-        if (area <= 0)
-            return Double.POSITIVE_INFINITY;
-        final double length = AnalysisUtils.traceLength(chromosome);
-        return length * length / area;
-    }
 
     /**
      * Create the problem this evolution is trying to solve.
@@ -178,6 +162,21 @@ public class Evolution implements Runnable, Serializable, Cloneable {
     }
 
     /**
+     * Wrapper function to generify area related fitness methods.
+     *
+     * @param chromosome      chromosome evaluated
+     * @param areaCalculation area function
+     * @return fitness as quotient between trace length and area
+     */
+    private static double areaFitness(final List<DiscreteGene> chromosome, final ToDoubleFunction<List<DiscreteGene>> areaCalculation) {
+        final double area = areaCalculation.applyAsDouble(chromosome);
+        if (area <= 0)
+            return Double.POSITIVE_INFINITY;
+        final double length = AnalysisUtils.traceLength(chromosome);
+        return length * length / area;
+    }
+
+    /**
      * Build evolution engine.
      *
      * @param problem problem to solve
@@ -186,7 +185,6 @@ public class Evolution implements Runnable, Serializable, Cloneable {
     private Engine<DiscreteGene, Double> buildEngine(final Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> problem) {
         final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine
                 .builder(problem)
-                .selector(new EliteSelector<>(configuration.getPopulation() / 5))
                 .minimizing();
 
         final List<? extends DiscreteAlterer> alterers = new ArrayList<>(configuration.getAlterers());
@@ -205,41 +203,6 @@ public class Evolution implements Runnable, Serializable, Cloneable {
                 .offspringFraction(configuration.getOffspring() / (double) configuration.getPopulation())
                 .populationSize(configuration.getPopulation())
                 .build();
-    }
-
-    /**
-     * Computes the fitness of a {@link DiscreteGene} chromosome based on the maximised
-     * area explored in each section between two rays.
-     *
-     * @param chromosome chromosome to evaluate
-     * @return chromosome fitness based on maximised area explored
-     * @see AnalysisUtils#areaCovered(List)
-     */
-    public double fitnessMaximisingArea(final List<DiscreteGene> chromosome) {
-        return areaFitness(chromosome, AnalysisUtils::areaCovered);
-    }
-
-    /**
-     * Computes the fitness of a {@link DiscreteGene} chromosome based on the maximised
-     * area explored in each section between two rays.
-     *
-     * @param chromosome chromosome to evaluate
-     * @return chromosome fitness based on maximised area explored
-     * @see AnalysisUtils#areaCovered(List)
-     */
-    public double fitnessMaximisingCoveredArea(final List<DiscreteGene> chromosome) {
-        return areaFitness(chromosome, AnalysisUtils::newAreaCovered);
-    }
-
-    /**
-     * Worst case fitness scenario.
-     *
-     * @param chromosome chromosome to evaluate
-     * @return worst case fitness
-     * @see AnalysisUtils#worstCase(List, float)
-     */
-    public double fitnessWorstCase(final List<DiscreteGene> chromosome) {
-        return AnalysisUtils.worstCase(chromosome, 1f);
     }
 
     /**
@@ -280,22 +243,22 @@ public class Evolution implements Runnable, Serializable, Cloneable {
          * The worst case method computes the fitness based on the maximum length over all
          * points to find their worst-case treasure (when the treasure is just an epsilon further
          * away from the origin than the point).
-         *
-         * @see #fitnessWorstCase(List)
          */
-        WORST_CASE(Evolution::fitnessWorstCase),
+        WORST_CASE((e, genes) -> AnalysisUtils.worstCase(genes, 1f)),
         /**
          * The max area method computes the fitness based on the competitive ratio of explored space
          * divided by the path's length.
-         *
-         * @see #fitnessMaximisingArea(List)
          */
-        MAX_AREA(Evolution::fitnessMaximisingArea),
+        MAX_AREA((e, genes) -> areaFitness(genes, AnalysisUtils::areaCovered)),
         /**
          * This fitness method computes the quotient between the trace length
          * and the sum of explored areas.
          */
-        COVERED_AREA(Evolution::fitnessMaximisingCoveredArea);
+        COVERED_AREA((e, genes) -> areaFitness(genes, AnalysisUtils::newAreaCovered)),
+        /**
+         * The spiral likeness fitness uses the rotation independent spiral likeness mesaure.
+         */
+        SPIRAL((e, genes) -> AnalysisUtils.spiralLikenessInvariant(genes));
 
         /**
          * Fitness method used in the evolution stream.

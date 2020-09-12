@@ -7,8 +7,6 @@ import evo.search.ga.mutators.DistanceMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.io.service.EventService;
 import evo.search.view.LangService;
-import io.jenetics.Chromosome;
-import io.jenetics.Genotype;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
@@ -78,14 +76,12 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      * @return evolution problem
      */
     @NotNull
-    private Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> constructProblem() {
-        final BiFunction<Evolution, List<DiscreteGene>, Double> fitnessMethod = configuration.getFitness().getMethod();
-
+    private Problem<List<DiscreteGene>, DiscreteGene, Double> constructProblem() {
         return Problem.of(
-                list -> fitnessMethod.apply(this, ISeq.of(list).asList()),
+                this::evalFitness,
                 Codec.of(
-                        Genotype.of(configuration::shuffle, configuration.getPopulation()),
-                        Genotype::chromosome
+                        configuration::genotypeFactory,
+                        genotype -> ISeq.of(genotype.chromosome()).asList()
                 )
         );
     }
@@ -107,7 +103,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
 
         history = new ArrayList<>();
 
-        final Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> problem = constructProblem();
+        final Problem<List<DiscreteGene>, DiscreteGene, Double> problem = constructProblem();
 
         final Engine<DiscreteGene, Double> engine = buildEngine(problem);
 
@@ -182,7 +178,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      * @param problem problem to solve
      * @return evolution engine
      */
-    private Engine<DiscreteGene, Double> buildEngine(final Problem<Chromosome<DiscreteGene>, DiscreteGene, Double> problem) {
+    private Engine<DiscreteGene, Double> buildEngine(final Problem<List<DiscreteGene>, DiscreteGene, Double> problem) {
         final Engine.Builder<DiscreteGene, Double> evolutionBuilder = Engine
                 .builder(problem)
                 .minimizing();
@@ -203,6 +199,16 @@ public class Evolution implements Runnable, Serializable, Cloneable {
                 .offspringFraction(configuration.getOffspring() / (double) configuration.getPopulation())
                 .populationSize(configuration.getPopulation())
                 .build();
+    }
+
+    /**
+     * Evaluate fitness method.
+     *
+     * @param chromosome chromosome to evaluate
+     * @return evaluated fitness
+     */
+    public double evalFitness(final List<DiscreteGene> chromosome) {
+        return configuration.getFitness().getMethod().apply(this, chromosome);
     }
 
     /**

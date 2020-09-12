@@ -3,6 +3,7 @@ package evo.search.view;
 import com.github.weisj.darklaf.ui.list.DarkDefaultListCellRenderer;
 import evo.search.Evolution;
 import evo.search.Main;
+import evo.search.ga.AnalysisUtils;
 import evo.search.ga.DiscreteGene;
 import evo.search.io.entities.Configuration;
 import evo.search.io.entities.Project;
@@ -16,6 +17,7 @@ import evo.search.view.part.Canvas;
 import io.jenetics.Chromosome;
 import io.jenetics.Phenotype;
 import io.jenetics.engine.EvolutionResult;
+import io.jenetics.util.ISeq;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -152,8 +154,9 @@ public class MainForm extends JFrame {
     @Setter
     private Workspace workspace = new Workspace();
 
-    CompletableFuture<Void> evolutionProcess;
-
+    /**
+     * Thread where the evolution runs.
+     */
     Thread evolutionThread;
 
     /**
@@ -446,15 +449,24 @@ public class MainForm extends JFrame {
 
                     generation = selectedIndex;
 
-                    final EvolutionResult<DiscreteGene, Double> result = evolution.getHistory().get(generation);
+                    final EvolutionResult<DiscreteGene, Double> evolutionResult = evolution.getHistory().get(generation);
+                    populationTableModel.getColumnNames().set(1, evolution.getConfiguration().getFitness().name());
 
-                    if (result == null) return;
+                    if (evolutionResult == null) return;
 
-                    final List<List<Double>> doubles = result
+                    final List<List<Double>> doubles = evolutionResult
                             .population()
-                            .map(FitnessTableModel::mapResult)
+                            .map(result -> {
+                                final List<DiscreteGene> genes = ISeq.of(result.genotype().chromosome()).asList();
+                                return List.of(
+                                        result.fitness(),
+                                        AnalysisUtils.spiralLikeness(genes),
+                                        AnalysisUtils.spiralLikenessInvariant(genes),
+                                        AnalysisUtils.optimalWorstCase(genes)
+                                );
+                            })
                             .asList();
-                    populationTableModel.setFitness(doubles);
+                    populationTableModel.setData(doubles);
                 }
             }
         });
@@ -568,8 +580,9 @@ public class MainForm extends JFrame {
                 return;
             }
 
-            populationTableModel.setFitness(Collections.emptyList());
+            populationTableModel.setData(Collections.emptyList());
             historyTableModel.clear();
+            historyTableModel.getColumnNames().set(1, selectedConfiguration.getFitness().name());
 
             progressBar.setMaximum(selectedConfiguration.getLimit());
             updateUIOnEvolution(true);
@@ -577,10 +590,15 @@ public class MainForm extends JFrame {
             final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
             final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
                 final Phenotype<DiscreteGene, Double> phenotype = result.bestPhenotype();
-                final Chromosome<DiscreteGene> chromosome = phenotype.genotype().chromosome();
 
-                EventService.REPAINT_CANVAS.trigger(chromosome);
-                historyTableModel.addResult(phenotype);
+                EventService.REPAINT_CANVAS.trigger(phenotype.genotype().chromosome());
+                final List<DiscreteGene> genes = ISeq.of(phenotype.genotype().chromosome()).asList();
+                historyTableModel.addRow(List.of(
+                        phenotype.fitness(),
+                        AnalysisUtils.spiralLikeness(genes),
+                        AnalysisUtils.spiralLikenessInvariant(genes),
+                        AnalysisUtils.optimalWorstCase(genes)
+                ));
             };
 
             evolution = Evolution.builder()

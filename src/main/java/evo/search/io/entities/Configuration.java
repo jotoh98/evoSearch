@@ -11,7 +11,7 @@ import evo.search.ga.mutators.SwapPositionsMutator;
 import evo.search.io.service.XmlService;
 import evo.search.util.ListUtils;
 import io.jenetics.AbstractAlterer;
-import io.jenetics.Chromosome;
+import io.jenetics.Genotype;
 import io.jenetics.util.ISeq;
 import io.jenetics.util.RandomRegistry;
 import lombok.AllArgsConstructor;
@@ -341,10 +341,10 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
      *
      * @return shuffled chromosome from distance list
      */
-    public Chromosome<DiscreteGene> shuffle() {
+    public Genotype<DiscreteGene> genotypeFactory() {
         final List<Double> shuffled;
         if (!chooseWithoutPermutation) {
-            shuffled = ListUtils.deepClone(this.distances, Double::doubleValue);
+            shuffled = new ArrayList<>(distances);
             Collections.shuffle(shuffled);
         } else {
             shuffled = new ArrayList<>();
@@ -356,7 +356,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
         for (int i = 0; i < shuffled.size(); i++)
             genes[i] = new DiscreteGene(positions, RandomRegistry.random().nextInt(positions), shuffled.get(i));
 
-        return new DiscreteChromosome(genes);
+        return Genotype.of(new DiscreteChromosome(genes));
     }
 
     /**

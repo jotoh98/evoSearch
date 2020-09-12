@@ -110,6 +110,31 @@ public class AnalysisUtils {
     }
 
     /**
+     * Calculate the optimal worst case factor given the strategy's distances.
+     *
+     * @param chromosome individual to analyze
+     * @return optimal worst case factor
+     */
+    public static double optimalWorstCase(final List<DiscreteGene> chromosome) {
+
+        if (chromosome.size() < 1)
+            return Double.POSITIVE_INFINITY;
+
+        final List<Float> distances = ListUtils.map(chromosome, DiscreteGene::getDistance);
+        Collections.sort(distances);
+
+        final short positions = chromosome.get(0).getPositions();
+        final double angle = MathUtils.sectorAngle(positions);
+
+        final float max = distances.get(distances.size() - 1);
+
+        final double worstCase = ListUtils.consecSum(distances, (a, b) -> MathUtils.lawOfCosine(angle, a, b));
+        final double outerArc = arcPathLength(positions, angle, max, max + 1);
+
+        return (worstCase + outerArc) / max;
+    }
+
+    /**
      * Computes the trace length necessary for the {@link DiscreteGene} chromosome
      * to find the given treasure {@link DiscreteGene}.
      *
@@ -351,25 +376,40 @@ public class AnalysisUtils {
     private static double arcDistance(final DiscreteGene start, final DiscreteGene worstCase) {
         final int distancePositions = Math.abs(start.getPosition() - worstCase.getPosition());
 
-        if (distancePositions < 2)
+        if (distancePositions == 1)
             return start.distance(worstCase);
 
-        final int steps = Math.min(distancePositions, start.getPositions() - distancePositions);
+        final int steps = distancePositions == 0 ? start.getPositions() : Math.min(distancePositions, start.getPositions() - distancePositions);
         final double angle = 2 * Math.PI / start.getPositions();
 
-        if (start.getDistance() >= worstCase.getDistance()) {
-            return steps * 2 * start.getDistance() * Math.sin(Math.PI / start.getPositions());
+        final float endDistance = worstCase.getDistance();
+        final float startDistance = start.getDistance();
+        if (startDistance >= endDistance) {
+            return steps * 2 * startDistance * Math.sin(Math.PI / start.getPositions());
         } else {
-            final double distanceDelta = (worstCase.getDistance() - start.getDistance()) / steps;
-            double sum = 0;
-            for (int i = 0; i < steps; i++)
-                sum += MathUtils.lawOfCosine(
-                        angle,
-                        worstCase.getDistance() + distanceDelta * i,
-                        worstCase.getDistance() + distanceDelta * (i + 1)
-                );
-            return sum;
+            return arcPathLength(steps, angle, endDistance, startDistance);
         }
+    }
+
+    /**
+     * Calculate the path length of an arc.
+     *
+     * @param steps       steps of the arcs path
+     * @param angle       angle of each sector
+     * @param innerRadius outer radius of the arc
+     * @param outerRadius inner radius of the arc
+     * @return arc path length
+     */
+    private static double arcPathLength(final int steps, final double angle, final float innerRadius, final float outerRadius) {
+        final double distanceDelta = (outerRadius - innerRadius) / steps;
+        double sum = 0;
+        for (int i = 0; i < steps; i++)
+            sum += MathUtils.lawOfCosine(
+                    angle,
+                    innerRadius + distanceDelta * i,
+                    innerRadius + distanceDelta * (i + 1)
+            );
+        return sum;
     }
 
 }

@@ -6,6 +6,11 @@ package evo.search.util;
 public class MathUtils {
 
     /**
+     * Two pi. Nothing more, nothing less.
+     */
+    public static final double TWO_PI = 2 * Math.PI;
+
+    /**
      * Euclidean distance between two polar coordinates.
      *
      * @param angleA    angle of the first point
@@ -38,8 +43,8 @@ public class MathUtils {
      * @param positions amount of rays
      * @return angle between two rays
      */
-    public static double sectorAngle(final short positions) {
-        return (2 * Math.PI) / positions;
+    public static double sectorAngle(final int positions) {
+        return TWO_PI / positions;
     }
 
     /**

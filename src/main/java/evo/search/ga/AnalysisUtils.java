@@ -116,7 +116,6 @@ public class AnalysisUtils {
      * @return optimal worst case factor
      */
     public static double optimalWorstCase(final List<DiscreteGene> chromosome) {
-
         if (chromosome.size() < 1)
             return Double.POSITIVE_INFINITY;
 
@@ -215,7 +214,7 @@ public class AnalysisUtils {
      * @return list of intersections between the line ab and the rays between a and b
      */
     public static List<DiscreteGene> inBetween(final DiscreteGene a, final DiscreteGene b) {
-        final int positions = a.getPositions();
+        final short positions = a.getPositions();
 
         final int difference = Math.abs(a.getPosition() - b.getPosition());
         final int shortestPath = Math.min(positions - difference, difference);
@@ -223,7 +222,7 @@ public class AnalysisUtils {
         if (((double) difference) == positions / 2d || difference == 0)
             return Collections.emptyList();
 
-        final double anglePart = 2 * Math.PI / (double) positions;
+        final double anglePart = MathUtils.sectorAngle(positions);
 
         final double distanceToPointA = a.getDistance();
         final double angleAtPointA = Math.asin(Math.sin(anglePart * (shortestPath - 1)) * b.getDistance() / a.distance(b));
@@ -252,7 +251,7 @@ public class AnalysisUtils {
      * @return triangle area in a sector given two point distances
      */
     public static double areaInSector(final double distanceA, final double distanceB, final int rayCount) {
-        return MathUtils.areaInTriangle((2 * Math.PI) / (double) rayCount, distanceA, distanceB);
+        return MathUtils.areaInTriangle(MathUtils.sectorAngle(rayCount), distanceA, distanceB);
     }
 
     /**
@@ -271,7 +270,7 @@ public class AnalysisUtils {
             return 0;
 
         final short positions = points.get(0).getPositions();
-        final double sectorAngle = (2 * Math.PI) / positions;
+        final double sectorAngle = MathUtils.sectorAngle(positions);
 
         final double[] maxDistance = new double[positions];
 
@@ -331,40 +330,79 @@ public class AnalysisUtils {
         if (size < 1)
             return Double.POSITIVE_INFINITY;
 
-        final short positions = points.get(0).getPositions();
-        double pathLength = points.get(0).getDistance();
-
+        double pathToCurrentPoint = points.get(0).getDistance();
         double worstCaseFactor = 0;
 
-        for (int i = 0; i < size; i++) {
-            final DiscreteGene point = points.get(i);
+        for (int currentIndex = 0; currentIndex < size; currentIndex++) {
+            if (currentIndex > 0)
+                pathToCurrentPoint += points.get(currentIndex).distance(points.get(currentIndex - 1));
 
-            if (i > 0)
-                pathLength += point.distance(points.get(i - 1));
+            final double pathToWorstCase = getPathToWorstCase(points, currentIndex, epsilon);
 
-            for (int position = 0; position < positions; position++) {
-                final DiscreteGene worstCase = new DiscreteGene(positions, position, point.getDistance() + epsilon);
-
-                boolean found = false;
-
-                for (int remain = i + 1; remain < size; remain++)
-                    if (finds(points.get(remain), worstCase)) {
-                        found = true;
-                        break;
-                    }
-
-                if (!found)
-                    pathLength += arcDistance(points.get(size - 1), worstCase);
-
-                worstCaseFactor = Math.max(worstCaseFactor, pathLength / point.getDistance());
-            }
+            worstCaseFactor = Math.max(worstCaseFactor, (pathToCurrentPoint + pathToWorstCase) / points.get(currentIndex).getDistance());
         }
 
         return worstCaseFactor;
     }
 
+    public static double worstCaseMean(final List<DiscreteGene> points, final float epsilon) {
+        final int size = points.size();
+
+        if (size < 1)
+            return Double.POSITIVE_INFINITY;
+
+        double pathToCurrentPoint = points.get(0).getDistance();
+        double worstCaseFactor = 0;
+
+        for (int currentIndex = 0; currentIndex < size; currentIndex++) {
+            if (currentIndex > 0)
+                pathToCurrentPoint += points.get(currentIndex).distance(points.get(currentIndex - 1));
+
+            final double pathToWorstCase = getPathToWorstCase(points, currentIndex, epsilon);
+
+            worstCaseFactor += Math.max(worstCaseFactor, (pathToCurrentPoint + pathToWorstCase) / points.get(currentIndex).getDistance());
+        }
+
+        return worstCaseFactor / size;
+    }
+
     /**
-     * Computes the arc distance between a chromosome point and a treasure.
+     * Get the path to the worst case point given the list of visited points and the index of the current point.
+     *
+     * @param points       points of the strategy
+     * @param currentIndex index of the point to evaluate the worst case path for
+     * @param epsilon      factor add to the current points distance property to get the worst cases
+     * @return maximum path length to find one of the worst cases points
+     */
+    private static double getPathToWorstCase(final List<DiscreteGene> points, final int currentIndex, final float epsilon) {
+        final short positions = points.get(currentIndex).getPositions();
+        final float distance = points.get(currentIndex).getDistance();
+        double maxPath = 0;
+
+        for (int position = 0; position < positions; position++) {
+            final DiscreteGene worstCase = new DiscreteGene(positions, position, distance + epsilon);
+
+            boolean found = false;
+            double pathToWorstCase = 0;
+
+            for (int remain = currentIndex + 1; remain < positions; remain++)
+                if (finds(points.get(remain), worstCase)) {
+                    found = true;
+                    break;
+                } else
+                    pathToWorstCase += points.get(remain - 1).distance(points.get(remain));
+
+            if (!found)
+                pathToWorstCase += artificialDistance(points.get(points.size() - 1), worstCase);
+
+            maxPath = Math.max(maxPath, pathToWorstCase);
+        }
+
+        return maxPath;
+    }
+
+    /**
+     * Computes the artificial arc distance between a chromosome point and a treasure.
      * If the distance of the chromosome point is greater than or equal to the treasure,
      * the arc stays on the points radius. Otherwise, the radius gets increased in each step
      * until it reaches the treasure.
@@ -373,22 +411,22 @@ public class AnalysisUtils {
      * @param worstCase worst case location
      * @return length of arc between last chromosome point and the worst-case location
      */
-    private static double arcDistance(final DiscreteGene start, final DiscreteGene worstCase) {
+    private static double artificialDistance(final DiscreteGene start, final DiscreteGene worstCase) {
         final int distancePositions = Math.abs(start.getPosition() - worstCase.getPosition());
+        final short positions = start.getPositions();
 
-        if (distancePositions == 1)
+        if (distancePositions < 2)
             return start.distance(worstCase);
 
-        final int steps = distancePositions == 0 ? start.getPositions() : Math.min(distancePositions, start.getPositions() - distancePositions);
-        final double angle = 2 * Math.PI / start.getPositions();
+        final int steps = Math.min(distancePositions, positions - distancePositions);
+        final double angle = MathUtils.sectorAngle(positions);
 
         final float endDistance = worstCase.getDistance();
         final float startDistance = start.getDistance();
-        if (startDistance >= endDistance) {
-            return steps * 2 * startDistance * Math.sin(Math.PI / start.getPositions());
-        } else {
-            return arcPathLength(steps, angle, endDistance, startDistance);
-        }
+        if (startDistance >= endDistance)
+            return steps * 2 * startDistance * Math.sin(Math.PI / positions);
+        else
+            return arcPathLength(steps > 0 ? steps : positions, angle, endDistance, startDistance);
     }
 
     /**

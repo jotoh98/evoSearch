@@ -32,6 +32,7 @@ import java.awt.event.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -180,6 +181,7 @@ public class MainForm extends JFrame {
             }
         });
 
+        project.getConfigurations().sort(Comparator.comparing(Configuration::getName));
         configComboModel.addAll(project.getConfigurations());
 
         configComboModel.addSelectionListener(index -> workspace.setSelectedConfiguration(index));
@@ -189,6 +191,7 @@ public class MainForm extends JFrame {
             final int selectedIndex = configComboBox.getSelectedIndex();
             final int oldSize = configComboModel.getSize();
             configComboModel.removeAllElements();
+            changedConfigurations.sort(Comparator.comparing(Configuration::getName));
             configComboModel.addAll(changedConfigurations);
             if (selectedItem instanceof Configuration && changedConfigurations.contains(selectedItem)) {
                 configComboModel.setSelectedItem(selectedItem);
@@ -450,21 +453,13 @@ public class MainForm extends JFrame {
                     generation = selectedIndex;
 
                     final EvolutionResult<DiscreteGene, Double> evolutionResult = evolution.getHistory().get(generation);
-                    populationTableModel.getColumnNames().set(1, evolution.getConfiguration().getFitness().name());
+                    populationTableModel.setColumnIdentifier(1, evolution.getConfiguration().getFitness().name());
 
                     if (evolutionResult == null) return;
 
                     final List<List<Double>> doubles = evolutionResult
                             .population()
-                            .map(result -> {
-                                final List<DiscreteGene> genes = ISeq.of(result.genotype().chromosome()).asList();
-                                return List.of(
-                                        result.fitness(),
-                                        AnalysisUtils.spiralLikeness(genes),
-                                        AnalysisUtils.spiralLikenessInvariant(genes),
-                                        AnalysisUtils.optimalWorstCase(genes)
-                                );
-                            })
+                            .map(phenotype -> phenotypeToTableRow(phenotype))
                             .asList();
                     populationTableModel.setData(doubles);
                 }
@@ -477,7 +472,7 @@ public class MainForm extends JFrame {
      */
     private void createPopulationTable() {
         populationTableModel = new FitnessTableModel();
-        populationTableModel.getColumnNames().set(0, "Individuum");
+        populationTableModel.setColumnIdentifier(0, "Individuum");
         populationTable = new JTable(populationTableModel);
         populationTable.setRowSorter(new TableRowSorter<>(populationTableModel));
         populationTable.getSelectionModel().addListSelectionListener(l -> {
@@ -582,7 +577,7 @@ public class MainForm extends JFrame {
 
             populationTableModel.setData(Collections.emptyList());
             historyTableModel.clear();
-            historyTableModel.getColumnNames().set(1, selectedConfiguration.getFitness().name());
+            historyTableModel.setColumnIdentifier(1, selectedConfiguration.getFitness().name());
 
             progressBar.setMaximum(selectedConfiguration.getLimit());
             updateUIOnEvolution(true);
@@ -590,15 +585,8 @@ public class MainForm extends JFrame {
             final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
             final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
                 final Phenotype<DiscreteGene, Double> phenotype = result.bestPhenotype();
-
                 EventService.REPAINT_CANVAS.trigger(phenotype.genotype().chromosome());
-                final List<DiscreteGene> genes = ISeq.of(phenotype.genotype().chromosome()).asList();
-                historyTableModel.addRow(List.of(
-                        phenotype.fitness(),
-                        AnalysisUtils.spiralLikeness(genes),
-                        AnalysisUtils.spiralLikenessInvariant(genes),
-                        AnalysisUtils.optimalWorstCase(genes)
-                ));
+                historyTableModel.addRow(phenotypeToTableRow(phenotype));
             };
 
             evolution = Evolution.builder()
@@ -615,6 +603,24 @@ public class MainForm extends JFrame {
 
             evolutionThread.start();
         });
+    }
+
+    /**
+     * Converts a phenotype to a {@link FitnessTableModel} row.
+     *
+     * @param phenotype phenotype to add to the table
+     * @return table row with doubles
+     */
+    private List<Double> phenotypeToTableRow(final Phenotype<DiscreteGene, Double> phenotype) {
+        final List<DiscreteGene> genes = ISeq.of(phenotype.genotype().chromosome()).asList();
+        final double worstCase = AnalysisUtils.worstCase(genes, 1f);
+        final double optimalWorstCase = AnalysisUtils.optimalWorstCase(genes);
+        return List.of(
+                phenotype.fitness(),
+                worstCase,
+                optimalWorstCase,
+                worstCase / optimalWorstCase
+        );
     }
 
     /**

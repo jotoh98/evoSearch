@@ -10,6 +10,7 @@ import evo.search.io.entities.Project;
 import evo.search.io.service.EventService;
 import evo.search.io.service.ProjectService;
 import evo.search.view.listener.DocumentAdapter;
+import evo.search.view.model.SortedListModel;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -20,10 +21,8 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -70,7 +69,9 @@ public class ConfigurationDialog extends JDialog {
     /**
      * List model of the {@link #configChooserList}.
      */
-    private final DefaultListModel<ConfigPanel> configListModel = new DefaultListModel<>();
+    private final SortedListModel<ConfigPanel> configListModel = new SortedListModel<>(
+            Comparator.comparing(panel -> panel.getConfiguration().getName())
+    );
 
     /**
      * Textfield to change the selected {@link Configuration}s name.
@@ -107,6 +108,11 @@ public class ConfigurationDialog extends JDialog {
      */
     @Getter
     private JScrollPane configScrollWrapper;
+
+    /**
+     * Cached panel/config selection.
+     */
+    private ConfigPanel selectedPanel;
 
     /**
      * Test main method.
@@ -162,9 +168,12 @@ public class ConfigurationDialog extends JDialog {
         final AtomicBoolean typed = new AtomicBoolean(false);
 
         nameTextField.getDocument().addDocumentListener((DocumentAdapter) e -> {
+            if (nameTextField.getText().isEmpty() || selectedPanel == null) return;
             if (typed.get()) triggerChange();
-            configChooserList.getSelectedValue().getConfiguration().setName(nameTextField.getText());
-            configChooserList.repaint();
+            final Configuration configuration = selectedPanel.getConfiguration();
+            configuration.setName(nameTextField.getText());
+            configListModel.sort();
+            configChooserList.setSelectedIndex(configListModel.indexOf(selectedPanel));
         });
 
         nameTextField.addKeyListener(new KeyAdapter() {
@@ -198,11 +207,13 @@ public class ConfigurationDialog extends JDialog {
      * Create a configuration panel.
      *
      * @param configuration configurations to be displayed/edited
+     * @return index of the inserted configuration
      */
-    public void createConfigPanel(final Configuration configuration) {
+    public int createConfigPanel(final Configuration configuration) {
         final ConfigPanel configPanel = new ConfigPanel(configuration);
         configPanel.setParent(this);
         configListModel.addElement(configPanel);
+        return configListModel.indexOf(configPanel);
     }
 
     /**
@@ -214,7 +225,7 @@ public class ConfigurationDialog extends JDialog {
         configListModel.addListDataListener(new ListDataListener() {
             @Override
             public void intervalAdded(final ListDataEvent e) {
-                removeConfigButton.setEnabled(configListModel.size() > 0);
+                removeConfigButton.setEnabled(configListModel.getSize() > 0);
             }
 
             @Override
@@ -224,7 +235,6 @@ public class ConfigurationDialog extends JDialog {
 
             @Override
             public void contentsChanged(final ListDataEvent e) {
-
             }
         });
     }
@@ -247,12 +257,12 @@ public class ConfigurationDialog extends JDialog {
 
             if (selectedIndices.length == 1) {
                 configListModel.remove(firstIndex);
-                configChooserList.setSelectedIndex(firstIndex == configListModel.size() ? firstIndex - 1 : firstIndex);
+                configChooserList.setSelectedIndex(firstIndex == configListModel.getSize() ? firstIndex - 1 : firstIndex);
                 return;
             }
 
             configListModel.removeRange(firstIndex, selectedIndices[selectedIndices.length - 1]);
-            if (configListModel.size() > 0) {
+            if (configListModel.getSize() > 0) {
                 configChooserList.setSelectedIndex(0);
             }
         });
@@ -266,26 +276,7 @@ public class ConfigurationDialog extends JDialog {
      */
     private void addConfiguration(final Configuration configuration) {
         triggerChange();
-        final int selectedIndex = configChooserList.getSelectedIndex();
-        if (selectedIndex == -1) {
-            createConfigPanel(0, configuration);
-            configChooserList.setSelectedIndex(0);
-        } else {
-            createConfigPanel(selectedIndex + 1, configuration);
-            configChooserList.setSelectedIndex(selectedIndex + 1);
-        }
-    }
-
-    /**
-     * Create a new configuration panel and insert a handle into the selection list.
-     *
-     * @param index         insertion index in the selection list
-     * @param configuration configuration to display
-     */
-    public void createConfigPanel(final int index, final Configuration configuration) {
-        final ConfigPanel configPanel = new ConfigPanel(configuration);
-        configPanel.setParent(this);
-        configListModel.add(index, configPanel);
+        createConfigPanel(configuration);
     }
 
     /**
@@ -302,12 +293,12 @@ public class ConfigurationDialog extends JDialog {
         });
 
         configChooserList.addListSelectionListener(e -> {
-            final ConfigPanel selectedTuple = configChooserList.getSelectedValue();
-            if (selectedTuple == null) {
+            selectedPanel = configChooserList.getSelectedValue();
+            if (selectedPanel == null) {
                 return;
             }
-            nameTextField.setText(selectedTuple.getConfiguration().getName());
-            configScrollWrapper.getViewport().setView(selectedTuple.getRootPanel());
+            nameTextField.setText(selectedPanel.getConfiguration().getName());
+            configScrollWrapper.getViewport().setView(selectedPanel.getRootPanel());
         });
 
         configChooserList.setSelectedIndex(0);
@@ -334,7 +325,7 @@ public class ConfigurationDialog extends JDialog {
      * displaying an empty message.
      */
     private void bindEmptyBehaviour() {
-        final boolean listEmpty = configListModel.size() == 0;
+        final boolean listEmpty = configListModel.getSize() == 0;
         removeConfigButton.setEnabled(!listEmpty);
         if (listEmpty) {
             configScrollWrapper.getViewport().setView(new JLabel("No configuration set"));
@@ -346,11 +337,9 @@ public class ConfigurationDialog extends JDialog {
      */
     private void duplicateSelectedConfiguration() {
         triggerChange();
-        final ConfigPanel selectedConfig = configChooserList.getSelectedValue();
-        if (selectedConfig != null) {
-            addConfiguration(selectedConfig.getConfiguration().clone());
-        }
-
+        if (selectedPanel == null) return;
+        final int newIndex = createConfigPanel(selectedPanel.getConfiguration().clone());
+        configChooserList.setSelectedIndex(newIndex);
     }
 
     /**
@@ -389,7 +378,7 @@ public class ConfigurationDialog extends JDialog {
      */
     private void saveConfigurations() {
         final List<Configuration> configurations = new ArrayList<>();
-        for (int i = 0; i < configListModel.size(); i++)
+        for (int i = 0; i < configListModel.getSize(); i++)
             configurations.add(configListModel.getElementAt(i).getConfiguration());
 
         final Project currentProject = ProjectService.getCurrentProject();

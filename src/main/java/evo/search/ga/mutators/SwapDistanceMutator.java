@@ -6,7 +6,7 @@ import io.jenetics.util.MSeq;
 /**
  * Mutator which swaps whole the positions between {@link DiscreteGene}s.
  */
-public class SwapDistanceMutator extends SwapPropertyMutator<DiscreteGene, Double> implements DiscreteAlterer {
+public class SwapDistanceMutator extends SwapPropertyMutator {
 
     /**
      * Standard probability constructor.

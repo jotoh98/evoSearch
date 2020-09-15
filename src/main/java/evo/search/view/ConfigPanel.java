@@ -446,7 +446,7 @@ public class ConfigPanel extends JDialog {
             final int rowByName = mutatorTableModel.getRowByName(configAlterer.getClass().getSimpleName());
             if (rowByName >= 0) {
                 mutatorTable.getSelectionModel().addSelectionInterval(rowByName, rowByName);
-                mutatorTableModel.setValueAt(configAlterer.getProbability(), rowByName, 1);
+                mutatorTableModel.setValueAt(configAlterer.probability(), rowByName, 1);
             }
         }
 

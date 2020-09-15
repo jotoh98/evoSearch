@@ -105,7 +105,7 @@ public class MultiTreasureFitnessExperiment extends Experiment {
             final List<List<DiscreteGene>> results = getResultMatrix(writer, baseConfiguration, treasureSublist);
 
             final List<List<DiscreteGene>> transposed = ListUtils.transpose(results);
-            final List<List<Point2D>> comparedPoints = ListUtils.map(transposed, row -> ListUtils.map(row, DiscreteGene::getAllele));
+            final List<List<Point2D>> comparedPoints = ListUtils.map(transposed, row -> ListUtils.map(row, DiscreteGene::allele));
 
             writeDeviations(writer, treasureAmount, comparedPoints);
         }

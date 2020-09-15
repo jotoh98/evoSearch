@@ -16,12 +16,12 @@ import java.io.Serializable;
  */
 @AllArgsConstructor
 @Data
-public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
+public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable, Cloneable {
 
     /**
      * Configuration providing context for the gene. Mainly used to calculate the allele.
      *
-     * @see #getAllele()
+     * @see #allele()
      * @see DiscreteGene#positions
      */
     private short positions;
@@ -58,7 +58,7 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
      * {@inheritDoc}
      */
     @Override
-    public Point2D getAllele() {
+    public Point2D allele() {
         final double angle = MathUtils.sectorAngle(positions) * position;
         return new Point2D.Double(distance * Math.cos(angle), distance * Math.sin(angle));
     }
@@ -78,7 +78,7 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
      */
     @Override
     public DiscreteGene newInstance(final Point2D value) {
-        final int position = (int) Math.round(Math.atan2(value.getY(), value.getX()) / (2 * Math.PI) * positions);
+        final int position = (int) Math.round(Math.atan2(value.getY(), value.getX()) / MathUtils.TWO_PI * positions);
         return new DiscreteGene(positions, position, value.distance(0, 0));
     }
 
@@ -104,11 +104,7 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable {
      */
     @Override
     public DiscreteGene clone() {
-        try {
-            return (DiscreteGene) super.clone();
-        } catch (final CloneNotSupportedException ignore) {
-            return new DiscreteGene(positions, position, distance);
-        }
+        return new DiscreteGene(positions, position, distance);
     }
 
     /**

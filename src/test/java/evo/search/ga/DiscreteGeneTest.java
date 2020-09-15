@@ -17,7 +17,7 @@ class DiscreteGeneTest {
     @Test
     void correctAlleleTest() {
         final DiscreteGene discreteGene = new DiscreteGene(6, 3, 1);
-        final Point2D allele = discreteGene.getAllele();
+        final Point2D allele = discreteGene.allele();
         assertEquals(-1, allele.getX(), 1e-15);
         assertEquals(0, allele.getY(), 1e-15);
         final DiscreteGene phenotype = discreteGene.newInstance(allele);

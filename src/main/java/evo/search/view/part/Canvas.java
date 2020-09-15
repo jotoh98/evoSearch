@@ -1,6 +1,7 @@
 package evo.search.view.part;
 
 import evo.search.ga.DiscreteGene;
+import evo.search.util.MathUtils;
 import evo.search.view.render.Ray2D;
 import evo.search.view.render.StringShape;
 import evo.search.view.render.Style;
@@ -268,7 +269,7 @@ public class Canvas extends JPanel {
 
         final AtomicInteger index = new AtomicInteger();
         chromosome.forEach(gene -> {
-            final Point2D point = gene.getAllele();
+            final Point2D point = gene.allele();
             enqueue(String.valueOf(index.get() + 1), point, Style.builder().color(Color.WHITE).build());
             enqueue(point, Style.builder().color(Color.GREEN).build());
             index.getAndIncrement();
@@ -277,7 +278,7 @@ public class Canvas extends JPanel {
         if (rays > 2) {
             Point2D previous = new Point2D.Double();
             for (final DiscreteGene discreteGene : chromosome) {
-                final Point2D current = discreteGene.getAllele();
+                final Point2D current = discreteGene.allele();
                 enqueue(
                         new Line2D.Double(previous, current),
                         Style.builder().color(Color.WHITE).build()
@@ -294,8 +295,8 @@ public class Canvas extends JPanel {
      */
     public void renderRays(final int amount) {
         for (int position = 0; position < amount; position++) {
-            final double x = Math.cos(position / (double) amount * 2 * Math.PI);
-            final double y = Math.sin(position / (double) amount * 2 * Math.PI);
+            final double x = Math.cos(position / (double) amount * MathUtils.TWO_PI);
+            final double y = Math.sin(position / (double) amount * MathUtils.TWO_PI);
             enqueue(
                     new Ray2D(0, 0, x, y),
                     Style.builder()
@@ -313,7 +314,7 @@ public class Canvas extends JPanel {
      */
     public void renderTreasures(final List<DiscreteGene> treasures) {
         treasures.forEach(treasure -> enqueue(
-                treasure.getAllele(),
+                treasure.allele(),
                 Style.builder().color(Color.RED).shape(Style.Shape.CROSS).build()
         ));
     }

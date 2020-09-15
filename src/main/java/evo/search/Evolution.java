@@ -11,7 +11,6 @@ import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
 import io.jenetics.engine.Problem;
-import io.jenetics.util.ISeq;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -81,7 +80,12 @@ public class Evolution implements Runnable, Serializable, Cloneable {
                 this::evalFitness,
                 Codec.of(
                         configuration::genotypeFactory,
-                        genotype -> ISeq.of(genotype.chromosome()).asList()
+                        genotype -> {
+                            final List<DiscreteGene> genes = new ArrayList<>();
+                            for (final DiscreteGene gene : genotype.chromosome())
+                                genes.add(gene.clone());
+                            return genes;
+                        }
                 )
         );
     }
@@ -198,6 +202,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
         return evolutionBuilder
                 .offspringFraction(configuration.getOffspring() / (double) configuration.getPopulation())
                 .populationSize(configuration.getPopulation())
+                .selector(configuration.getSelector())
                 .build();
     }
 
@@ -251,6 +256,11 @@ public class Evolution implements Runnable, Serializable, Cloneable {
          * away from the origin than the point).
          */
         WORST_CASE((e, genes) -> AnalysisUtils.worstCase(genes, 1f)),
+        /**
+         * This fitness method calculates the mean of the worst cases for
+         * each point of the strategy.
+         */
+        WORST_MEAN((e, genes) -> AnalysisUtils.worstCaseMean(genes, 1f)),
         /**
          * The max area method computes the fitness based on the competitive ratio of explored space
          * divided by the path's length.

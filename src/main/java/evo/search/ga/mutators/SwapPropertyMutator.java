@@ -1,9 +1,8 @@
 package evo.search.ga.mutators;
 
+import evo.search.ga.DiscreteGene;
 import io.jenetics.Chromosome;
-import io.jenetics.Gene;
 import io.jenetics.MutatorResult;
-import io.jenetics.SwapMutator;
 import io.jenetics.util.MSeq;
 
 import java.util.Random;
@@ -13,7 +12,7 @@ import static io.jenetics.internal.math.Randoms.indexes;
 /**
  * @author jotoh
  */
-public abstract class SwapPropertyMutator<G extends Gene<?, G>, C extends Comparable<? super C>> extends SwapMutator<G, C> {
+public abstract class SwapPropertyMutator extends SwapGeneMutator {
 
     /**
      * Construct a swap mutator which swaps a component of the genes.
@@ -25,10 +24,10 @@ public abstract class SwapPropertyMutator<G extends Gene<?, G>, C extends Compar
     }
 
     @Override
-    protected MutatorResult<Chromosome<G>> mutate(final Chromosome<G> chromosome, final double p, final Random random) {
-        final MutatorResult<Chromosome<G>> result;
+    protected MutatorResult<Chromosome<DiscreteGene>> mutate(final Chromosome<DiscreteGene> chromosome, final double p, final Random random) {
+        final MutatorResult<Chromosome<DiscreteGene>> result;
         if (chromosome.length() > 1) {
-            final MSeq<G> genes = MSeq.of(chromosome);
+            final MSeq<DiscreteGene> genes = MSeq.of(chromosome);
             final int mutations = (int) indexes(random, genes.length(), p)
                     .peek(i -> swapComponent(genes, i, random.nextInt(genes.length())))
                     .count();
@@ -50,6 +49,6 @@ public abstract class SwapPropertyMutator<G extends Gene<?, G>, C extends Compar
      * @param a    position a
      * @param b    position b
      */
-    protected abstract void swapComponent(final MSeq<G> mSeq, final int a, final int b);
+    protected abstract void swapComponent(final MSeq<DiscreteGene> mSeq, final int a, final int b);
 
 }

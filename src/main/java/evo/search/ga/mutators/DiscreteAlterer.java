@@ -35,6 +35,6 @@ public interface DiscreteAlterer extends Alterer<DiscreteGene, Double> {
      *
      * @return the alterers probability
      */
-    double getProbability();
+    double probability();
 
 }

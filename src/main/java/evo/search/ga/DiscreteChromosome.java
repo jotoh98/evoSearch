@@ -36,7 +36,7 @@ public class DiscreteChromosome extends AbstractChromosome<DiscreteGene> {
      *                                  empty.
      */
     public DiscreteChromosome(final DiscreteGene... genes) {
-        this(ISeq.of(genes));
+        super(ISeq.of(genes));
     }
 
     @Override

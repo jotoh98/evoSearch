@@ -12,6 +12,8 @@ import evo.search.io.service.XmlService;
 import evo.search.util.ListUtils;
 import io.jenetics.AbstractAlterer;
 import io.jenetics.Genotype;
+import io.jenetics.Selector;
+import io.jenetics.StochasticUniversalSelector;
 import io.jenetics.util.ISeq;
 import io.jenetics.util.RandomRegistry;
 import lombok.AllArgsConstructor;
@@ -89,6 +91,12 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
                     new SwapPositionsMutator(0.5)
             )
     );
+
+    /**
+     * Selection method for offspring.
+     */
+    private Selector<DiscreteGene, Double> selector = new StochasticUniversalSelector<>();
+    //TODO:serialization
 
     /**
      * Amount of offspring individuals.

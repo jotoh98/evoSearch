@@ -1,27 +1,27 @@
 package evo.search.io.entities;
 
-import org.dom4j.Document;
+import org.dom4j.Element;
 
 /**
  * Entity interface for objects which can be parsed from and converted to xml.
  *
- * @param <T> return type of the parsed {@link Document}
+ * @param <T> return type of the parsed {@link Element}
  */
 public interface XmlEntity<T> {
 
     /**
-     * Serialize the entity into a {@link Document}.
+     * Serialize the entity into a {@link Element}.
      *
      * @return serialized document
      */
-    Document serialize();
+    Element serialize();
 
     /**
-     * Parse a {@link Document} and return the entity.
+     * Parse a {@link Element} and return the entity.
      *
-     * @param document document to parse
+     * @param element element to parse
      * @return parsed entity
      */
-    T parse(Document document);
+    T parse(Element element);
 
 }

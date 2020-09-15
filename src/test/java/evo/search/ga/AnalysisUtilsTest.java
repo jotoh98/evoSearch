@@ -83,7 +83,7 @@ class AnalysisUtilsTest {
                 .inBetween(new DiscreteGene(8, 0, 1), new DiscreteGene(8, 2, 1))
                 .get(0)
                 .getDistance();
-        Assertions.assertEquals(distance, Math.sqrt(2) / 2);
+        Assertions.assertEquals(Math.sqrt(2) / 2, distance, 1e-6);
     }
 
     @Test
@@ -116,8 +116,8 @@ class AnalysisUtilsTest {
         final double better = AnalysisUtils.areaCovered(List.of(new DiscreteGene(4, 0, 1), new DiscreteGene(4, 1, 1), new DiscreteGene(4, 1, 2), new DiscreteGene(4, 2, 2)));
 
 
-        Assertions.assertEquals(quarter, .5);
-        Assertions.assertEquals(maximisedQuarter, 2);
+        Assertions.assertEquals(.5, quarter);
+        Assertions.assertEquals(2, maximisedQuarter);
         Assertions.assertTrue(maximisedQuarter < better);
     }
 

@@ -4,7 +4,6 @@ import evo.search.io.service.XmlService;
 import lombok.Data;
 import org.dom4j.Attribute;
 import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.tree.DefaultElement;
 
@@ -117,7 +116,7 @@ public class Workspace implements XmlEntity<Workspace> {
      * @return serialized xml document from this workspace
      */
     @Override
-    public Document serialize() {
+    public Element serialize() {
         final Element workspace = new DefaultElement("workspace");
 
         workspace.add(serialize("mainLocation", mainLocation));
@@ -128,43 +127,42 @@ public class Workspace implements XmlEntity<Workspace> {
         workspace.add(serialize("configLocation", configLocation));
         workspace.add(serialize("configSize", configSize));
 
-        return DocumentHelper.createDocument(workspace);
+        return workspace;
     }
 
     /**
-     * Parse a workspace from a {@link Document}.
+     * Parse a workspace from a {@link Element}.
      *
-     * @param document document to parse
+     * @param element element to parse
      * @return parsed workspace
      */
     @Override
-    public Workspace parse(final Document document) {
+    public Workspace parse(final Element element) {
         final Workspace workspace = new Workspace();
 
-        final Element rootElement = document.getRootElement();
-        if (rootElement == null) return workspace;
+        if (element == null) return workspace;
 
-        final Iterator<?> iterator = rootElement.elementIterator();
+        final Iterator<?> iterator = element.elementIterator();
 
         iterator.forEachRemaining(object -> {
             if (object instanceof Element) {
-                final Element element = (Element) object;
-                switch (element.getName()) {
+                final Element current = (Element) object;
+                switch (current.getName()) {
                     case "mainLocation":
-                        mainLocation = parsePoint(element);
+                        mainLocation = parsePoint(current);
                         break;
                     case "mainSize":
-                        mainSize = parseDimension(element);
+                        mainSize = parseDimension(current);
                         break;
                     case "configLocation":
-                        configLocation = parsePoint(element);
+                        configLocation = parsePoint(current);
                         break;
                     case "configSize":
-                        configSize = parseDimension(element);
+                        configSize = parseDimension(current);
                         break;
                     case "property":
                         XmlService.readProperty(
-                                element,
+                                current,
                                 (name, value) -> {
                                     switch (name) {
                                         case "configSelected":

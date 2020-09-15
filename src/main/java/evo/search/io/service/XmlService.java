@@ -120,7 +120,7 @@ public class XmlService {
                 .addAttribute("version", Main.VERSION);
 
         final Element projectsNode = root.addElement("entries");
-        appendElementList(projectsNode, projects, IndexEntry::createElement);
+        appendElementList(projectsNode, projects, IndexEntry::serialize);
         return configDocument;
     }
 
@@ -143,7 +143,7 @@ public class XmlService {
         }
 
         return ListUtils.map(
-                readElementList("entry", projects, IndexEntry::parse),
+                readElementList("entry", projects, element -> new IndexEntry().parse(element)),
                 project -> {
                     if (project == null) log.info("A project is broken. It will be deleted.");
                     return project;

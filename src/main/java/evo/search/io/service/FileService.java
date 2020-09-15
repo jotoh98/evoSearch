@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.xml.sax.SAXException;
 
@@ -113,15 +114,25 @@ public class FileService {
     /**
      * Write a xml {@link Document} to a file.
      *
-     * @param file     the files path
+     * @param path     files path
      * @param document xml document to write
      */
-    public static void write(final Path file, final Document document) {
+    public static void write(final Path path, final Document document) {
         try {
-            Files.write(file, document.asXML().getBytes());
+            Files.write(path, document.asXML().getBytes());
         } catch (final IOException e) {
-            log.error("Could not serialize document in XML file: " + file.toString(), e);
+            log.error("Could not serialize document in XML file: " + path.toString(), e);
         }
+    }
+
+    /**
+     * Write a xml {@link Element} as root element to a file.
+     *
+     * @param path    file path
+     * @param element xml element to write
+     */
+    public static void write(final Path path, final Element element) {
+        write(path, DocumentHelper.createDocument(element));
     }
 
     /**

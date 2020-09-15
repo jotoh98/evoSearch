@@ -1,7 +1,9 @@
 package evo.search.io.entities;
 
 import evo.search.Main;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.dom4j.Attribute;
 import org.dom4j.Element;
 import org.dom4j.tree.DefaultElement;
@@ -13,8 +15,10 @@ import java.time.format.DateTimeFormatter;
 /**
  * Global project register entry used to save registered projects in the file system.
  */
-@Value
-public class IndexEntry {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class IndexEntry implements XmlEntity<IndexEntry> {
 
     /**
      * Date format used to display the {@link #lastUsed} property.
@@ -24,22 +28,22 @@ public class IndexEntry {
     /**
      * File system path of the project.
      */
-    Path path;
+    Path path = Path.of("/");
 
     /**
      * Name of the project.
      */
-    String name;
+    String name = "Unknown";
 
     /**
      * Version of the project.
      */
-    String version;
+    String version = "unknown";
 
     /**
      * Time since last project use.
      */
-    LocalDateTime lastUsed;
+    LocalDateTime lastUsed = LocalDateTime.MIN;
 
     /**
      * Parse an {@link IndexEntry} from an {@link Element}.
@@ -47,7 +51,7 @@ public class IndexEntry {
      * @param element element to parse
      * @return parsed index entry
      */
-    public static IndexEntry parse(final Element element) {
+    public IndexEntry parse(final Element element) {
         final Attribute pathAttribute = element.attribute("path");
         final Attribute nameAttribute = element.attribute("name");
         final Attribute versionAttribute = element.attribute("version");
@@ -56,12 +60,12 @@ public class IndexEntry {
         if (pathAttribute == null) {
             return null;
         }
-        final Path path = Path.of(pathAttribute.getValue());
-        final String name = nameAttribute == null ? "Unknown" : nameAttribute.getValue();
-        final String version = versionAttribute == null ? Main.UNKNOWN_VERSION : versionAttribute.getValue();
-        final LocalDateTime lastUsed = lastUsedAttribute == null ? LocalDateTime.now() : LocalDateTime.parse(lastUsedAttribute.getValue(), DATE_FORMAT);
+        path = Path.of(pathAttribute.getValue());
+        name = nameAttribute == null ? "Unknown" : nameAttribute.getValue();
+        version = versionAttribute == null ? Main.UNKNOWN_VERSION : versionAttribute.getValue();
+        lastUsed = lastUsedAttribute == null ? LocalDateTime.now() : LocalDateTime.parse(lastUsedAttribute.getValue(), DATE_FORMAT);
 
-        return new IndexEntry(path, name, version, lastUsed);
+        return this;
     }
 
     /**
@@ -69,7 +73,7 @@ public class IndexEntry {
      *
      * @return serialized index entry
      */
-    public Element createElement() {
+    public Element serialize() {
         return new DefaultElement("entry")
                 .addAttribute("path", path.toString())
                 .addAttribute("name", name)

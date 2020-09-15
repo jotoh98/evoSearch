@@ -4,6 +4,8 @@ import javax.swing.table.DefaultTableModel;
 import java.util.List;
 
 /**
+ * Table model to display several fitness values.
+ *
  * @author jotoh
  */
 public class FitnessTableModel extends DefaultTableModel {
@@ -69,9 +71,9 @@ public class FitnessTableModel extends DefaultTableModel {
      * Clear the table.
      */
     public void clear() {
-        final int size = getRowCount();
-        while (getRowCount() > 0)
-            removeRow(0);
+        final int size = dataVector.size();
+        if (size == 0) return;
+        dataVector.removeAllElements();
         fireTableRowsDeleted(0, size - 1);
     }
 }

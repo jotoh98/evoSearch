@@ -225,7 +225,7 @@ public class AnalysisUtils {
         final double anglePart = MathUtils.sectorAngle(positions);
 
         final double distanceToPointA = a.getDistance();
-        final double angleAtPointA = Math.asin(Math.sin(anglePart * (shortestPath - 1)) * b.getDistance() / a.distance(b));
+        final double angleAtPointA = Math.asin(Math.sin(anglePart * shortestPath) * b.getDistance() / a.distance(b));
 
         final int increase = (a.getPosition() + shortestPath) % positions == b.getPosition() ? 1 : -1;
 
@@ -282,7 +282,7 @@ public class AnalysisUtils {
         double area = MathUtils.areaInTriangle(sectorAngle, maxDistance[0], maxDistance[maxDistance.length - 1]);
 
         for (int i = 0; i < positions - 1; i++)
-            area = MathUtils.areaInTriangle(sectorAngle, maxDistance[i], maxDistance[i + 1]);
+            area += MathUtils.areaInTriangle(sectorAngle, maxDistance[i], maxDistance[i + 1]);
 
         return area;
     }

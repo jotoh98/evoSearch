@@ -21,8 +21,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dom4j.Attribute;
-import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.tree.DefaultElement;
 
@@ -95,6 +93,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
     /**
      * Selection method for offspring.
      */
+    @Builder.Default
     private Selector<DiscreteGene, Double> selector = new StochasticUniversalSelector<>();
     //TODO:serialization
 
@@ -133,7 +132,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
      *
      * @param element element containing the discrete alterer
      * @return parsed discrete alterer
-     * @see #parse(Document)
+     * @see #parse(Element)
      */
     private static DiscreteAlterer parseAlterer(final Element element) {
         final Attribute methodAttribute = element.attribute("method");
@@ -195,7 +194,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
      *
      * @param element element containing the discrete alterer
      * @return parsed treasure point
-     * @see #parse(Document)
+     * @see #parse(Element)
      */
     private DiscreteGene parseTreasure(final Element element) {
         final Attribute positionAttribute = element.attribute("position");
@@ -224,8 +223,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
     }
 
     @Override
-    public Configuration parse(final Document document) {
-        final Element rootElement = document.getRootElement();
+    public Configuration parse(final Element rootElement) {
 
         if (rootElement == null) return this;
 
@@ -314,7 +312,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
     }
 
     @Override
-    public Document serialize() {
+    public Element serialize() {
         final Element root = new DefaultElement("configuration");
         final Element propertiesElement = root.addElement("properties");
 
@@ -341,7 +339,7 @@ public class Configuration implements Cloneable, XmlEntity<Configuration>, Seria
         final Element alterersElement = root.addElement("alterers");
         XmlService.appendElementList(alterersElement, getAlterers(), Configuration::writeAlterer);
 
-        return DocumentHelper.createDocument(root);
+        return root;
     }
 
     /**

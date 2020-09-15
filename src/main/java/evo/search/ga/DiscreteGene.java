@@ -1,12 +1,16 @@
 package evo.search.ga;
 
 import evo.search.io.entities.Configuration;
+import evo.search.io.entities.XmlEntity;
 import evo.search.util.MathUtils;
 import evo.search.util.RandomUtils;
 import io.jenetics.Gene;
 import io.jenetics.util.RandomRegistry;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.dom4j.Attribute;
+import org.dom4j.Element;
+import org.dom4j.tree.DefaultElement;
 
 import java.awt.geom.Point2D;
 import java.io.Serializable;
@@ -16,7 +20,7 @@ import java.io.Serializable;
  */
 @AllArgsConstructor
 @Data
-public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable, Cloneable {
+public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable, Cloneable, XmlEntity<DiscreteGene> {
 
     /**
      * Configuration providing context for the gene. Mainly used to calculate the allele.
@@ -125,5 +129,27 @@ public class DiscreteGene implements Gene<Point2D, DiscreteGene>, Serializable, 
     @Override
     public boolean isValid() {
         return distance > 0 && position >= 0 && position < positions && distance >= 0;
+    }
+
+    @Override
+    public Element serialize() {
+        return new DefaultElement("gene")
+                .addAttribute("p", String.valueOf(position))
+                .addAttribute("d", String.valueOf(distance));
+    }
+
+    @Override
+    public DiscreteGene parse(final Element element) {
+        final Attribute positionsAttribute = element.attribute("P");
+        final Attribute positionAttribute = element.attribute("p");
+        final Attribute distanceAttribute = element.attribute("d");
+
+        if (positionsAttribute != null)
+            positions = Short.parseShort(positionsAttribute.getValue());
+        if (positionAttribute != null)
+            position = Short.parseShort(positionAttribute.getValue());
+        if (distanceAttribute != null)
+            distance = Float.parseFloat(distanceAttribute.getValue());
+        return this;
     }
 }

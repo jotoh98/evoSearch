@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.dom4j.Document;
+import org.dom4j.DocumentHelper;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -72,6 +73,9 @@ public class ProjectService {
     @Getter
     private static Project currentProject;
 
+    /**
+     * Pattern for file numbering.
+     */
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
 
     /**
@@ -108,7 +112,7 @@ public class ProjectService {
 
         final Path projectXML = hiddenPath.resolve(PROJECT_SETTING);
         try {
-            final Document document = project.serialize();
+            final Document document = DocumentHelper.createDocument(project.serialize());
             Files.write(projectXML, document.asXML().getBytes());
         } catch (final IOException e) {
             log.error("Project setup didn't complete.", e);
@@ -149,14 +153,14 @@ public class ProjectService {
                 switch (path.getFileName().toString()) {
                     case PROJECT_SETTING:
                         final Document projectSettings = FileService.read(path);
-                        project.parse(projectSettings);
+                        project.parse(projectSettings.getRootElement());
                         break;
                     case CONFIG_FOLDER:
                         try {
                             Files.walk(path).forEach(configFile -> {
                                 if (!configFile.toString().endsWith(".xml")) return;
                                 final Document configDocument = FileService.read(configFile);
-                                project.getConfigurations().add(new Configuration().parse(configDocument));
+                                project.getConfigurations().add(new Configuration().parse(configDocument.getRootElement()));
                             });
                         } catch (final IOException ignored) {}
                 }
@@ -235,7 +239,7 @@ public class ProjectService {
 
         if (Files.exists(workspacePath)) {
             final Document workspaceDocument = FileService.read(workspacePath);
-            return new Workspace().parse(workspaceDocument);
+            return new Workspace().parse(workspaceDocument.getRootElement());
         }
 
         FileService.write(workspacePath, new Workspace().serialize());
@@ -355,7 +359,7 @@ public class ProjectService {
         if (counter >= 0) {
             final Path configPath = evolutionFile.getParent().resolve("config-" + counter + ".csv");
             if (Files.exists(configPath))
-                configuration.parse(FileService.read(configPath));
+                configuration.parse(FileService.read(configPath).getRootElement());
         }
         try (final ObjectInputStream objectInputStream = new ObjectInputStream(Files.newInputStream(evolutionFile))) {
             final Evolution evolution = (Evolution) objectInputStream.readObject();

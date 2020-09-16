@@ -8,6 +8,7 @@ import evo.search.util.ListUtils;
 import io.jenetics.util.ISeq;
 
 import javax.swing.*;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
@@ -66,6 +67,14 @@ public class ExportDialog extends JDialog {
      * Checkbox to determine whether to export fitness values.
      */
     private JCheckBox fitnessInfo;
+    /**
+     * Checkbox to determine whether to export the gene's position.
+     */
+    private JCheckBox csvExportPosition;
+    /**
+     * Checkbox to determine whether to export the gene's distance.
+     */
+    private JCheckBox csvExportDistance;
 
     /**
      * Evolution with data to export.
@@ -82,6 +91,8 @@ public class ExportDialog extends JDialog {
         strategyTabs.addChangeListener(e -> saveButton.setVisible(strategyTabs.getSelectedIndex() == 1));
         saveButton.setVisible(false);
         saveButton.addActionListener(l -> onSave());
+        csvExportPosition.addChangeListener(atLeastOneChecked(csvExportPosition, csvExportDistance));
+        csvExportDistance.addChangeListener(atLeastOneChecked(csvExportDistance, csvExportPosition));
         setModal(true);
         getRootPane().setDefaultButton(exportButton);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -157,6 +168,20 @@ public class ExportDialog extends JDialog {
     }
 
     /**
+     * Create a change listener for two checkboxes that ensures, that at least one of them is checked.
+     *
+     * @param checkbox checkbox to listen to
+     * @param other    checkbox to select, in the case of both being unselected
+     * @return change listener binding this behavior to a checkbox
+     */
+    private ChangeListener atLeastOneChecked(final JCheckBox checkbox, final JCheckBox other) {
+        return e -> {
+            if (!checkbox.isSelected() && !other.isSelected())
+                other.setSelected(true);
+        };
+    }
+
+    /**
      * Export the {@link DiscreteGene} chromosomes to csv.
      *
      * @return csv string
@@ -206,10 +231,19 @@ public class ExportDialog extends JDialog {
      * @return row separated csv string of integers and doubles
      */
     private <T> String printRowSeparated(final List<T> items, final Function<T, Integer> position, final Function<T, Double> distance, final String separator) {
+        final StringBuilder stringBuilder = new StringBuilder();
         final BinaryOperator<String> accumulator = ListUtils.separator(separator);
-        final List<String> positionStrings = ListUtils.map(items, position.andThen(p -> Integer.toString(p)));
-        final List<String> distanceStrings = ListUtils.map(items, distance.andThen(d -> Double.toString(d)));
-        return ListUtils.reduce(positionStrings, accumulator, "") + "\n" + ListUtils.reduce(distanceStrings, accumulator, "");
+        if (csvExportPosition.isSelected()) {
+            final List<String> positionStrings = ListUtils.map(items, position.andThen(p -> Integer.toString(p)));
+            stringBuilder.append(ListUtils.reduce(positionStrings, accumulator, ""));
+            if (csvExportDistance.isSelected())
+                stringBuilder.append('\n');
+        }
+        if (csvExportDistance.isSelected()) {
+            final List<String> distanceStrings = ListUtils.map(items, distance.andThen(d -> Double.toString(d)));
+            stringBuilder.append(ListUtils.reduce(distanceStrings, accumulator, ""));
+        }
+        return stringBuilder.toString();
     }
 
     /**

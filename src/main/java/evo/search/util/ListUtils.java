@@ -278,4 +278,25 @@ public class ListUtils {
         return result;
     }
 
+    /**
+     * Compute the ratio of the maximum value divided by the minimum value of the float array.
+     *
+     * @param distances list of float values
+     * @return max value divided by min value
+     */
+    public static float getMinMaxRatio(final float[] distances) {
+        if (distances.length < 2)
+            return 1;
+        float min = Float.POSITIVE_INFINITY;
+        float max = 0;
+
+        for (final float distance : distances) {
+            if (distance < min)
+                min = distance;
+            if (distance > max)
+                max = distance;
+        }
+
+        return max / min;
+    }
 }

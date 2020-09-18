@@ -6,8 +6,8 @@ import evo.search.ga.DiscreteGene;
 import evo.search.io.entities.Configuration;
 import evo.search.view.ConfigurationDialog;
 import evo.search.view.part.Canvas;
-import io.jenetics.Chromosome;
 
+import javax.swing.*;
 import java.util.List;
 
 /**
@@ -29,7 +29,7 @@ public class EventService {
     /**
      * Event to repaint the {@link Canvas} upon.
      */
-    public static final Event<Chromosome<DiscreteGene>> REPAINT_CANVAS = new SimpleEvent<>();
+    public static final Event<Iterable<DiscreteGene>> REPAINT_CANVAS = new SimpleEvent<>();
 
     /**
      * Event to open the {@link evo.search.view.ConfigurationDialog}.
@@ -43,9 +43,9 @@ public class EventService {
 
 
     static {
-        OPEN_CONFIG.addListener(configurations -> {
+        OPEN_CONFIG.addListener(configurations -> SwingUtilities.invokeLater(() -> {
             final ConfigurationDialog configurationDialog = new ConfigurationDialog(configurations);
             configurationDialog.showFrame();
-        });
+        }));
     }
 }

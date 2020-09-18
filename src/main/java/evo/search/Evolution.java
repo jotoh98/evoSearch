@@ -7,6 +7,7 @@ import evo.search.ga.mutators.DistanceMutator;
 import evo.search.io.entities.Configuration;
 import evo.search.io.service.EventService;
 import evo.search.view.LangService;
+import io.jenetics.Phenotype;
 import io.jenetics.engine.Codec;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionResult;
@@ -47,7 +48,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
      * Consumes an evolution result.
      */
     @Builder.Default
-    private transient final Consumer<EvolutionResult<DiscreteGene, Double>> historyConsumer = result -> {
+    private transient final Consumer<Phenotype<DiscreteGene, Double>> bestConsumer = phenotype -> {
     };
     /**
      * Configuration to use during the evolution.
@@ -117,11 +118,11 @@ public class Evolution implements Runnable, Serializable, Cloneable {
                 .stream()
                 .limit(discreteGeneDoubleEvolutionResult -> !aborted)
                 .limit(configuration.getLimit())
-                .peek(historyConsumer)
-                .peek(history::add)
-                .forEach(
-                        result -> progressConsumer.accept(progressCounter.incrementAndGet())
-                );
+                .forEach(result -> {
+                    progressConsumer.accept(progressCounter.incrementAndGet());
+                    bestConsumer.accept(result.bestPhenotype());
+                    history.add(result);
+                });
     }
 
     /**
@@ -226,7 +227,7 @@ public class Evolution implements Runnable, Serializable, Cloneable {
         try {
             return (Evolution) super.clone();
         } catch (final CloneNotSupportedException e) {
-            return new Evolution(progressConsumer, historyConsumer, configuration, history, aborted);
+            return new Evolution(progressConsumer, bestConsumer, configuration, history, aborted);
         }
     }
 

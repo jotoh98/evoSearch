@@ -6,7 +6,6 @@ import evo.search.view.render.Ray2D;
 import evo.search.view.render.StringShape;
 import evo.search.view.render.Style;
 import evo.search.view.render.Transformation;
-import io.jenetics.Chromosome;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -261,7 +260,7 @@ public class Canvas extends JPanel {
      *
      * @param chromosome chromosome to render
      */
-    public void render(final Chromosome<DiscreteGene> chromosome) {
+    public void render(final Iterable<DiscreteGene> chromosome) {
 
         renderRays(rays);
 
@@ -312,7 +311,7 @@ public class Canvas extends JPanel {
      *
      * @param treasures list of treasure points
      */
-    public void renderTreasures(final List<DiscreteGene> treasures) {
+    public void renderTreasures(final Iterable<DiscreteGene> treasures) {
         treasures.forEach(treasure -> enqueue(
                 treasure.allele(),
                 Style.builder().color(Color.RED).shape(Style.Shape.CROSS).build()

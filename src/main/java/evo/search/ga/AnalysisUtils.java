@@ -3,9 +3,7 @@ package evo.search.ga;
 import evo.search.util.ListUtils;
 import evo.search.util.MathUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * This class provides several analysis metrics to evaluate individuals upon
@@ -110,27 +108,24 @@ public class AnalysisUtils {
     }
 
     /**
-     * Calculate the optimal worst case factor given the strategy's distances.
+     * Calculate the optimal worst case factor for the strategy.
+     * This fitness is the worst case factor of the strategy's spiral counterpart.
      *
      * @param chromosome individual to analyze
      * @return optimal worst case factor
      */
-    public static double optimalWorstCase(final List<DiscreteGene> chromosome) {
+    public static double worstCaseSpiralStrategy(final List<DiscreteGene> chromosome) {
         if (chromosome.size() < 1)
             return Double.POSITIVE_INFINITY;
 
-        final List<Float> distances = ListUtils.map(chromosome, DiscreteGene::getDistance);
-        Collections.sort(distances);
+        final List<DiscreteGene> distances = ListUtils.map(chromosome, DiscreteGene::clone);
+        distances.sort(Comparator.comparing(DiscreteGene::getDistance));
 
-        final short positions = chromosome.get(0).getPositions();
-        final double angle = MathUtils.sectorAngle(positions);
+        final short positions = distances.get(0).getPositions();
+        for (int i = 0; i < distances.size(); i++)
+            distances.get(i).setPosition((short) (i % positions));
 
-        final float max = distances.get(distances.size() - 1);
-
-        final double worstCase = ListUtils.consecSum(distances, (a, b) -> MathUtils.lawOfCosine(angle, a, b));
-        final double outerArc = arcPathLength(positions, angle, max, max + 1);
-
-        return (worstCase + outerArc) / max;
+        return worstCase(distances, 1f);
     }
 
     /**
@@ -274,10 +269,8 @@ public class AnalysisUtils {
 
         final double[] maxDistance = new double[positions];
 
-        for (final DiscreteGene gene : points) {
-            final short position = gene.getPosition();
-            maxDistance[position] = Math.max(gene.getDistance(), maxDistance[position]);
-        }
+        for (final DiscreteGene gene : points)
+            maxDistance[gene.getPosition()] = Math.max(gene.getDistance(), maxDistance[gene.getPosition()]);
 
         double area = MathUtils.areaInTriangle(sectorAngle, maxDistance[0], maxDistance[maxDistance.length - 1]);
 
@@ -317,34 +310,45 @@ public class AnalysisUtils {
     }
 
     /**
-     * Calculates the worst case trace length of a trace barely missing a treasure
-     * every time by a distance given in epsilon.
+     * Calculates the worst case trace length of a trace barely missing a treasure.
      *
-     * @param points  list of points forming a path
-     * @param epsilon distance the treasure is missed by
+     * @param points      list of points forming a path
+     * @param minDistance minimum distance a worst case is placed away from the origin
      * @return worst case scenario fitness
      */
-    public static double worstCase(final List<DiscreteGene> points, final float epsilon) {
+    public static double worstCase(final List<DiscreteGene> points, final float minDistance) {
         final int size = points.size();
 
         if (size < 1)
             return Double.POSITIVE_INFINITY;
 
         double pathToCurrentPoint = points.get(0).getDistance();
+        final short positions = points.get(0).getPositions();
+
         double worstCaseFactor = 0;
 
+        final float[] worstCaseDistances = new float[positions];
+        Arrays.fill(worstCaseDistances, minDistance);
+
         for (int currentIndex = 0; currentIndex < size; currentIndex++) {
+            final DiscreteGene point = points.get(currentIndex);
             if (currentIndex > 0)
-                pathToCurrentPoint += points.get(currentIndex).distance(points.get(currentIndex - 1));
-
-            final double pathToWorstCase = getPathToWorstCase(points, currentIndex, epsilon);
-
-            worstCaseFactor = Math.max(worstCaseFactor, (pathToCurrentPoint + pathToWorstCase) / points.get(currentIndex).getDistance());
+                pathToCurrentPoint += point.distance(points.get(currentIndex - 1));
+            final float optimalPath = worstCaseDistances[point.getPosition()];
+            worstCaseDistances[point.getPosition()] = Math.max(optimalPath, point.getDistance());
+            worstCaseFactor = Math.max(worstCaseFactor, pathToCurrentPoint / optimalPath);
         }
 
-        return worstCaseFactor;
+        return worstCaseFactor * ListUtils.getMinMaxRatio(worstCaseDistances);
     }
 
+    /**
+     * Compute the mean worst case over all points in the strategy.
+     *
+     * @param points  list of points of the strategy
+     * @param epsilon distance the worst case is missed by
+     * @return mean worst case fitness
+     */
     public static double worstCaseMean(final List<DiscreteGene> points, final float epsilon) {
         final int size = points.size();
 
@@ -352,81 +356,31 @@ public class AnalysisUtils {
             return Double.POSITIVE_INFINITY;
 
         double pathToCurrentPoint = points.get(0).getDistance();
+        final short positions = points.get(0).getPositions();
+
         double worstCaseFactor = 0;
 
+        final float[] worstCaseDistances = new float[positions];
+        Arrays.fill(worstCaseDistances, epsilon);
+
+        double worstCaseSum = 0d;
+
         for (int currentIndex = 0; currentIndex < size; currentIndex++) {
+            final DiscreteGene point = points.get(currentIndex);
             if (currentIndex > 0)
-                pathToCurrentPoint += points.get(currentIndex).distance(points.get(currentIndex - 1));
+                pathToCurrentPoint += point.distance(points.get(currentIndex - 1));
 
-            final double pathToWorstCase = getPathToWorstCase(points, currentIndex, epsilon);
+            final float optimalPath = worstCaseDistances[point.getPosition()];
 
-            worstCaseFactor += Math.max(worstCaseFactor, (pathToCurrentPoint + pathToWorstCase) / points.get(currentIndex).getDistance());
+            worstCaseDistances[point.getPosition()] = Math.max(optimalPath, point.getDistance());
+
+            worstCaseSum += pathToCurrentPoint / optimalPath;
+
+            if (optimalPath < point.getDistance())
+                worstCaseFactor = Math.max(worstCaseFactor, worstCaseSum / (currentIndex + 1));
         }
 
-        return worstCaseFactor / size;
-    }
-
-    /**
-     * Get the path to the worst case point given the list of visited points and the index of the current point.
-     *
-     * @param points       points of the strategy
-     * @param currentIndex index of the point to evaluate the worst case path for
-     * @param epsilon      factor add to the current points distance property to get the worst cases
-     * @return maximum path length to find one of the worst cases points
-     */
-    private static double getPathToWorstCase(final List<DiscreteGene> points, final int currentIndex, final float epsilon) {
-        final short positions = points.get(currentIndex).getPositions();
-        final float distance = points.get(currentIndex).getDistance();
-        double maxPath = 0;
-
-        for (int position = 0; position < positions; position++) {
-            final DiscreteGene worstCase = new DiscreteGene(positions, position, distance + epsilon);
-
-            boolean found = false;
-            double pathToWorstCase = 0;
-
-            for (int remain = currentIndex + 1; remain < positions; remain++)
-                if (finds(points.get(remain), worstCase)) {
-                    found = true;
-                    break;
-                } else
-                    pathToWorstCase += points.get(remain - 1).distance(points.get(remain));
-
-            if (!found)
-                pathToWorstCase += artificialDistance(points.get(points.size() - 1), worstCase);
-
-            maxPath = Math.max(maxPath, pathToWorstCase);
-        }
-
-        return maxPath;
-    }
-
-    /**
-     * Computes the artificial arc distance between a chromosome point and a treasure.
-     * If the distance of the chromosome point is greater than or equal to the treasure,
-     * the arc stays on the points radius. Otherwise, the radius gets increased in each step
-     * until it reaches the treasure.
-     *
-     * @param start     last point in chromosome
-     * @param worstCase worst case location
-     * @return length of arc between last chromosome point and the worst-case location
-     */
-    private static double artificialDistance(final DiscreteGene start, final DiscreteGene worstCase) {
-        final int distancePositions = Math.abs(start.getPosition() - worstCase.getPosition());
-        final short positions = start.getPositions();
-
-        if (distancePositions < 2)
-            return start.distance(worstCase);
-
-        final int steps = Math.min(distancePositions, positions - distancePositions);
-        final double angle = MathUtils.sectorAngle(positions);
-
-        final float endDistance = worstCase.getDistance();
-        final float startDistance = start.getDistance();
-        if (startDistance >= endDistance)
-            return steps * 2 * startDistance * Math.sin(Math.PI / positions);
-        else
-            return arcPathLength(steps > 0 ? steps : positions, angle, endDistance, startDistance);
+        return worstCaseFactor * ListUtils.getMinMaxRatio(worstCaseDistances);
     }
 
     /**

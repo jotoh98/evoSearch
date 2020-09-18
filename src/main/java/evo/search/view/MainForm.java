@@ -17,7 +17,7 @@ import evo.search.view.part.Canvas;
 import io.jenetics.Chromosome;
 import io.jenetics.Phenotype;
 import io.jenetics.engine.EvolutionResult;
-import io.jenetics.util.ISeq;
+import io.jenetics.util.MSeq;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +36,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * The main swing application forms class.
@@ -263,7 +264,12 @@ public class MainForm extends JFrame {
                         if (evolution.getHistory().size() == 0)
                             return;
                         final int lastIndex = evolution.getHistory().size() - 1;
-                        final Chromosome<DiscreteGene> chromosome = evolution.getHistory().get(lastIndex).bestPhenotype().genotype().chromosome();
+                        final Chromosome<DiscreteGene> chromosome = evolution
+                                .getHistory()
+                                .get(lastIndex)
+                                .bestPhenotype()
+                                .genotype()
+                                .chromosome();
                         EventService.REPAINT_CANVAS.trigger(chromosome);
                     });
         });
@@ -459,7 +465,7 @@ public class MainForm extends JFrame {
 
                     final List<List<Double>> doubles = evolutionResult
                             .population()
-                            .map(phenotype -> phenotypeToTableRow(phenotype))
+                            .map(list -> phenotypeToTableRow(list))
                             .asList();
                     populationTableModel.setData(doubles);
                 }
@@ -484,12 +490,14 @@ public class MainForm extends JFrame {
             if (individual < 0)
                 return;
             try {
-                final Phenotype<DiscreteGene, Double> phenotype = evolution
+                final Chromosome<DiscreteGene> chromosome = evolution
                         .getHistory()
                         .get(generation)
                         .population()
-                        .get(individual);
-                EventService.REPAINT_CANVAS.trigger(phenotype.genotype().chromosome());
+                        .get(individual)
+                        .genotype()
+                        .chromosome();
+                EventService.REPAINT_CANVAS.trigger(chromosome);
             } catch (final IndexOutOfBoundsException ignored) {}
         });
     }
@@ -513,7 +521,7 @@ public class MainForm extends JFrame {
         historyTable.getSelectionModel().addListSelectionListener(e -> {
             final int selectedIndex = getSelectedGenerationIndex();
             if (selectedIndex < 0) return;
-            final Chromosome<DiscreteGene> chromosome = getBestIndividual(selectedIndex);
+            final Iterable<DiscreteGene> chromosome = getBestIndividual(selectedIndex);
             if (chromosome != null)
                 EventService.REPAINT_CANVAS.trigger(chromosome);
         });
@@ -554,8 +562,8 @@ public class MainForm extends JFrame {
      * @param generation generation index
      * @return best phenotypes chromosome of the generation
      */
-    private Chromosome<DiscreteGene> getBestIndividual(final int generation) {
-        return evolution.getHistory().get(generation).bestPhenotype().genotype().chromosome();
+    private List<DiscreteGene> getBestIndividual(final int generation) {
+        return evolution.getHistory().get(generation).bestPhenotype().genotype().chromosome().stream().collect(Collectors.toList());
     }
 
     /**
@@ -583,8 +591,7 @@ public class MainForm extends JFrame {
             updateUIOnEvolution(true);
 
             final Consumer<Integer> progressConsumer = progress -> SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
-            final Consumer<EvolutionResult<DiscreteGene, Double>> resultConsumer = result -> {
-                final Phenotype<DiscreteGene, Double> phenotype = result.bestPhenotype();
+            final Consumer<Phenotype<DiscreteGene, Double>> resultConsumer = phenotype -> {
                 EventService.REPAINT_CANVAS.trigger(phenotype.genotype().chromosome());
                 historyTableModel.addRow(phenotypeToTableRow(phenotype));
             };
@@ -592,7 +599,7 @@ public class MainForm extends JFrame {
             evolution = Evolution.builder()
                     .configuration(selectedConfiguration)
                     .progressConsumer(progressConsumer)
-                    .historyConsumer(resultConsumer)
+                    .bestConsumer(resultConsumer)
                     .build();
 
             evolutionThread = new Thread(() -> {
@@ -612,9 +619,11 @@ public class MainForm extends JFrame {
      * @return table row with doubles
      */
     private List<Double> phenotypeToTableRow(final Phenotype<DiscreteGene, Double> phenotype) {
-        final List<DiscreteGene> genes = ISeq.of(phenotype.genotype().chromosome()).asList();
+        final List<DiscreteGene> genes = MSeq.of(
+                phenotype.genotype().chromosome()
+        ).asList();
         final double worstCase = AnalysisUtils.worstCase(genes, 1f);
-        final double optimalWorstCase = AnalysisUtils.optimalWorstCase(genes);
+        final double optimalWorstCase = AnalysisUtils.worstCaseSpiralStrategy(genes);
         return List.of(
                 phenotype.fitness(),
                 worstCase,

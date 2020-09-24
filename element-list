@@ -6,6 +6,7 @@ evo.search.io.entities
 evo.search.io.service
 evo.search.util
 evo.search.view
+evo.search.view.handler
 evo.search.view.listener
 evo.search.view.model
 evo.search.view.part

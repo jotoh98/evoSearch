@@ -339,7 +339,13 @@ public class AnalysisUtils {
             worstCaseFactor = Math.max(worstCaseFactor, pathToCurrentPoint / optimalPath);
         }
 
-        return worstCaseFactor * ListUtils.getMinMaxRatio(worstCaseDistances);
+        final double arcWorstCase = arcWorstCase(
+                worstCaseDistances,
+                points.get(points.size() - 1),
+                pathToCurrentPoint
+        );
+
+        return Math.max(worstCaseFactor, arcWorstCase);
     }
 
     /**
@@ -402,6 +408,35 @@ public class AnalysisUtils {
                     innerRadius + distanceDelta * (i + 1)
             );
         return sum;
+    }
+
+    private static double arcWorstCase(final float[] maxDistances, final DiscreteGene lastPoint, double pathLength) {
+        float max = 0;
+        for (final float distance : maxDistances)
+            if (distance > max) max = distance;
+
+        final double sectorAngle = MathUtils.sectorAngle(lastPoint.getPositions());
+        final double sectorDistance = MathUtils.lawOfCosine(sectorAngle, max, max);
+
+        pathLength += Math.abs(max - lastPoint.getDistance());
+
+        double maxWorstCase = 0d;
+        for (int position = 0; position < maxDistances.length; position++) {
+            final int delta = Math.abs(position - lastPoint.getPosition());
+            final int maxDelta;
+
+            if (delta == 0)
+                maxDelta = 0;
+            else
+                maxDelta = Math.max(lastPoint.getPositions() - delta, delta);
+
+            final double worstCase = (pathLength + maxDelta * sectorDistance) / maxDistances[position];
+
+            if (worstCase > maxWorstCase)
+                maxWorstCase = worstCase;
+        }
+
+        return maxWorstCase;
     }
 
 }

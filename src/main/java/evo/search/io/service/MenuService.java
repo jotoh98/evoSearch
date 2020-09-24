@@ -38,15 +38,14 @@ public class MenuService {
     public static Menu menu(final String text, final Object... children) {
         final Menu menu = new Menu(text);
 
-        for (final Object child : children) {
-            if (child instanceof MenuItem) {
+        for (final Object child : children)
+            if (child instanceof MenuItem)
                 menu.add((MenuItem) child);
-            } else if (child instanceof String) {
+            else if (child instanceof String)
                 menu.add((String) child);
-            } else if (child instanceof Integer && ((int) child) == SEPARATOR) {
+            else if (child instanceof Integer && ((int) child) == SEPARATOR)
                 menu.addSeparator();
-            }
-        }
+
         return menu;
     }
 

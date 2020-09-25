@@ -4,6 +4,7 @@ import com.pploder.events.Event;
 import com.pploder.events.SimpleEvent;
 import evo.search.ga.DiscreteGene;
 import evo.search.io.entities.Configuration;
+import evo.search.view.ChooserForm;
 import evo.search.view.ConfigurationDialog;
 import evo.search.view.part.Canvas;
 
@@ -41,11 +42,16 @@ public class EventService {
      */
     public static final Event<List<Configuration>> CONFIGS_CHANGED = new SimpleEvent<>();
 
+    /**
+     * Event for displaying the chooser form.
+     */
+    public static final Event<Void> OPEN_CHOOSER_FORM = new SimpleEvent<>();
 
     static {
         OPEN_CONFIG.addListener(configurations -> SwingUtilities.invokeLater(() -> {
             final ConfigurationDialog configurationDialog = new ConfigurationDialog(configurations);
             configurationDialog.showFrame();
         }));
+        OPEN_CHOOSER_FORM.addListener(unused -> new ChooserForm());
     }
 }

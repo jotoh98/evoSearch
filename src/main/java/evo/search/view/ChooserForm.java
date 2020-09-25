@@ -61,6 +61,10 @@ public class ChooserForm extends JFrame {
      * Logo is loaded dynamically.
      */
     private JLabel evoSearchLogo;
+    /**
+     * Button to open a Preview window.
+     */
+    private JButton previewButton;
 
     /**
      * Constructor for the chooser form.
@@ -72,6 +76,7 @@ public class ChooserForm extends JFrame {
 
         addButton.addActionListener(e -> onCreateProject());
         openButton.addActionListener(e -> onOpenProject());
+        previewButton.addActionListener(e -> onOpenPreview());
 
         setOptionPaneUI();
 
@@ -256,7 +261,7 @@ public class ChooserForm extends JFrame {
         optionPane.setBackground(UIManager.getColor("EvoSearch.darker"));
         addButton.setIcon(UIManager.getIcon("Spinner.plus.icon"));
         openButton.setIcon(UIManager.getIcon("FileView.directoryIcon"));
-        Arrays.asList(addButton, openButton).forEach(jButton ->
+        Arrays.asList(addButton, openButton, previewButton).forEach(jButton ->
                 jButton.addMouseListener(new MouseAdapter() {
 
                     /**
@@ -290,6 +295,20 @@ public class ChooserForm extends JFrame {
         final MainForm mainForm = new MainForm();
         mainForm.setWorkspace(workspace);
         mainForm.showFrame();
+        dispose();
+    }
+
+    /**
+     * Display a preview window.
+     */
+    private void onOpenPreview() {
+        SwingUtilities.invokeLater(() -> {
+            final Preview preview = new Preview();
+            preview.setPreferredSize(new Dimension(800, 500));
+            preview.pack();
+            preview.setLocationRelativeTo(null);
+            preview.showFrame();
+        });
         dispose();
     }
 

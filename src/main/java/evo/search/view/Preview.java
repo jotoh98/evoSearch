@@ -5,6 +5,7 @@ import evo.search.Main;
 import evo.search.ga.AnalysisUtils;
 import evo.search.ga.DiscreteGene;
 import evo.search.io.entities.Configuration;
+import evo.search.io.service.EventService;
 import evo.search.io.service.MenuService;
 import evo.search.view.part.Canvas;
 import evo.search.view.part.GeneListCellEditor;
@@ -16,10 +17,7 @@ import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -38,9 +36,13 @@ public class Preview extends JFrame {
     private JTable fitnessTable;
 
     public Preview() {
+        positionsSpinner.setValue(1);
         positionsSpinner.addChangeListener(l -> {
-            final List<DiscreteGene> geneList = getChromosome();
             final short value = ((Number) positionsSpinner.getValue()).shortValue();
+
+            if (value < 1)
+                positionsSpinner.setValue(1);
+            final List<DiscreteGene> geneList = getChromosome();
             if (value > 0)
                 geneList.forEach(gene -> gene.setPositions(value));
             canvas.clear();
@@ -75,8 +77,23 @@ public class Preview extends JFrame {
                         )
                 )
         ));
+
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(final WindowEvent e) {
+                EventService.OPEN_CHOOSER_FORM.trigger();
+                super.windowClosed(e);
+            }
+        });
     }
 
+    /**
+     * Preview test method.
+     *
+     * @param ignored ignored cli args
+     */
     public static void main(final String[] ignored) {
         Main.setupEnvironment();
         final Preview preview = new Preview();
@@ -103,7 +120,7 @@ public class Preview extends JFrame {
                 .collect(Collectors.toList());
     }
 
-    private void showFrame() {
+    public void showFrame() {
         setContentPane(rootPanel);
         pack();
         setVisible(true);
